@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Cart | {{ course_code }}</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/courses_platform/payment/addcart_page.css') }}">
+</head>
+<body>
+<div id="pageData" hidden data-value="{{ 'true' if phone else 'false' }}" data-create-payment-order-url="{{ url_for('users.create_payment_order', course_code=course_code, unique_code=unique_code) }}" data-csrf-token="{{ csrf_token() }}" data-value2="{{ url_for('static', filename='images/logo.png') }}"></div>
+
+{% with flash_scopes = ['cart', 'payment', 'purchase'] %}
+    {% include 'users/_flash.html' %}
+{% endwith %}
+
+<header class="checkout-bar">
+    <div class="checkout-bar__inner">
+        <a href="{{ url_for('users.index') }}" class="brand" title="Go to home">
+            <img src="{{ url_for('static', filename='images/favicon.png') }}" alt="ShyamPracticePaper" class="brand__logo">
+            <span class="brand__text">ShyamPracticePaper</span>
+        </a>
+
+        {% if added_courses %}
+        <div class="steps" id="steps">
+            <span class="step is-active" data-step="1">
+                <span class="step__dot"><span class="step__num">1</span><i class="fas fa-check step__tick"></i></span>
+                <span class="step__label">Cart</span>
+            </span>
+            <span class="step__line" data-line="1"></span>
+            <span class="step" data-step="2">
+                <span class="step__dot"><span class="step__num">2</span><i class="fas fa-check step__tick"></i></span>
+                <span class="step__label">Details</span>
+            </span>
+            <span class="step__line" data-line="2"></span>
+            <span class="step" data-step="3">
+                <span class="step__dot"><span class="step__num">3</span><i class="fas fa-check step__tick"></i></span>
+                <span class="step__label">Payment</span>
+            </span>
+        </div>
+
+        <span class="secure-tag">
+            <i class="fas fa-lock"></i> <span>Secure Checkout</span>
+        </span>
+        {% endif %}
+    </div>
+</header>
+
+<main class="shell">
+
+    {% if added_courses %}
+    <div class="page-head">
+        <h1>Review your order</h1>
+        <p>{{ added_courses|length }} item{{ '' if added_courses|length == 1 else 's' }} ready for checkout in {{ course_code }}.</p>
+    </div>
+
+    <div class="layout">
+        <section class="panel">
+            <div class="panel__head">
+                <div class="panel__title">
+                    Your Cart
+                    <span class="count-pill">{{ added_courses|length }}</span>
+                </div>
+                <a href="{{ url_for('users.course_shop', course_code=course_code, unique_code=unique_code) }}" class="link-quiet">
+                    Add more items
+                </a>
+            </div>
+
+            {% for course in added_courses %}
+            <article class="item">
+                <div>
+                    {% if course.section %}
+                    <span class="item__eyebrow">{{ course.section }}</span>
+                    {% endif %}
+                    <h3 class="item__title">{{ course.title }}</h3>
+                    {% if course.subtitle %}
+                    <p class="item__sub">{{ course.subtitle }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="item__right">
+                    <div class="item__price">₹{{ "%.2f"|format(course.price) }}</div>
+                    <form method="POST" action="{{ url_for('users.add_cart', course_code=course_code, unique_code=unique_code) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="course_to_remove" value="{{ course.title }}">
+                        <button class="btn-remove" type="submit" name="remove" title="Remove item">Remove</button>
+                    </form>
+                </div>
+            </article>
+            {% endfor %}
+        </section>
+
+        <aside class="summary">
+            <div class="panel summary__card">
+                <h2 class="summary__title">Order Summary</h2>
+
+                <div class="row">
+                    <span>Subtotal ({{ added_courses|length }} item{{ '' if added_courses|length == 1 else 's' }})</span>
+                    <span>₹{{ "%.2f"|format(total_price) }}</span>
+                </div>
+
+                {% if discount > 0 %}
+                <div class="row row--save">
+                    <span>Discount ({{ discount }}%)</span>
+                    <span>− ₹{{ "%.2f"|format(discount_amount) }}</span>
+                </div>
+                {% endif %}
+
+                <div class="row row--total">
+                    <span>Total Payable</span>
+                    <span class="amount">₹{{ "%.2f"|format(discounted_total) }}</span>
+                </div>
+
+                <button onclick="openPhonePopup()" class="btn btn--pay" type="button">Proceed to Pay</button>
+
+                {% if discount > 0 %}
+                <div class="coupon-applied">
+                    <div>
+                        <span class="coupon-applied__code">{{ coupon_applied }} applied</span>
+                        <small>You saved ₹{{ "%.2f"|format(discount_amount) }}</small>
+                        {% if coupon_expiry %}
+                        <small>Valid till {{ coupon_expiry }}</small>
+                        {% endif %}
+                    </div>
+                    <form method="POST" action="{{ url_for('users.add_cart', course_code=course_code, unique_code=unique_code) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" name="remove_coupon" class="link-remove" title="Remove coupon">Remove</button>
+                    </form>
+                </div>
+                {% endif %}
+
+                <button onclick="showCouponPopup()" class="btn btn--ghost" type="button">
+                    {% if discount > 0 %}Change Coupon{% else %}Apply Coupon{% endif %}
+                </button>
+            </div>
+
+            <div class="panel trust">
+                <p class="trust__title">What's included</p>
+                <div class="trust__row">Secure payment processed by Razorpay</div>
+                <div class="trust__row">Instant access right after payment</div>
+                <div class="trust__row">Receipt emailed to {{ email }}</div>
+            </div>
+        </aside>
+    </div>
+
+    {% else %}
+    <div class="empty">
+        <h2>Your cart is empty{% if username %}, {{ username.split()[0] }}{% endif %}</h2>
+        <p>You haven't added any study material yet. Browse the store to find notes, mock tests and practice papers for {{ course_code }}.</p>
+        <a href="{{ url_for('users.course_shop', course_code=course_code, unique_code=unique_code) }}" class="btn btn--pay btn--inline">
+            Browse Store
+        </a>
+    </div>
+    {% endif %}
+
+</main>
+
+<div id="overlay" class="overlay" onclick="closeAllPopups()"></div>
+
+<div id="payment-loader-overlay" class="overlay">
+    <div class="spinner-container">
+        <div class="dual-ring-spinner"></div>
+        <div class="loader-text">Verifying payment... Do not refresh.</div>
+    </div>
+</div>
+
+<div id="coupon-popup" class="popup">
+    <div class="popup-header">
+        <h3>Available Coupons</h3>
+        <button class="close-btn" onclick="closeCouponPopup()" aria-label="Close">&times;</button>
+    </div>
+    <div>
+    {% if coupons %}
+        {% for coupon in coupons %}
+        <div class="coupon-item">
+            <form method="POST" action="{{ url_for('users.add_cart', course_code=course_code, unique_code=unique_code) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="coupon_code" value="{{ coupon.coupon_code }}">
+                <div>
+                    <span class="coupon-code">{{ coupon.coupon_code }}</span>
+                    <span class="coupon-off">{{ coupon.discount }}% OFF</span>
+                    {% if coupon.min_purchase %}
+                    <div class="coupon-meta">Min order ₹{{ "%.2f"|format(coupon.min_purchase) }}</div>
+                    {% endif %}
+                    <div class="coupon-meta">Expires {{ coupon.formatted_expiry }}</div>
+                </div>
+                <button type="submit" name="apply_coupon" class="btn btn--pay btn--mini">Apply</button>
+            </form>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="popup-note" style="text-align:center; margin:0;">No active coupons available right now.</p>
+    {% endif %}
+    </div>
+</div>
+
+<div id="phonePopup" class="popup">
+    <div class="popup-header">
+        <h3>Verify Phone</h3>
+        <button class="close-btn" onclick="closeAllPopups()" aria-label="Close">&times;</button>
+    </div>
+    <p class="popup-note">Enter your 10-digit mobile number. We use it only for payment confirmation and your receipt.</p>
+    <form id="phoneForm" method="POST" action="{{ url_for('users.validate_phone', course_code=course_code, unique_code=unique_code) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="phone-field">
+            <div class="phone-field__cc">+91</div>
+            <input type="tel" name="phone_number" id="phone_number" maxlength="10" required
+                   pattern="[1-9]{1}[0-9]{9}" inputmode="numeric" placeholder="9876543210" autocomplete="tel-national">
+        </div>
+        <button type="submit" class="btn btn--pay" style="margin-top:0;">Continue</button>
+    </form>
+</div>
+
+<div id="billingPopup" class="popup billing">
+    <div class="popup-header">
+        <h3>Billing Details</h3>
+        <button class="close-btn" onclick="closeAllPopups()" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="billing__block">
+        <p class="billing__label">Customer</p>
+        <div class="billing__grid">
+            <div><small>Name</small><div>{{ username }}</div></div>
+            <div><small>Phone</small><div><span id="billingPhoneNumber">{{ phone }}</span></div></div>
+            <div class="billing__span"><small>Email</small><div>{{ email }}</div></div>
+        </div>
+    </div>
+
+    <p class="billing__label">Order Items</p>
+    <table class="billing__list">
+        <thead>
+            <tr><th>Item</th><th style="text-align:right;">Price</th></tr>
+        </thead>
+        <tbody>
+            {% for course in added_courses %}
+            <tr>
+                <td>{{ course.title }}</td>
+                <td style="text-align:right; font-weight:700;">₹{{ "%.2f"|format(course.price) }}</td>
+            </tr>
+            {% endfor %}
+            {% if discount > 0 %}
+            <tr>
+                <td style="color:var(--ok); font-weight:700;">Discount ({{ discount }}%)</td>
+                <td style="text-align:right; color:var(--ok); font-weight:700;">− ₹{{ "%.2f"|format(discount_amount) }}</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+
+    <div class="billing__total">
+        <span>Total Payable</span>
+        <span class="amount">₹{{ "%.2f"|format(discounted_total) }}</span>
+    </div>
+
+    <button type="button" id="proceed-to-pay-btn" class="btn btn--pay" style="margin-top:0;">
+        Pay Securely
+    </button>
+
+    <form id="payment_success_form" method="POST"
+          action="{{ url_for('users.payment_success', course_code=course_code, unique_code=unique_code) }}"
+          style="display: none;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="razorpay_payment_id" id="payment_id">
+        <input type="hidden" name="razorpay_signature" id="razorpay_signature">
+        <input type="hidden" name="razorpay_order_id" id="order_id">
+    </form>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="{{ url_for('static', filename='js/users/shared/spp_checkout.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/courses_platform/payment/addcart.js') }}"></script>
+
+</body>
+</html>

@@ -1,0 +1,13 @@
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/communication_portal/sapm_footer.css') }}">
+<footer class="sapm-footer">
+    <div class="sapm-footer__brand">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="ShyamPracticePaper logo">
+        <span>SAPM - Shyam Assessment Platform Monitor &copy; 2025-2035</span>
+    </div>
+    <nav class="sapm-footer__links">
+        <a target="_blank" rel="noopener" href="{{ url_for('users.sapm_about', section='cookies') }}">Manage cookies</a>
+        <a target="_blank" rel="noopener" href="{{ url_for('users.sapm_about', section='privacy') }}">Privacy Notice</a>
+        <a target="_blank" rel="noopener" href="{{ url_for('users.sapm_about', section='terms') }}">Terms of Services</a>
+    </nav>
+    <a class="sapm-footer__powered" href="{{ url_for('users.sapm_about') }}">Powered By ShyamPracticePaper - SPP</a>
+</footer>

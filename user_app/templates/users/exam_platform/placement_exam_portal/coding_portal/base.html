@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+
+  <title>{% block title %}Assessment Platform{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/coding_portal/tokens.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/coding_portal/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/coding_portal/layout.css') }}">
+  {% block styles %}{% endblock %}
+  {% block head_extra %}{% endblock %}
+</head>
+<body>
+<div id="page-root">{% block body %}{% endblock %}</div>
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/common.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

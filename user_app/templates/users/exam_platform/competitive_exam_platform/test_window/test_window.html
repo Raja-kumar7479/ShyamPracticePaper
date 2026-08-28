@@ -1,0 +1,190 @@
+{% extends 'users/exam_platform/competitive_exam_platform/test_window/base.html' %}
+
+{% block title %}Exam - {{ course_info.subject_title }}{% endblock %}
+
+{% block styles %}
+    <link href="{{ url_for('static', filename='css/users/exam_platform/competitive_exam_platform/test_window.css') }}" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/competitive_exam_platform/test_calculator/calclayout.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/competitive_exam_platform/test_window/test_window.css') }}">
+{% endblock %}
+
+{% block flash %}{% endblock %}
+
+{% block content %}
+<div id="pageData" hidden data-section-id="{{ section_id }}" data-test-key="{{ test_key }}" data-course-code="{{ course_code }}" data-unique-code="{{ unique_code }}" data-email="{{ email }}" data-duration-seconds="{{ duration_seconds | safe }}" data-sections-data='{{ sections_data | tojson | safe }}'></div>
+<div id="examWindowGuard" hidden data-test-key="{{ test_key }}" data-exit-url="{{ url_for('users.open_mock_test_section', section_id=section_id, course_code=course_code, unique_code=unique_code) }}"></div>
+<div id="examExitGuard" hidden
+     data-away-seconds="0"
+     data-confirm="1"
+     data-confirm-text="Do you want to leave the test? Closing this window will end your attempt."></div>
+<header class="brand-band">
+    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="ShyamPracticePaper" class="brand-band__logo">
+    <div class="brand-band__titles">
+        <div class="brand-band__title">ShyamPracticePaper</div>
+        <div class="brand-band__subtitle">{{ test_course_info.code }} {{ test_course_info.stream }} - Online Test Series</div>
+    </div>
+</header>
+<header class="header-1">
+    <div class="header-left" id="exam-header-title">{{ course_info.subject_title }}</div>
+    <div class="header-right">
+        <span id="view-instructions-btn" class="clickable"><i class="fas fa-circle-info icon-info"></i> Instructions</span>
+        <span id="view-question-paper-btn" class="clickable" style="margin-left: 15px;"><i class="fas fa-book icon-paper"></i> Question Paper</span>
+        <span id="fullscreen-toggle-btn" class="clickable" style="margin-left: 15px;" title="Toggle Fullscreen"><i class="fas fa-expand"></i></span>
+        <span id="palette-toggle-btn" class="clickable" style="margin-left: 15px;" title="Toggle Palette"><i class="fas fa-bars"></i></span>
+    </div>
+</header>
+
+<div class="content right-panel-hidden">
+    <aside class="left-panel">
+        <div class="breadcrumb">
+            <span id="breadcrumb-course-stream">&copy;ShyamPracticePaper<i class="fas fa-info-circle"></i></span>
+            {% if show_calculator %}<i class="fas fa-calculator calculator-icon" title="Calculator"></i>{% endif %}
+        </div>
+        <div class="exam-header">
+            <div class="section-label">Sections</div>
+            <div class="time-left"><strong id="time-left-display">Time Left : --:--:--</strong></div>
+        </div>
+        <div class="section-tabs" id="section-tabs-container">
+            {% for section in sections_data %}
+            <div class="tab" data-section-id="{{ section.section_id }}" onclick="testManager.selectSection('{{ section.section_id }}')">{{ section.section_name }} <i class="fas fa-info-circle tab-info"></i></div>
+            {% endfor %}
+        </div>
+        <div class="question-header">
+            <div><strong>Question Type: <span id="question-type-display">---</span></strong></div>
+            <div>Marks for correct answer: <span class="correct-mark" id="correct-marks-display">-</span> | Negative Marks: <span class="negative-mark" id="negative-marks-display">-</span></div>
+        </div>
+        <div class="question-number-header">
+            <strong id="question-number-display">Question No. -</strong>
+            <button type="button" id="flag-question-btn" class="qf-btn" title="Report a problem with this question">
+                <i class="fas fa-flag"></i><span>Flag</span>
+            </button>
+        </div>
+        <div class="question-box" id="question-box-container">
+            <div id="question-text-area"></div>
+            <div class="question-options" id="question-options-area"></div>
+        </div>
+        <div class="question-actions">
+            <div class="left-actions"><button id="mark-review-next-btn">Mark for Review & Next</button><button id="clear-response-btn">Clear Response</button></div>
+            <div class="right-action"><button id="save-next-btn">Save & Next</button></div>
+        </div>
+    </aside>
+
+    <aside class="right-panel">
+        <span id="close-palette-btn" class="close-palette-btn" title="Close Palette">&times;</span>
+        <div class="user-header">
+            <img src="https://api.dicebear.com/8.x/pixel-art/svg?seed={{ username }}" class="profile-img" alt="{{ username }}'s avatar"/>
+            <div class="username">{{ username }}</div>
+        </div>
+        <section class="status-section" id="status-panel">
+            <div class="status-grid">
+                <div class="status-item"><div class="shield green-shield" id="answered-count">0</div> Answered</div>
+                <div class="status-item"><div class="shield red-shield" id="not-answered-count">1</div> Not Answered</div>
+                <div class="status-item"><div class="box gray-box" id="not-visited-count">9</div> Not Visited</div>
+                <div class="status-item"><div class="circle purple-circle" id="marked-review-count">0</div> Marked for Review</div>
+            </div>
+            <div class="status-item centered-item"><div class="purple-green-circle" id="answered-marked-count-container"><span class="center-icon">✓</span><span id="answered-marked-count">0</span></div>Answered & Marked for Review</div>
+        </section>
+        <div id="question-palette-container"></div>
+        <div class="submit-section"><button class="submit-btn" id="submit-test-btn">Submit</button></div>
+    </aside>
+</div>
+
+<div class="sidebar-backdrop"></div>
+
+<div id="instructions-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Instructions</h2>
+            <span id="close-instructions-btn" class="modal-close-btn">&times;</span>
+        </div>
+        <div class="modal-body">
+            {{ instructions.part1 | safe }}
+            <strong>{{ test_course_info.total_duration_minutes }}</strong>
+            {{ instructions.part2 | safe }}
+        </div>
+    </div>
+</div>
+
+<div id="question-paper-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Question Paper</h2>
+            <span id="close-question-paper-btn" class="modal-close-btn">&times;</span>
+        </div>
+        <div class="modal-body" id="question-paper-body">
+            <p class="qp-loading">Loading question paper...</p>
+        </div>
+    </div>
+</div>
+
+<div id="calculator-popup">
+    <div id="calculator-popup-header">
+        <div class="calculator-title-area">
+            <span>Scientific Calculator</span>
+            <button id="calculator-help-btn" class="calculator-help-btn">Help</button>
+        </div>
+        <span id="close-calculator-btn" class="calculator-close-btn">&times;</span>
+    </div>
+    <div id="keyPad" class="ui-widget-content calc_container" style="border: none; margin-top:0;">
+          <div id="mainContentArea">
+              <input type="text" id="keyPad_UserInput1" class="keyPad_TextBox1" readonly /><div class="text_container"><input type="text" id="keyPad_UserInput" class="keyPad_TextBox" maxlength="30" readonly /><span id="memory" class="memoryhide"><font size="2">M</font></span></div><div class="clear"></div>
+              <div class="left_sec">
+                  <div class="calc_row clear"><a id="keyPad_btnMod" class="keyPad_btnBinaryOp">mod</a><div class="degree_radian"><input type="radio" name="degree_or_radian" value="deg" checked="checked">Deg<input type="radio" name="degree_or_radian" value="rad">Rad</div><a id="keyPad_MC" class="keyPad_btnMemoryOp">MC</a><a id="keyPad_MR" class="keyPad_btnMemoryOp">MR</a><a id="keyPad_MS" class="keyPad_btnMemoryOp">MS</a><a id="keyPad_M+" class="keyPad_btnMemoryOp">M+</a><a id="keyPad_M-" class="keyPad_btnMemoryOp">M-</a></div>
+                  <div class="calc_row clear"><a id="keyPad_btnSinH" class="keyPad_btnUnaryOp min">sinh</a><a id="keyPad_btnCosinH" class="keyPad_btnUnaryOp min">cosh</a><a id="keyPad_btnTgH" class="keyPad_btnUnaryOp min">tanh</a><a id="keyPad_EXP" class="keyPad_btnBinaryOp">Exp</a><a id="keyPad_btnOpen" class="keyPad_btnBinaryOp ">(</a><a id="keyPad_btnClose" class="keyPad_btnBinaryOp ">)</a><a id="keyPad_btnBack" class="keyPad_btnCommand calc_arrows">&#8592;</a><a id="keyPad_btnAllClr" class="keyPad_btnCommand">C</a><a id="keyPad_btnInverseSign" class="keyPad_btnUnaryOp">+/-</a><a id="keyPad_btnSquareRoot" class="keyPad_btnUnaryOp">&#8730;</a></div>
+                  <div class="calc_row clear" style="margin-top: 5px;"><a id="keyPad_btnAsinH" class="keyPad_btnUnaryOp min "><span class='baseele'>sinh</span><span class='superscript'>-1</span></a><a id="keyPad_btnAcosH" class="keyPad_btnUnaryOp min "><span class='baseele'>cosh</span><span class='superscript'>-1</span></a><a id="keyPad_btnAtanH" class="keyPad_btnUnaryOp min "><span class='baseele'>tanh</span><span class='superscript'>-1</span></a><a id="keyPad_btnLogBase2" class="keyPad_btnUnaryOp"><span class='baseele'>log</span><span class='subscript'>2</span><span class='baseele'>x</span></a><a id="keyPad_btnLn" class="keyPad_btnUnaryOp">ln</a><a id="keyPad_btnLg" class="keyPad_btnUnaryOp">log</a><a id="keyPad_btn7" class="keyPad_btnNumeric">7</a><a id="keyPad_btn8" class="keyPad_btnNumeric">8</a><a id="keyPad_btn9" class="keyPad_btnNumeric ">9</a><a id="keyPad_btnDiv" class="keyPad_btnBinaryOp">/</a><a id="keyPad_%" class="keyPad_btnBinaryOp">%</a></div>
+                  <div class="calc_row clear"><a id="keyPad_btnPi" class="keyPad_btnConst">&#960;</a><a id="keyPad_btnE" class="keyPad_btnConst">e</a><a id="keyPad_btnFact" class="keyPad_btnUnaryOp">n!</a><a id="keyPad_btnYlogX" class="keyPad_btnBinaryOp "><span class='baseele'>log</span><span class='subscript'>y</span><span class='baseele'>x</span></a><a id="keyPad_btnExp" class="keyPad_btnUnaryOp"><span class='baseele'>e</span><span class='superscript'>x</span></a><a id="keyPad_btn10X" class="keyPad_btnUnaryOp"><span class='baseele'>10</span><span class='superscript'>x</span></a><a id="keyPad_btn4" class="keyPad_btnNumeric">4</a><a id="keyPad_btn5" class="keyPad_btnNumeric">5</a><a id="keyPad_btn6" class="keyPad_btnNumeric ">6</a><a id="keyPad_btnMult" class="keyPad_btnBinaryOp">*</a><a id="keyPad_btnInverse" class="keyPad_btnUnaryOp">1/x</a></div>
+                  <div class="calc_row clear"><a id="keyPad_btnSin" class="keyPad_btnUnaryOp min ">sin</a><a id="keyPad_btnCosin" class="keyPad_btnUnaryOp min">cos</a><a id="keyPad_btnTg" class="keyPad_btnUnaryOp min">tan</a><a id="keyPad_btnYpowX" class="keyPad_btnBinaryOp"><span class='baseele'>x</span><span class='superscript'>y</span></a><a id="keyPad_btnCube" class="keyPad_btnUnaryOp"><span class='baseele'>x</span><span class='superscript'>3</span></a><a id="keyPad_btnSquare" class="keyPad_btnUnaryOp"><span class='baseele'>x</span><span class='superscript'>2</span></a><a id="keyPad_btn1" class="keyPad_btnNumeric">1</a><a id="keyPad_btn2" class="keyPad_btnNumeric">2</a><a id="keyPad_btn3" class="keyPad_btnNumeric">3</a><a id="keyPad_btnMinus" class="keyPad_btnBinaryOp">-</a></div>
+                  <div class="calc_row clear"><a id="keyPad_btnAsin" class="keyPad_btnUnaryOp min"><span class='baseele'>sin</span><span class='superscript'>-1</span></a><a id="keyPad_btnAcos" class="keyPad_btnUnaryOp min"><span class='baseele'>cos</span><span class='superscript'>-1</span></a><a id="keyPad_btnAtan" class="keyPad_btnUnaryOp min"><span class='baseele'>tan</span><span class='superscript'>-1</span></a><a id="keyPad_btnYrootX" class="keyPad_btnBinaryOp"><span class='superscript' style='top: -8px;'>y</span><span class='baseele' style='font-size: 1.2em; margin: -6px 0 0 -9px;'>&#8730;x</span></a><a id="keyPad_btnCubeRoot" class="keyPad_btnUnaryOp"><font size="3">&#8731; </font></a><a id="keyPad_btnAbs" class="keyPad_btnUnaryOp"><span class='baseele'>|x|</span></a><a id="keyPad_btn0" class="keyPad_btnNumeric">0</a><a id="keyPad_btnDot" class="keyPad_btnNumeric ">.</a><a id="keyPad_btnPlus" class="keyPad_btnBinaryOp">+</a><a id="keyPad_btnEnter" class="keyPad_btnCommand ">=</a></div>
+              </div>
+              <div class="clear"></div>
+            <div id="helpContent" onmousedown="return false">
+              <h3 style="text-align:center;"><strong>Calculator Instructions</strong></h3>
+              <p>Allows you to perform basic and complex mathematical operations such as modulus, square root, cube root, trigonometric, exponential, logarithmic, hyperbolic functions, etc. You can operate the calculator using the buttons provided on screen with your mouse.</p>
+              <h3 style="text-decoration: underline;color: green">Do's:</h3>
+              <ul>
+                <li>Be sure to press [C] when beginning a new calculation.</li>
+                <li>Simply an equation using parenthesis and other mathematical operators.</li>
+                <li>Use the predefined operations such as p (Pi), log, Exp to save time during calculation.</li>
+                <li>Use memory function for calculating cumulative totals.
+                    <strong>[M+]: Will add displayed value to memory.<br>[MR]: Will recall the value stored in memory.<br>[M-]: Subtracts the displayed value from memory.</strong>
+                </li>
+                <li>Be sure select the angle unit (Deg or Rad) before beginning any calculation.<br><strong>Note: By default angle unit is set as Degree</strong></li>
+              </ul>
+              <h3 style="text-decoration: underline;color: red">Don'ts:</h3>
+              <ul>
+                <li>Perform multiple operations together.</li>
+                <li>Leave parenthesis unbalanced.</li>
+                <li>Change the angle unit (Deg or Rad) while performing a calculation.</li>
+              </ul>
+              <h3 style="text-decoration: underline;">Limitations:</h3>
+              <ul>
+                <li>Keyboard operation is disabled.</li>
+                <li>The output for a Factorial calculation is precise up to 14 digits.</li>
+                <li>The output for Logarithmic and Hyperbolic calculations is precise up to 5 digits.</li>
+                <li>Modulus (mod) operation performed on decimal numbers with 15 digits would not be precise.<br><strong>Use mod operation only if the number comprises of less than 15 digits i.e. mod operation provides best results for smaller numbers.</strong></li>
+                <li>The range of value supported by the calculator is 10(-323) to 10(308).</li>
+              </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/users/exam_platform/competitive_exam_platform/test_window/test_window.js') }}"></script>
+
+<script src="{{ url_for('static', filename='js/users/exam_platform/competitive_exam_platform/test_calculator/jquery-1.8.0.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/competitive_exam_platform/test_calculator/jquery-ui.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/competitive_exam_platform/test_calculator/oscZenoedited.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/competitive_exam_platform/test_proctoring.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/competitive_exam_platform/test_window.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/competitive_exam_platform/test_window/test_features.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/exam_window_guard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/exam_exit_guard.js') }}"></script>
+
+{% endblock %}

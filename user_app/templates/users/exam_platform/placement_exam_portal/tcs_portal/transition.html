@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <title>Part 1 Complete | ShyamPracticePaper</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/tcs_portal/tcs.css') }}">
+</head>
+<body class="tcs-body">
+<main class="tcs-center">
+    <h1>Aptitude submitted</h1>
+    <p>{{ exam.title }} - Part 1 is saved. Part 2 opens the coding editor with its own timer.</p>
+
+    <ol class="tcs-steps">
+        <li class="is-done">1. Aptitude</li>
+        <li class="is-active">2. Coding ({{ exam.coding_minutes or 0 }} min)</li>
+        <li>3. Result</li>
+    </ol>
+
+    <div class="tcs-note">
+        <i class="fas fa-code"></i>
+        The coding section shows the problem on the left and the editor on the right. Run against sample cases,
+        then submit. The timer starts the moment you continue.
+    </div>
+
+    <a class="tcs-btn tcs-btn--ok" href="{{ continue_url }}"><i class="fas fa-play"></i> Start Coding Part</a>
+</main>
+</body>
+</html>

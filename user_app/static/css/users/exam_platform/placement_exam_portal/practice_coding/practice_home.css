@@ -1,0 +1,535 @@
+/* Practice home: LeetCode-style dark three-column layout. */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+    --pc-bg: #fbf7f0; --pc-panel: #ffffff; --pc-panel2: #f4ece0;
+    --pc-line: #e7d9c6; --pc-text: #2a2220; --pc-muted: #8a7c6c;
+    --pc-accent: #992c25; --pc-gold: #f0ae06;
+    --pc-easy: #1f7a4d; --pc-med: #c98a00; --pc-hard: #992c25;
+    --pc-ok: #1f7a4d; --pc-err: #c0392b;
+    /* Measured height of the sticky topbar; the sidebar starts below it. */
+    --pc-topbar-h: 56px;
+}
+body { background: var(--pc-bg); color: var(--pc-text);
+       font: 14px/1.5 -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; }
+a { color: inherit; text-decoration: none; }
+
+/* ---- top bar ---- */
+.pc-topbar {
+    display: flex; align-items: center; gap: 22px;
+    padding: 10px 22px; background: #992c25; border-bottom: 1px solid var(--pc-line);
+    position: sticky; top: 0; z-index: 20;
+}
+.pc-brand { display: flex; align-items: center; gap: 9px; font-weight: 700; font-size: 16px; }
+.pc-brand img { height: 26px; }
+.pc-topnav { display: flex; gap: 18px; }
+.pc-topnav__item { padding: 6px 2px; color: var(--pc-muted); }
+.pc-topnav__item.is-active { color: var(--pc-text); border-bottom: 2px solid var(--pc-accent); }
+.pc-topbar__right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+.pc-user { color: var(--pc-muted); }
+.pc-premium-cta {
+    background: rgba(153, 44, 37, .12); color: var(--pc-accent);
+    padding: 6px 14px; border-radius: 6px; font-weight: 600;
+}
+.pc-premium-badge { color: var(--pc-accent); font-weight: 700; }
+
+.pc-hamburger { display: inline-flex; align-items: center; background: transparent; border: 0; color: #fff;
+                font-size: 20px; line-height: 1; cursor: pointer; padding: 4px 6px; }
+.pc-user { display: inline-flex; align-items: center; }
+.pc-user__avatar {
+    width: 34px; height: 34px; border-radius: 50%; flex: 0 0 34px;
+    background: var(--pc-gold); color: #3a2600;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 15px; text-transform: uppercase;
+}
+.pc-side__close { display: none; }
+.pc-side__mobilenav { display: none; }
+.pc-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 39; }
+.pc-backdrop.is-open { display: block; }
+body.pc-noscroll { overflow: hidden; }
+
+/* ---- layout ----
+   The sidebar is its own full-height column against the left edge, so the
+   grid is not centred as a whole: the sidebar takes the gutter and the
+   remaining content is centred inside the space that is left. */
+.pc-layout {
+    display: grid; grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 0 24px; max-width: none; margin: 0; padding: 0 24px 20px 24px;
+    align-items: start;
+}
+
+/* ---- left sidebar: full height, with a divider against the content ----
+   The topbar is sticky, so the sidebar starts below it and fills the rest of
+   the viewport. --pc-topbar-h keeps the two in step if the header changes. */
+.pc-side {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 268px; max-width: 84vw;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 16px 12px;
+    background: var(--pc-panel);
+    z-index: 40;
+    transform: translateX(-100%); transition: transform .25s ease;
+    box-shadow: 2px 0 18px rgba(0, 0, 0, .18);
+}
+
+.pc-side.is-open { transform: translateX(0); }
+
+.pc-side__close {
+    display: inline-flex; align-items: center; justify-content: center;
+    margin: 0 0 10px auto; width: 34px; height: 34px; border: 0; border-radius: 8px;
+    background: var(--pc-panel2); color: var(--pc-text); font-size: 16px; cursor: pointer;
+}
+
+.pc-side::-webkit-scrollbar { width: 8px; }
+.pc-side::-webkit-scrollbar-thumb { background: var(--pc-line); border-radius: 999px; }
+
+/* The other two columns keep the old breathing room the padding used to give. */
+.pc-main { padding-top: 20px; }
+.pc-rail { margin-top: 20px; }
+
+/* ---- independent scroll panes ----
+   The page itself does not scroll on desktop. The sidebar and the right rail
+   stay put and only the question list moves, so a bank of 10,000 questions
+   never pushes the filters or the nav off screen. */
+@media (min-width: 769px) {
+    html, body { height: 100%; overflow: hidden; }
+
+    .pc-layout {
+        height: calc(100vh - var(--pc-topbar-h));
+        align-items: stretch;
+    }
+
+
+    .pc-main {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;          /* lets the list shrink instead of overflowing */
+    }
+
+    /* Filters, search and the action row stay pinned above the list. */
+    .pc-main > .pc-subjects,
+    .pc-main > .pc-actionrow,
+    .pc-main > .pc-tools { flex: 0 0 auto; }
+
+    .pc-list {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding-right: 6px;     /* room for the scrollbar, not under it */
+    }
+
+    .pc-rail {
+        position: static;
+        height: 100%;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        max-height: none;
+    }
+
+    .pc-list::-webkit-scrollbar,
+    .pc-rail::-webkit-scrollbar { width: 8px; }
+    .pc-list::-webkit-scrollbar-thumb,
+    .pc-rail::-webkit-scrollbar-thumb { background: var(--pc-line); border-radius: 999px; }
+}
+.pc-side__item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-radius: 8px; color: var(--pc-muted); margin-bottom: 2px;
+}
+.pc-side__item:hover { background: var(--pc-panel); color: var(--pc-text); }
+.pc-side__item.is-active { background: var(--pc-panel2); color: var(--pc-text); font-weight: 600; }
+.pc-side__divider { border-top: 1px solid var(--pc-line); margin: 14px 0; }
+.pc-side__label { color: var(--pc-muted); font-size: 12px; text-transform: uppercase;
+                  letter-spacing: .4px; padding: 0 14px 8px; }
+.pc-side__stat { display: flex; justify-content: space-between; padding: 4px 14px; color: var(--pc-muted); }
+.pc-side__stat strong { color: var(--pc-text); }
+
+/* ---- subject chips ---- */
+.pc-subjects { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.pc-chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: var(--pc-panel); border-radius: 16px; padding: 6px 14px;
+    color: var(--pc-muted); font-size: 13px;
+}
+.pc-chip:hover { color: var(--pc-text); }
+.pc-chip.is-active { background: var(--pc-accent); color: #fff; font-weight: 600; }
+.pc-chip__n {
+    background: var(--pc-panel2); border-radius: 10px; padding: 1px 8px; font-size: 12px;
+}
+.pc-chip.is-active .pc-chip__n { background: rgba(255,255,255,.25); color:#fff; }
+
+/* ---- search / filter row ---- */
+.pc-tools { display: flex; gap: 10px; margin-bottom: 14px; }
+.pc-search {
+    flex: 1 1 auto; display: flex; align-items: center; gap: 9px;
+    background: var(--pc-panel); border-radius: 8px; padding: 0 13px;
+}
+.pc-search i { color: var(--pc-muted); }
+.pc-search input {
+    flex: 1; background: transparent; border: 0; outline: 0;
+    color: var(--pc-text); padding: 9px 0; font-size: 14px;
+}
+.pc-tools select, .pc-go {
+    background: var(--pc-panel); color: var(--pc-text); border: 0;
+    border-radius: 8px; padding: 8px 14px; cursor: pointer;
+}
+
+/* ---- question rows ---- */
+/* No `overflow: hidden` here. It was only ever clipping the rounded corners,
+   but this rule sits after the desktop block that makes the list scroll, so it
+   silently won and left the list unscrollable with rows out of reach. The
+   corners are rounded on the first and last row instead. */
+.pc-list { border-radius: 10px; }
+.pc-list > .pc-row:first-child { border-top-left-radius: 10px; border-top-right-radius: 10px; }
+.pc-list > .pc-row:last-child { border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; }
+.pc-row {
+    display: grid; grid-template-columns: 34px minmax(0, 1fr) 130px 70px 60px 34px;
+    align-items: center; gap: 10px; padding: 12px 16px;
+}
+.pc-row--alt { background: var(--pc-panel); }
+.pc-row:hover { background: var(--pc-panel2); }
+.pc-row__title { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pc-row__subject { color: var(--pc-muted); font-size: 12.5px; }
+.pc-row__acc { color: var(--pc-muted); font-size: 13px; text-align: right; }
+.pc-row__diff { font-size: 13px; font-weight: 600; text-align: right; }
+.pc-diff--easy { color: var(--pc-easy); }
+.pc-diff--moderate { color: var(--pc-med); }
+.pc-diff--hard { color: var(--pc-hard); }
+.pc-row__lock { text-align: center; color: var(--pc-muted); }
+.pc-crown { color: var(--pc-accent); }
+.pc-solved { color: var(--pc-easy); }
+.pc-empty { padding: 46px; text-align: center; color: var(--pc-muted); background: var(--pc-panel); }
+
+/* ---- right rail ---- */
+.pc-rail { position: sticky; top: 66px; align-self: start;
+           max-height: calc(100vh - 86px); overflow-y: auto;
+           display: flex; flex-direction: column; gap: 18px; }
+.pc-card { background: var(--pc-panel); border-radius: 10px; padding: 16px; }
+.pc-card__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.pc-cal__nav button {
+    background: transparent; border: 0; color: var(--pc-muted);
+    font-size: 18px; cursor: pointer; padding: 0 6px;
+}
+.pc-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+.pc-cal__dow { color: var(--pc-muted); font-size: 11px; padding: 4px 0; }
+.pc-cal__day { padding: 6px 0; border-radius: 6px; font-size: 13px; color: var(--pc-text); }
+.pc-cal__day.is-today { background: var(--pc-easy); color: #08201d; font-weight: 700; }
+
+.pc-companies { display: flex; flex-wrap: wrap; gap: 8px; }
+.pc-company {
+    background: var(--pc-panel2); border-radius: 14px; padding: 5px 12px;
+    font-size: 12.5px; color: var(--pc-text);
+}
+.pc-company__n {
+    background: var(--pc-accent); color: #fff; border-radius: 10px;
+    padding: 1px 7px; font-size: 11px; font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+    .pc-topnav { display: none; }
+    .pc-layout { grid-template-columns: minmax(0, 1fr); }
+    .pc-rail {
+        grid-column: 1 / -1; position: static; max-height: none; overflow: visible;
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 16px; align-items: start;
+    }
+}
+
+@media (max-width: 768px) {
+    .pc-hamburger { display: inline-flex; align-items: center; }
+    .pc-layout { grid-template-columns: minmax(0, 1fr); }
+    .pc-side {
+        /* Back to a drawer on small screens: reset the docked column's
+           height and divider, or the drawer would stop short of the bottom. */
+        position: fixed; top: 0; left: 0; bottom: 0; width: 268px; max-width: 84vw;
+        height: auto; max-height: none; border-right: 0;
+        background: var(--pc-panel); z-index: 40;
+        padding: 16px 12px; overflow-y: auto;
+        transform: translateX(-100%); transition: transform .25s ease;
+        box-shadow: 2px 0 18px rgba(0, 0, 0, .18);
+    }
+    .pc-side.is-open { transform: translateX(0); }
+    .pc-side__close {
+        display: inline-flex; align-items: center; justify-content: center;
+        margin: 0 0 10px auto; width: 34px; height: 34px; border: 0; border-radius: 8px;
+        background: var(--pc-panel2); color: var(--pc-text); font-size: 16px; cursor: pointer;
+    }
+    .pc-side__mobilenav { display: block; }
+}
+
+/* ---- streak / action row / company badges (feature round 2) ---- */
+.pc-streak {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: #ff9d3c; font-weight: 700; font-size: 14px;
+}
+.pc-actionrow { display: flex; gap: 10px; margin-bottom: 12px; }
+.pc-action {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--pc-panel); border-radius: 8px; padding: 8px 15px;
+    color: var(--pc-text); font-size: 13px; font-weight: 600;
+}
+.pc-action:hover { background: var(--pc-panel2); }
+.pc-row__companies { text-align: center; }
+.pc-cobadge {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--pc-panel2); border-radius: 12px; padding: 2px 9px;
+    font-size: 11.5px; color: var(--pc-muted);
+}
+
+/* rows gained a companies column */
+.pc-row { grid-template-columns: 34px minmax(0, 1fr) 120px 64px 56px 52px 34px; }
+
+/* ---- sidebar progress bars ---- */
+.pc-progress { padding: 5px 14px; }
+.pc-progress__row {
+    display: flex; justify-content: space-between;
+    color: var(--pc-muted); font-size: 12.5px; margin-bottom: 4px;
+}
+.pc-progress__bar {
+    height: 6px; border-radius: 3px; background: var(--pc-panel2); overflow: hidden;
+}
+.pc-progress__bar span { display: block; height: 100%; background: var(--pc-easy); }
+
+/* ---- daily challenge card ---- */
+.pc-daily {
+    /* Was a near-black gradient left over from the dark theme, which left the
+       maroon heading and muted meta text unreadable on top of it. */
+    display: block; border-radius: 10px; padding: 15px 17px;
+    background: linear-gradient(135deg, #fff6e2, #fdeccb);
+    border: 1px solid rgba(240, 174, 6, .45);
+}
+.pc-daily:hover { border-color: var(--pc-accent); }
+.pc-daily__head {
+    display: flex; justify-content: space-between; align-items: center;
+    color: var(--pc-accent); font-size: 12.5px; font-weight: 700; margin-bottom: 8px;
+}
+.pc-daily__done { color: var(--pc-easy); }
+.pc-daily strong { font-size: 15px; }
+/* Darker than --pc-muted: that only reaches 3.8:1 on the card's cream. */
+.pc-daily__meta { color: #5f5346; font-size: 12.5px; margin-top: 6px; }
+
+/* ---- list toolbar extras ---- */
+.pc-attempted { color: var(--pc-med); }
+
+.pc-solvedmeter {
+    display: inline-flex; align-items: center; gap: 7px;
+    margin-left: auto; color: var(--pc-muted); font-size: 12.5px; white-space: nowrap;
+}
+.pc-solvedmeter i { color: var(--pc-ok); }
+.pc-solvedmeter strong { color: var(--pc-text); }
+
+.pc-clear {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; color: var(--pc-accent); border: 1px solid var(--pc-line);
+    border-radius: 8px; padding: 6px 11px; background: var(--pc-panel);
+}
+.pc-clear:hover { background: var(--pc-panel2); }
+
+/* ---- live search affordances ---- */
+.pc-search { position: relative; }
+.pc-search__clear, .pc-search__spin {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: transparent; border: 0; cursor: pointer;
+    color: var(--pc-muted); font-size: 16px; line-height: 1; padding: 0 4px;
+}
+.pc-search__clear:hover { color: var(--pc-text); }
+.pc-search__spin { pointer-events: none; font-size: 12px; right: 30px; }
+
+/* ---- reset ---- */
+.pc-clear.is-off { opacity: .45; pointer-events: none; }
+
+/* ---- sidebar count chip ---- */
+.pc-side__count {
+    margin-left: auto; background: var(--pc-panel2); color: var(--pc-muted);
+    border-radius: 999px; padding: 0 8px; font-size: 11px; font-weight: 700;
+}
+
+/* ---- bookmarks page ---- */
+.pc-bmwrap { max-width: 1100px; margin: 0 auto; padding: 26px 22px 60px; }
+.pc-bmhead h1 { font-size: 24px; display: flex; align-items: center; gap: 10px; }
+.pc-bmhead h1 i { color: var(--pc-gold); }
+.pc-bmsub { color: var(--pc-muted); margin: 6px 0 20px; font-size: 14px; }
+
+.pc-bmstats { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+.pc-bmstat {
+    background: var(--pc-panel); border: 1px solid var(--pc-line);
+    border-radius: 999px; padding: 5px 14px; font-size: 13px; color: var(--pc-muted);
+}
+.pc-bmstat strong { color: var(--pc-text); }
+.pc-bmstat--ok strong { color: var(--pc-ok); }
+.pc-bmstat--mid strong { color: var(--pc-med); }
+
+.pc-bmtag {
+    font-size: 11.5px; font-weight: 600; padding: 2px 10px; border-radius: 999px;
+    background: var(--pc-panel2); color: var(--pc-muted); white-space: nowrap;
+}
+.pc-bmtag--ok { background: rgba(31, 122, 77, .13); color: var(--pc-ok); }
+.pc-bmtag--mid { background: rgba(201, 138, 0, .16); color: #8a6b1f; }
+
+.pc-bmempty { text-align: center; padding: 70px 20px; color: var(--pc-muted); }
+.pc-bmempty i { color: var(--pc-line); margin-bottom: 16px; }
+.pc-bmempty h3 { font-size: 18px; color: var(--pc-text); margin-bottom: 8px; }
+.pc-bmempty p { font-size: 14px; margin-bottom: 18px; }
+.pc-bmbtn {
+    display: inline-block; background: var(--pc-accent); color: #fff;
+    padding: 9px 20px; border-radius: 8px; font-weight: 600; font-size: 14px;
+}
+
+/* ---- infinite scroll footer ---- */
+.pc-more {
+    display: flex; align-items: center; justify-content: center;
+    padding: 18px 10px; min-height: 60px;
+}
+.pc-more__spin { display: none; color: var(--pc-muted); font-size: 13px; }
+.pc-more.is-loading .pc-more__spin { display: inline-flex; gap: 8px; align-items: center; }
+.pc-more.is-loading .pc-more__btn { display: none; }
+
+.pc-more__btn {
+    background: var(--pc-panel); border: 1px solid var(--pc-line);
+    color: var(--pc-text); font-size: 13px; font-weight: 600;
+    padding: 8px 18px; border-radius: 8px; cursor: pointer;
+}
+.pc-more__btn:hover { background: var(--pc-panel2); }
+.pc-more.is-error .pc-more__btn { border-color: var(--pc-err); color: var(--pc-err); }
+
+.pc-count {
+    flex: 0 0 auto; text-align: center; color: var(--pc-muted);
+    font-size: 12px; padding: 8px 0 4px;
+}
+.pc-count strong { color: var(--pc-text); }
+
+/* ---- company page ---- */
+.pc-company-page { max-width: 1100px; margin: 0 auto; padding: 26px 22px 60px; }
+.pc-cohero { display: flex; gap: 20px; align-items: center; margin-bottom: 22px; }
+.pc-cohero__logo {
+    width: 84px; height: 84px; border-radius: 18px; flex: 0 0 84px;
+    background: var(--pc-accent); color: #fff; font-size: 40px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+}
+.pc-cohero h1 { font-size: 30px; }
+.pc-cohero__meta { color: var(--pc-muted); margin: 6px 0; }
+.pc-back-link { color: var(--pc-muted); font-size: 13px; }
+.pc-back-link:hover { color: var(--pc-text); }
+
+.pc-copromo {
+    display: flex; align-items: center; justify-content: space-between; gap: 18px;
+    flex-wrap: wrap; padding: 16px 20px; margin-bottom: 22px; border-radius: 12px;
+    background: rgba(153, 44, 37, .1); border: 1px solid rgba(255, 161, 22, .35);
+}
+.pc-copromo p { color: var(--pc-muted); font-size: 13px; margin-top: 4px; }
+.pc-subscribe-mini {
+    background: var(--pc-accent); color: #fff; font-weight: 700;
+    border-radius: 20px; padding: 10px 26px; white-space: nowrap;
+}
+
+.pc-cogrid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px;
+}
+.pc-cocard {
+    background: var(--pc-panel); border-radius: 12px; padding: 16px 18px;
+    border: 1px solid transparent;
+}
+.pc-cocard:hover { border-color: var(--pc-line); background: var(--pc-panel2); }
+.pc-cocard__top { display: flex; justify-content: space-between; margin-bottom: 10px; }
+.pc-cocard h3 { font-size: 15px; margin-bottom: 10px; }
+.pc-cocard__meta {
+    display: flex; justify-content: space-between;
+    color: var(--pc-muted); font-size: 12.5px;
+}
+
+@media (max-width: 700px) {
+    .pc-row { grid-template-columns: 28px minmax(0, 1fr) 60px 34px; }
+    .pc-row__subject, .pc-row__acc, .pc-row__companies { display: none; }
+    .pc-cohero { flex-direction: column; text-align: center; }
+    .pc-topnav { display: none; }
+    .pc-layout { padding: 14px; gap: 14px; }
+    .pc-tools { flex-wrap: wrap; }
+    .pc-search { flex: 1 1 100%; }
+    .pc-tools select, .pc-go { flex: 1 1 auto; }
+    .pc-brand span { font-size: 15px; }
+    .pc-topbar { gap: 12px; padding: 10px 14px; }
+    .pc-topbar__right { gap: 10px; }
+}
+
+
+/* ============ ShyamPracticePaper brand overrides (palette: #992c25 / #f0ae06 / #fbf7f0) ============ */
+.pc-topbar { background: #992c25 !important; border-bottom: 1px solid #7c2018 !important; }
+.pc-topbar, .pc-topbar a, .pc-title-mini, .pc-back { color: #fff !important; }
+.pc-topnav__item { color: rgba(255,255,255,.78) !important; }
+.pc-topnav__item.is-active { color: #fff !important; border-bottom-color: var(--pc-gold) !important; }
+.pc-back:hover { color: var(--pc-gold) !important; }
+.pc-user { color: rgba(255,255,255,.85) !important; }
+.pc-premium-cta { background: var(--pc-gold) !important; color: #3a2600 !important; }
+.pc-premium-badge { color: var(--pc-gold) !important; }
+.pc-streak { color: var(--pc-gold) !important; }
+
+/* active chips / selected states on a light bg */
+.pc-chip.is-active { background: var(--pc-accent) !important; color: #fff !important; }
+.pc-chip.is-active .pc-chip__n { background: rgba(255,255,255,.25) !important; color: #fff !important; }
+.pc-company__n, .pc-cal__day.is-today { background: var(--pc-accent) !important; color: #fff !important; }
+.pc-solved { color: var(--pc-easy) !important; }
+.pc-crown { color: var(--pc-gold) !important; }
+
+/* code editor + gutter: light, on-brand, still high-contrast */
+#pcCode { background: #fffdf8 !important; color: #2a2220 !important; }
+.pc-gutter { background: #f4ece0 !important; color: #b9ab97 !important; }
+.pc-io__body textarea, .pc-customout { background: #fffdf8 !important; color: #2a2220 !important; }
+
+/* quiz option accents */
+.qz-opt.is-picked { border-color: var(--pc-accent) !important; }
+.qz-opt.is-picked .qz-opt__letter { background: var(--pc-accent) !important; color: #fff !important; }
+.qz-btn { background: var(--pc-accent) !important; color: #fff !important; }
+.qz-btn--alt { background: var(--pc-gold) !important; color: #3a2600 !important; }
+.qz-progress span { background: var(--pc-gold) !important; }
+
+/* premium plan cards */
+.pm-plan--featured { background: linear-gradient(135deg, #fff2d6, #ffd98c) !important; }
+.pm-subscribe { background: var(--pc-accent) !important; }
+
+/* ---- brand footer with pricing ---- */
+.pc-footer {
+    margin-top: 40px; padding: 22px 26px; background: #992c25; color: #fff;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 24px; flex-wrap: wrap;
+}
+.pc-footer__brand { display: flex; align-items: center; gap: 12px; }
+.pc-footer__brand img { height: 40px; width: 40px; border-radius: 50%; background: #fff; object-fit: contain; }
+.pc-footer__brand strong { display: block; font-size: 15px; }
+.pc-footer__brand span { font-size: 12.5px; color: rgba(255,255,255,.75); }
+.pc-footer__pricing { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.pc-price { display: flex; flex-direction: column; }
+.pc-price__label { font-size: 11.5px; color: rgba(255,255,255,.75); }
+.pc-price__label em { color: var(--pc-gold); font-style: normal; font-weight: 700; }
+.pc-price__amt { font-size: 20px; font-weight: 800; }
+.pc-price__amt small { font-size: 12px; font-weight: 500; color: rgba(255,255,255,.7); }
+.pc-price--best .pc-price__amt { color: var(--pc-gold); }
+.pc-footer__cta {
+    background: var(--pc-gold); color: #3a2600; font-weight: 700;
+    border-radius: 22px; padding: 11px 26px; white-space: nowrap;
+}
+.pc-footer__cta:hover { filter: brightness(1.05); }
+.pc-footer__links { display: flex; align-items: center; gap: 14px; font-size: 12px; color: rgba(255,255,255,.75); }
+.pc-footer__links a { color: rgba(255,255,255,.85); }
+@media (max-width: 760px) {
+    .pc-footer { flex-direction: column; align-items: stretch; text-align: left; padding: 20px; gap: 18px; }
+    .pc-footer__pricing { justify-content: space-between; width: 100%; }
+    .pc-footer__cta { text-align: center; }
+    .pc-footer__links { flex-wrap: wrap; justify-content: center; }
+}
+
+/* ---------- monthly leaderboard ---------- */
+.pc-lb { display: flex; flex-direction: column; }
+.pc-lb__row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 6px; border-radius: 8px; font-size: .84rem;
+}
+.pc-lb__row + .pc-lb__row { border-top: 1px solid #f2f0ec; }
+.pc-lb__row.is-me { background: #fdf3e3; font-weight: 600; }
+.pc-lb__rank {
+  flex: 0 0 22px; height: 22px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #f2f0ec; color: #6b625c; font-size: .7rem; font-weight: 700;
+}
+.pc-lb__rank--top { background: #ffe9c0; color: #a06a00; }
+.pc-lb__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-lb__solved { flex: 0 0 auto; font-weight: 700; color: #1a7f4b; font-size: .8rem; }

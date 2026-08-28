@@ -1,0 +1,317 @@
+* {
+  box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+}
+
+body {
+  font-family: Arial;
+}
+
+
+#keyPad_Help {
+    position: absolute;
+    right: 60px;
+    top: 10px;
+    width: 22px;
+    height: 22px;
+    background-color: #ffffff;
+    color: #992c25;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 22px;
+    font-weight: bold;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+#keyPad_Help::before {
+    content: "?";
+    display: block;
+    margin-top: -1px;
+}
+
+
+.calc_min {
+    position: absolute;
+    right: 35px;
+    top: 10px;
+    width: 22px;
+    height: 22px;
+    background-color: #ffffff;
+    color: #992c25;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 30px;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    font-size: 24px;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.calc_min::before {
+    content: "-";
+    display: block;
+    margin-top: -8px;
+}
+
+
+.calc_close {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    width: 22px;
+    height: 22px;
+    background-color: #ffffff;
+    color: #992c25;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 27px;
+    cursor: pointer;
+    border: 1px solid #ddd;
+    font-size: 18px;
+    font-family: Arial, sans-serif;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.calc_close::before {
+    content: "×";
+    display: block;
+    margin-top: -2px;
+}
+
+
+#keyPad_Help:hover,
+.calc_min:hover,
+.calc_close:hover {
+    background-color: #fafafa;
+    transform: scale(1.1);
+    color: #5c1a15;
+}
+
+
+#helpContent {
+    display: none;
+    position: absolute;
+    top: 40px;
+    left: 10px;
+    right: 10px;
+    background: white;
+    z-index: 100;
+    padding: 15px;
+    border: 1px solid #ccc;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+    border-radius: 0 0 5px 5px;
+}
+
+
+#keyPad.minimized {
+    height: 40px !important;
+    overflow: hidden;
+    border-bottom: 7px solid #999;
+}
+
+
+.calc_max.hide {
+    display: none;
+}
+
+
+#mainContentArea {
+  margin-top: 0px;
+  padding: 10px;
+}
+
+.calc_container {
+  background: #dadada;
+  border: 1px solid #aaa;
+  border-radius: 5px;
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.1);
+  padding: 0;
+  width: 463px;
+  border-bottom: 7px solid #999;
+  position: relative;
+}
+
+.left_sec {
+  float: left;
+}
+
+.right_sec {
+  float: left;
+  height: 180px;
+}
+
+.calc_row {
+  display: block;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+
+#keyPad a {
+  background: #fafafa;
+  border: 1px solid #aaa;
+  border-radius: 4px;
+  color: #444;
+  cursor: pointer;
+  float: left;
+  font-size: 12px;
+  font-weight: bold;
+  height: 25px;
+  line-height: 20px;
+  margin-right: 5px;
+  text-align: center;
+  text-decoration: none;
+  vertical-align: middle;
+  width: 35px;
+}
+
+#keyPad a.min {
+  font-size: 10.5px;
+}
+
+#keyPad a.last {
+  margin-right: 0px;
+}
+
+#keyPad a:active {
+  position: relative;
+  height: 25px;
+  border-bottom: 1px solid #aaa;
+}
+
+#keyPad_btnEnter:active {
+  position: absolute !important;
+  bottom: 17px !important;
+}
+
+#keyPad a:hover {
+  background: #eaeaea;
+}
+
+.text_container {
+  display: inline;
+}
+
+.memoryhide {
+  visibility: hidden;
+  position: absolute;
+  top: 52px;
+  right: 429px;
+  bottom: 0;
+  opacity: 0;
+  transition: opacity 1s, visibility 1s;
+}
+
+.memoryshow {
+  visibility: visible;
+  opacity: 1;
+}
+
+.keyPad_TextBox,
+.keyPad_TextBox1 {
+  background: #fff;
+  border: 1px solid #aaa;
+  border-radius: 3px;
+  font-size: 20px;
+  height: 30px;
+  line-height: 30px;
+  text-align: right;
+  text-indent: 10px;
+  vertical-align: middle;
+  width: 434px;
+  float: left;
+  margin-bottom: 7px;
+  padding-right: 5px;
+}
+
+.degree_radian {
+  height: 25px;
+  display: inline-block;
+  font-size: 9px;
+  margin-top: 4px;
+  vertical-align: middle;
+}
+
+#keyPad_btnDot {
+  width: 35px !important;
+}
+
+#keyPad_btn0 {
+  width: 76px !important;
+}
+
+.calc_arrows {
+  font-size: 24px !important;
+}
+
+#keyPad #keyPad_btnEnter {
+  background: #2ecc71;
+  border-color: #27ae60;
+  color: #fff;
+  font-size: 20px;
+  line-height: 47px;
+  bottom: 17px;
+  right: 6px;
+  width: 35px;
+  height: 53px;
+  position: absolute;
+}
+
+#keyPad #keyPad_btnClr,
+#keyPad #keyPad_btnInverseSign,
+#keyPad #keyPad_btnAllClr {
+  background: #e74c3c;
+  color: #fff;
+  border-color: #c0392b;
+  width: 35px !important;
+}
+
+#keyPad #keyPad_btnBack {
+  background: #e74c3c;
+  color: #fff;
+  border-color: #c0392b;
+  width: 76px !important;
+}
+
+#keyPad #keyPad_btnSquare,
+#keyPad #keyPad_btnCube,
+#keyPad #keyPad_btnExp,
+#keyPad #keyPad_btnYpowX {
+  font-size: 12px;
+}
+
+.clear {
+  clear: both;
+}
+
+.superscript,
+.subscript {
+  font-size: 0.7em;
+  position: relative;
+}
+
+.superscript {
+  top: -0.5em;
+}
+
+.subscript {
+  top: 0.5em;
+}
+
+#helpContent {
+  height: 263px;
+  margin-right: 6px;
+  overflow: auto;
+  padding: 10px;
+}
+
+#helptopDiv {
+  margin-bottom: 5px;
+  padding: 10px;
+  background-color: #992c25;
+  color: #ffffff;
+}

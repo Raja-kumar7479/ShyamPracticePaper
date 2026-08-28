@@ -1,0 +1,29 @@
+#flash-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  max-width: 600px;
+  width: auto;
+  pointer-events: none;
+}
+
+.flash-message {
+  background-color: #db9504;
+  color: #000 !important;
+  font-weight: 500;
+  font-family: 'Segoe UI', sans-serif;
+  padding: 16px 24px;
+  margin-bottom: 12px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  opacity: 0.95;
+  transition: opacity 0.5s ease-in-out;
+  pointer-events: auto;
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.flash-hide {
+  opacity: 0;
+}

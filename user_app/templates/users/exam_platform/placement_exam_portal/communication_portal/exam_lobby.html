@@ -1,0 +1,71 @@
+{% extends "users/exam_platform/placement_exam_portal/communication_portal/base1.html" %}
+
+{% block title %}Lobby - {{ data.assessment_title }}{% endblock %}
+
+{% block assessment_title %}{{ data.assessment_title }}{% endblock %}
+{% block q_count %}{{ data.total_questions }}{% endblock %}
+{% block duration %}{{ data.duration_minutes }}{% endblock %}
+
+{% block step2_class %}success{% endblock %}
+{% block step3_class %}success{% endblock %}
+{% block step4_class %}active{% endblock %}
+
+{% block head_scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/communication_portal/exam_lobby.css') }}">
+{% endblock %}
+
+{% block right_content %}
+    <input type="hidden" id="lobbyTestKey" value="{{ test_key }}">
+    <div class="info-bar">
+        <span class="status-dot" id="socketStatus"></span>
+        <span id="socketMsg">Connecting to secure server...</span>
+        &nbsp; | &nbsp; <span id="topTimer" class="text-muted">Ready? 10s</span>
+    </div>
+
+    <div class="section-header"><span class="section-tab">Select section to attempt</span></div>
+
+    <div class="section-card">
+        <div class="radio-row">
+            <input class="form-check-input" type="radio" name="section" id="sec1" checked>
+            <label class="section-name-bold" for="sec1">Section</label>
+        </div>
+
+        <table class="table-custom">
+            <thead><tr><th>SECTION NAME</th><th>NO. OF QUESTIONS</th><th>DURATION</th></tr></thead>
+            <tbody>
+                {% for sec in sections %}
+                <tr>
+                    <td>{{ sec.section_title }}</td>
+                    <td>{{ sec.question_count }} Questions</td>
+                    <td>
+                        {% if sec.section_duration_seconds > 0 %}
+                            {{ sec.section_duration_seconds // 60 }} Min
+                        {% else %}
+                            Untimed
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td>Section #1</td><td>{{ data.total_questions }} Questions</td><td>Untimed</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="note-text">* Untimed: These sections do not have a specific time limit. Total Time of Untimed Sections = Total time of test - Total time of Timed sections</div>
+
+        <div class="start-area">
+            <a href="{{ url_for('users.start_proctored_test', test_key=test_key, course_code=course_code, unique_code=unique_code) }}" class="text-decoration-none" id="startLink">
+                <button id="btnStart" class="btn-start" disabled>Start Test</button>
+            </a>
+            <span class="timer-text" id="btnTimerText">Start in 10s</span>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/communication_portal/exam_lobby.js') }}"></script>
+{% endblock %}

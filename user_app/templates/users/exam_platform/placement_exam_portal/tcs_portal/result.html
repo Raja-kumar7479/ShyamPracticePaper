@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <title>TCS Exam Result | ShyamPracticePaper</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/tcs_portal/tcs.css') }}">
+</head>
+<body class="tcs-body">
+{% include 'users/exam_platform/placement_exam_portal/tcs_portal/_top.html' %}
+
+<main class="tcs-page">
+    <div class="tcs-head">
+        <h1>{{ exam.title }} - Result</h1>
+        <p>{{ username }} &middot; completed {{ attempt.completed_at.strftime('%d %b %Y, %I:%M %p') if attempt.completed_at else '' }}</p>
+    </div>
+
+    <div class="tcs-score">
+        <div class="tcs-score__box">
+            <strong>{{ '%.2f' % apt_score }} / {{ '%.0f' % apt_max }}</strong>
+            <span>Aptitude</span>
+        </div>
+        <div class="tcs-score__box">
+            <strong>{{ '%.0f' % code_score }} / {{ '%.0f' % code_max }}</strong>
+            <span>Coding</span>
+        </div>
+        <div class="tcs-score__box tcs-score__box--total">
+            <strong>{{ '%.2f' % total }} / {{ '%.0f' % total_max }}</strong>
+            <span>Total &middot; {{ overall_pct }}%</span>
+        </div>
+        {% if apt_overall.accuracy is not none %}
+        <div class="tcs-score__box">
+            <strong>{{ '%.1f' % (apt_overall.accuracy or 0) }}%</strong>
+            <span>Aptitude accuracy</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <h2 class="tcs-section-title"><i class="fas fa-brain"></i> Part 1 - Aptitude sections</h2>
+    {% if apt_sections %}
+    <div class="tcs-table-wrap">
+    <table class="tcs-table">
+        <thead>
+            <tr><th>Section</th><th class="num">Questions</th><th class="num">Correct</th><th class="num">Incorrect</th><th class="num">Skipped</th><th class="num">Marks</th></tr>
+        </thead>
+        <tbody>
+            {% for s in apt_sections %}
+            <tr>
+                <td>{{ s.name }}</td>
+                <td class="num">{{ s.questions }}</td>
+                <td class="num tcs-ok">{{ s.correct }}</td>
+                <td class="num tcs-bad">{{ s.incorrect }}</td>
+                <td class="num">{{ s.skipped }}</td>
+                <td class="num">{{ '%.2f' % s.marks }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="tcs-card__sub">No aptitude result was recorded.</p>
+    {% endif %}
+
+    <h2 class="tcs-section-title"><i class="fas fa-code"></i> Part 2 - Coding</h2>
+    {% if coding_rows %}
+    <div class="tcs-table-wrap">
+    <table class="tcs-table">
+        <thead>
+            <tr><th>Question</th><th>Section</th><th>Verdict</th><th class="num">Cases</th><th class="num">Score</th></tr>
+        </thead>
+        <tbody>
+            {% for r in coding_rows %}
+            <tr>
+                <td>{{ r.title }}</td>
+                <td>{{ r.section_title or r.section_type }}</td>
+                <td class="{{ 'tcs-ok' if r.verdict == 'AC' else ('tcs-bad' if r.verdict else '') }}">{{ r.verdict_label or r.verdict or 'Not attempted' }}</td>
+                <td class="num">{{ r.passed or 0 }} / {{ r.total_cases or 0 }}</td>
+                <td class="num">{{ r.score or 0 }} / {{ r.marks or 0 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="tcs-card__sub">No coding submission was recorded.</p>
+    {% endif %}
+
+    <div class="tcs-links">
+        <a class="tcs-btn tcs-btn--ghost" href="{{ aptitude_result_url }}"><i class="fas fa-list-check"></i> Aptitude analysis</a>
+        {% if coding_result_url %}
+        <a class="tcs-btn tcs-btn--ghost" href="{{ coding_result_url }}"><i class="fas fa-terminal"></i> Coding report</a>
+        {% endif %}
+        <a class="tcs-btn" href="{{ dashboard_url }}"><i class="fas fa-house"></i> Back to exams</a>
+    </div>
+</main>
+</body>
+</html>

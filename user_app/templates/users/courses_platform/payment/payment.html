@@ -1,0 +1,43 @@
+{% extends 'users/courses_platform/payment/base_1.html' %}
+
+{% block title %}Secure Payment{% endblock %}
+{% block body_attr %}onload="initiatePayment()"{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users/courses_platform/payment/payment_page.css') }}">
+{% endblock %}
+
+{% block content %}
+<div id="pageData" hidden data-razorpay-key-id="{{ razorpay_key_id }}" data-amount="{{ amount }}" data-value="{{ url_for('static', filename='images/logo.png') }}" data-razorpay-order-id="{{ razorpay_order_id }}" data-username="{{ username }}" data-email="{{ email }}" data-phone="{{ phone }}" data-add-cart-url="{{ url_for('users.add_cart', course_code=course_code, unique_code=unique_code) }}"></div>
+
+
+<div id="loader-overlay">
+  <div class="spinner-container">
+    <div class="spinner"></div>
+    <div class="loader-text mt-3">Preparing Payment...</div>
+  </div>
+</div>
+
+
+<div id="post-payment-loader" style="display: none;">
+  <div class="spinner-container">
+    <div class="spinner"></div>
+    <div class="loader-text mt-3">Please wait... Do not refresh or close the page.</div>
+  </div>
+</div>
+
+
+<form id="payment_success_form" method="POST"
+      action="{{ url_for('users.payment_success', course_code=course_code, unique_code=unique_code) }}?razorpay_order_id={{ razorpay_order_id }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="razorpay_payment_id" id="payment_id">
+  <input type="hidden" name="razorpay_signature" id="razorpay_signature">
+  <input type="hidden" name="razorpay_order_id" id="order_id" value="{{ razorpay_order_id }}">
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script src="{{ url_for('static', filename='js/users/shared/spp_checkout.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/courses_platform/payment/payment.js') }}"></script>
+{% endblock %}

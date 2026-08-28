@@ -1,0 +1,8 @@
+.danger-zone { border: 1px solid #f5c2c7; background: #fff8f8; }
+        .delete-loss-list { list-style: none; padding-left: 0; margin-bottom: 1rem; }
+        .delete-loss-list li { padding: 0.4rem 0; font-size: 0.9rem; border-bottom: 1px solid #f1e7e5; }
+        .delete-loss-list li:last-child { border-bottom: 0; }
+        .delete-loss-list i { width: 22px; color: #dc3545; margin-right: 0.35rem; }
+        .loss-count { background: #fdecea; color: #b02a37; font-size: 0.72rem; font-weight: 700;
+                      padding: 1px 8px; border-radius: 999px; margin-left: 4px; }
+        .delete-otp-input { letter-spacing: 12px; font-size: 1.4rem; font-weight: 700; }

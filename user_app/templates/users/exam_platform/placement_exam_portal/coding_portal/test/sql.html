@@ -1,0 +1,82 @@
+{% extends "users/exam_platform/placement_exam_portal/coding_portal/test/exam_base.html" %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/coding_portal/editor.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/coding_portal/sql.css') }}">
+{% endblock %}
+
+{% block question_extra %}
+  <p class="muted" style="margin-top:16px">
+    You can view the database schema by clicking the <strong>View Schema</strong>
+    tab at the bottom of the query window on the right-hand side of the screen.
+  </p>
+{% endblock %}
+
+{% block response_head_extra %}
+  <span class="spacer"></span>
+  <span class="sql-dialect" style="border:0;padding:0">MYSQL 8.0</span>
+{% endblock %}
+
+{% block response %}
+<div class="pane-main">
+  <div class="tabpanels" id="response-panels" style="flex:1">
+    <div class="tabpanel is-active" data-panel="query">
+      <div class="editor-wrap" id="sql-editor" style="height:100%">
+        <div class="editor-gutter">1</div>
+        <textarea class="editor-input" spellcheck="false"
+                  placeholder="SELECT ..." autocomplete="off"></textarea>
+      </div>
+    </div>
+
+    <div class="tabpanel" data-panel="schema">
+      <div class="schema-panel" id="schema-panel">
+        <div class="schema-head">
+          View Schema
+          <div class="schema-zoom">
+            <button data-zoom="in" title="Zoom in">＋</button>
+            <button data-zoom="reset" title="Reset">↺</button>
+            <button data-zoom="out" title="Zoom out">－</button>
+            <button class="schema-close" id="schema-close"
+                    title="Close schema and return to the query">✕</button>
+          </div>
+        </div>
+        <div class="schema-viewport">
+          <div class="schema-stage">
+            {% if question.schema_image_path %}
+              <img src="{{ url_for('static', filename=question.schema_image_path) }}"
+                   alt="Database schema diagram">
+            {% endif %}
+          </div>
+        </div>
+        {% if not question.schema_image_path %}
+          <div class="schema-missing">No schema diagram has been uploaded for this question.</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="tabpanel" data-panel="output" id="panel-output">
+      <div class="console console-empty">Run your query to see its output here.</div>
+    </div>
+
+    <div class="tabpanel" data-panel="cases" id="panel-cases">
+      <div class="console console-empty">Check your query to see whether it is correct.</div>
+    </div>
+  </div>
+
+  <div class="tabbar" id="response-tabs">
+    <button class="tab is-active" data-tab="query">Query</button>
+    <button class="tab" data-tab="schema">View Schema</button>
+    <button class="tab" data-tab="output">Output</button>
+    <button class="tab" data-tab="cases">Test Cases</button>
+    <div class="actions">
+      <button class="btn btn-ghost" id="btn-run-query">Run Query</button>
+      <button class="btn btn-primary" id="btn-check-query">Check Query</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block section_lib %}
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/schema-viewer.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/sql.js') }}"></script>
+{% endblock %}

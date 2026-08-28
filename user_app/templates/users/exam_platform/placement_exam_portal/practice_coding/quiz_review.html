@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Result - {{ attempt.subject }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/brand-bootstrap.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/round_assessments.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/practice_coding/quiz.css') }}">
+    <script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/round_assessments.js') }}" defer></script>
+</head>
+<body>
+    <div class="container py-5">
+        <div class="ra-head">
+            <div class="ra-head__main">
+                <button type="button" class="ra-sidebar-toggle" id="raSidebarToggle" aria-label="Toggle menu"
+                        aria-controls="raSidebar" aria-expanded="false" title="Toggle menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="ra-head__titles">
+                    <h2 class="fw-bold">{{ attempt.subject }} Result</h2>
+                </div>
+            </div>
+            <div class="ra-head__actions">
+                <span class="badge bg-primary p-2">{{ attempt.mode | title }}</span>
+            </div>
+        </div>
+
+        <div class="qz-score">
+            <div class="qz-score__ring
+                        {{ 'is-good' if attempt.total and attempt.correct * 2 >= attempt.total else 'is-bad' }}">
+                <strong>{{ attempt.correct }}</strong>
+                <span>of {{ attempt.total }}</span>
+            </div>
+            <div class="qz-score__cells">
+                <div class="qz-cell qz-cell--ok"><strong>{{ attempt.correct }}</strong><span>Correct</span></div>
+                <div class="qz-cell qz-cell--bad"><strong>{{ attempt.wrong }}</strong><span>Wrong</span></div>
+                <div class="qz-cell"><strong>{{ attempt.skipped }}</strong><span>Skipped</span></div>
+                <div class="qz-cell">
+                    <strong>{{ ((100 * attempt.correct / attempt.total) | round(0, 'floor')) if attempt.total else 0 }}%</strong>
+                    <span>Score</span>
+                </div>
+            </div>
+            <a class="qz-btn" href="{{ url_for('practice_coding.quiz_start', subject=attempt.subject, mode=attempt.mode) }}">
+                <i class="fas fa-rotate-right"></i> Try again
+            </a>
+        </div>
+
+        <h2 class="qz-section">Question by question</h2>
+
+        {% for r in rows %}
+        <div class="qz-rev {{ 'qz-rev--ok' if r.is_correct else 'qz-rev--bad' }}">
+            <div class="qz-rev__head">
+                <span class="qz-rev__num">{{ loop.index }}</span>
+                {% if r.is_correct %}
+                    <span class="qz-rev__flag qz-rev__flag--ok"><i class="fas fa-check"></i> Correct</span>
+                {% else %}
+                    <span class="qz-rev__flag qz-rev__flag--bad"><i class="fas fa-xmark"></i> Wrong</span>
+                {% endif %}
+            </div>
+
+            {% if r.question_text %}<p class="qz-rev__q">{{ r.question_text }}</p>{% endif %}
+            {% if r.question_image %}<img class="qz-qimg" src="{{ r.question_image }}" alt="Question">{% endif %}
+
+            <div class="qz-rev__opts">
+                {% for letter, text in [('A', r.option_a), ('B', r.option_b), ('C', r.option_c), ('D', r.option_d)] %}
+                <div class="qz-rev__opt
+                            {{ 'is-correct' if letter == r.correct_option }}
+                            {{ 'is-picked-wrong' if letter == r.selected and letter != r.correct_option }}">
+                    <span class="qz-opt__letter">{{ letter }}</span>
+                    <span>{{ text }}</span>
+                    {% if letter == r.correct_option %}
+                        <i class="fas fa-check qz-opt__mark"></i>
+                    {% elif letter == r.selected %}
+                        <i class="fas fa-xmark qz-opt__mark"></i>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <p class="qz-rev__you">
+                You picked: <strong>{{ r.selected or 'nothing (skipped)' }}</strong>
+                &middot; Correct answer: <strong>{{ r.correct_option }}</strong>
+            </p>
+            {% if r.explanation %}
+            <div class="qz-rev__why"><i class="fas fa-lightbulb"></i> {{ r.explanation }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="ra-sidebar-backdrop" id="raSidebarBackdrop"></div>
+    <aside class="ra-sidebar" id="raSidebar" aria-hidden="true">
+        <a href="{{ url_for('practice_coding.home') }}" class="ra-brand">
+            <img src="{{ url_for('static', filename='images/favicon.png') }}" alt="ShyamPracticePaper" class="ra-brand__logo">
+            <span class="ra-brand__text">ShyamPracticePaper</span>
+        </a>
+        <button type="button" class="ra-sidebar__close" id="raSidebarClose" aria-label="Close menu">&times;</button>
+
+        <nav class="ra-sidebar__nav">
+            <div class="ra-sidebar__label">Summary</div>
+            <div class="ra-sidebar__test is-static"><i class="fas fa-circle-check text-success"></i>
+                <span>Correct</span><span class="ra-sb-count">{{ attempt.correct }}</span></div>
+            <div class="ra-sidebar__test is-static"><i class="fas fa-circle-xmark text-danger"></i>
+                <span>Wrong</span><span class="ra-sb-count">{{ attempt.wrong }}</span></div>
+            <div class="ra-sidebar__test is-static"><i class="far fa-circle"></i>
+                <span>Skipped</span><span class="ra-sb-count">{{ attempt.skipped }}</span></div>
+            <div class="ra-sidebar__test is-static"><i class="fas fa-list"></i>
+                <span>Total</span><span class="ra-sb-count">{{ attempt.total }}</span></div>
+
+            <div class="ra-sidebar__label">Go to</div>
+            <a class="ra-sidebar__test" href="{{ url_for('practice_coding.quiz_attempts') }}">
+                <i class="fas fa-clock-rotate-left"></i><span>Your Recent Attempts</span></a>
+            <a class="ra-sidebar__test" href="{{ url_for('practice_coding.quiz_home') }}">
+                <i class="fas fa-layer-group"></i><span>All Subjects</span></a>
+            <a class="ra-sidebar__test" href="{{ url_for('practice_coding.home') }}">
+                <i class="fas fa-code"></i><span>Coding Problems</span></a>
+        </nav>
+
+        <div class="ra-sidebar__footer">
+            <div class="ra-sb-user">
+                <div class="ra-sb-user__avatar">{{ (user.username or user.email or 'U')[:1]|upper }}</div>
+                <div class="ra-sb-user__info">
+                    <div class="ra-sb-user__name">{{ user.username or user.email }}</div>
+                    <div class="ra-sb-user__role">{{ attempt.subject }} &middot; {{ attempt.mode | title }}</div>
+                </div>
+                <a href="{{ url_for('users.user_logout') }}" class="ra-sb-user__logout" title="Logout">
+                    <i class="fas fa-right-from-bracket"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{% extends 'users/auth/base.html' %}
+{% block title %}Logging Out...{% endblock %}
+
+{% block content %}
+<div id="pageData" hidden data-index-url="{{ url_for('users.index') }}"></div>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users/auth/logout_spinner.css') }}">
+
+<div class="spinner-container">
+    <div class="spinner"></div>
+    <div class="spinner-text">Logging you out...</div>
+</div>
+
+<script src="{{ url_for('static', filename='js/users/auth/logout_spinner.js') }}"></script>
+{% endblock %}

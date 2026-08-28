@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Question Paper</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/competitive_exam_platform/test_window/question_paper.css') }}">
+</head>
+<body>
+
+<header class="qp-head">
+    <div class="qp-head__title">
+        <i class="fas fa-file-lines"></i>
+        <span>Question Paper - {{ test.subject_title or 'Test' }}</span>
+    </div>
+    <button type="button" class="qp-close" id="qpClose"><i class="fas fa-xmark"></i> Close</button>
+</header>
+
+<main class="qp-wrap">
+    <p class="qp-note"><i class="fas fa-circle-info"></i>
+        This is a read-only view of the full paper. Answers you select here are not saved -
+        return to the test window to answer.</p>
+
+    {% set ns = namespace(section='') %}
+    {% for q in questions %}
+        {% if q.section_name != ns.section %}
+            {% set ns.section = q.section_name %}
+            <h2 class="qp-section">{{ q.section_name or 'Section' }}</h2>
+        {% endif %}
+        <article class="qp-q">
+            <div class="qp-q__head">
+                <span class="qp-q__no">Q{{ q.serial }}</span>
+                <span class="qp-q__type">{{ q.question_type }}</span>
+                <span class="qp-q__marks">+{{ q.correct_marks }}{% if q.negative_marks %} / -{{ q.negative_marks }}{% endif %}</span>
+            </div>
+            {% if q.question_image %}
+            <div class="qp-q__img"><img src="{{ q.question_image if q.question_image.startswith('/') else '/' ~ q.question_image }}" alt="Question {{ q.serial }}"></div>
+            {% endif %}
+            <div class="qp-q__text">{{ q.question_text | safe }}</div>
+            {% if q.option_a or q.option_b or q.option_c or q.option_d %}
+            <ol class="qp-opts" type="A">
+                {% if q.option_a %}<li>{{ q.option_a | safe }}</li>{% endif %}
+                {% if q.option_b %}<li>{{ q.option_b | safe }}</li>{% endif %}
+                {% if q.option_c %}<li>{{ q.option_c | safe }}</li>{% endif %}
+                {% if q.option_d %}<li>{{ q.option_d | safe }}</li>{% endif %}
+            </ol>
+            {% endif %}
+        </article>
+    {% else %}
+        <p class="qp-empty">No questions available for this test.</p>
+    {% endfor %}
+</main>
+
+<script src="{{ url_for('static', filename='js/users/exam_platform/competitive_exam_platform/test_window/question_paper.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Purchases</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" xintegrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/brand-bootstrap.css') }}">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/users/courses_platform/payment/purchase.css') }}">
+</head>
+<body>
+
+  <div class="wrapper">
+    <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="toggleSidebar()"></div>
+    <div class="sidebar" id="sidebar">
+      <a href="{{ url_for('users.index') }}" class="sb-brand-row" title="Go to home">
+        <img src="{{ url_for('static', filename='images/favicon.png') }}" alt="ShyamPracticePaper" class="sb-logo-img">
+        <span class="sb-brand-block">
+          <span class="sb-brand-line">ShyamPracticePaper</span>
+          <span class="premium-badge"><i class="fas fa-crown"></i> Premium</span>
+        </span>
+      </a>
+      <span class="close-btn" onclick="toggleSidebar()">&times;</span>
+
+      <nav>
+        <div class="menu-label">My Library</div>
+        <a href="{{ url_for('users.purchase_dashboard', course_code=course_code, unique_code=unique_code) }}" class="active" title="My Packages">
+          <i class="fas fa-box-open"></i><span>My Packages</span>
+        </a>
+        <a href="{{ url_for('users.course_shop', course_code=course_code, unique_code=unique_code) }}" title="Premium Store">
+          <i class="fas fa-store"></i><span>Premium Store</span>
+        </a>
+        <a href="{{ url_for('users.add_cart', course_code=course_code, unique_code=unique_code) }}" title="My Cart">
+          <i class="fas fa-cart-shopping"></i><span>My Cart</span>
+        </a>
+
+        <div class="menu-label">Browse</div>
+        <a href="{{ url_for('users.view_course_dashboard', course_code=course_code, unique_code=unique_code) }}" title="Course Dashboard">
+          <i class="fas fa-table-columns"></i><span>Course Dashboard</span>
+        </a>
+        <a href="{{ url_for('users.profile_view') }}" title="My Profile">
+          <i class="fas fa-user"></i><span>My Profile</span>
+        </a>
+        <a href="{{ url_for('users.browse_courses') }}" title="All Courses">
+          <i class="fas fa-compass"></i><span>All Courses</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-foot">
+        <div class="sb-user">
+          <div class="sb-user__avatar">{{ initials }}</div>
+          <div class="sb-user__info">
+            <div class="sb-user__name">{{ username }}</div>
+            <div class="sb-user__role">Signed in</div>
+          </div>
+          <a href="{{ url_for('users.user_logout') }}" class="sb-user__logout" title="Logout">
+            <i class="fas fa-right-from-bracket"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="main" id="main">
+      <div class="topbar">
+        <button type="button" class="toggle-btn" onclick="toggleSidebar()" aria-label="Toggle sidebar" aria-controls="sidebar" aria-expanded="false">
+          <i class="fas fa-bars"></i>
+        </button>
+        <div class="page-title">Welcome, {{ username }}</div>
+        <span class="course-badge">{{course_code}}</span>
+      </div>
+
+      {% with flash_scopes = ['purchase', 'payment', 'cart', 'download'] %}
+          {% include 'users/_flash.html' %}
+      {% endwith %}
+
+      <div class="content">
+
+        <div class="stat-card-row">
+          <div class="stat-card">
+            <div class="stat-icon primary"><i class="fas fa-shopping-bag"></i></div>
+            <div class="stat-info">
+              <div class="stat-value">{{ total_purchases }}</div>
+              <div class="stat-label">Total Purchases</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon success"><i class="fas fa-wallet"></i></div>
+            <div class="stat-info">
+              <div class="stat-value">₹{{ "%.2f"|format(total_spent) }}</div>
+              <div class="stat-label">Total Spent</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon warning"><i class="fas fa-clock"></i></div>
+            <div class="stat-info">
+              <div class="stat-value">{{ expiring_soon_count }}</div>
+              <div class="stat-label">Expiring Soon</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="search-bar">
+          <i class="fas fa-search"></i>
+          <input type="search" id="purchaseSearch" class="form-control" placeholder="Search your purchases...">
+        </div>
+
+        {% if practice_premium %}
+        <div class="purchase-section-card" style="border-left: 4px solid #ffa116;">
+          <div class="section-header">
+            <h2><i class="fas fa-crown" style="color:#ffa116"></i> Coding Practice Premium</h2>
+            <span class="item-count">{{ practice_premium.plan | title }} plan</span>
+          </div>
+          <div class="purchase-item-list">
+            <div class="purchase-item">
+              <div class="item-details">
+                <span class="course-tag" style="background:#ffa116;color:#201500">PREMIUM</span>
+                <strong>All paid coding questions, company banks and premium quizzes unlocked</strong>
+                <div style="color:#8a8078;font-size:.85rem;margin-top:4px">
+                  Active until {{ practice_premium.expires_at.strftime('%d %b %Y') }}
+                  &middot; Amount paid: &#8377;{{ '%.2f' % (practice_premium.amount_paise / 100) }}
+                  {% if practice_premium.razorpay_payment_id %}
+                    &middot; Payment ID: {{ practice_premium.razorpay_payment_id }}
+                  {% endif %}
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                {% if practice_premium.razorpay_payment_id %}
+                <a class="btn btn-outline-secondary btn-sm"
+                   href="{{ url_for('practice_coding.subscription_receipt', payment_id=practice_premium.razorpay_payment_id) }}"
+                   title="Download receipt">
+                  <i class="fas fa-file-invoice"></i> Receipt
+                </a>
+                {% endif %}
+                <a class="btn btn-sm"
+                   style="background:#ffa116;color:#201500;font-weight:700;border-radius:8px;padding:8px 16px;white-space:nowrap"
+                   href="{{ url_for('practice_coding.home', tier='paid') }}">
+                  Practice now
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {# Past subscriptions keep their receipts available after they lapse. #}
+        {% set past = subscription_history | rejectattr('razorpay_payment_id', 'equalto',
+                        practice_premium.razorpay_payment_id if practice_premium else '') | list %}
+        {% if past %}
+        <div class="purchase-section-card">
+          <div class="section-header">
+            <h2><i class="fas fa-clock-rotate-left"></i> Subscription history</h2>
+            <span class="item-count">{{ past|length }} record{{ '' if past|length == 1 else 's' }}</span>
+          </div>
+          <div class="purchase-item-list">
+            {% for s in past %}
+            <div class="purchase-item">
+              <div class="item-details">
+                <strong>{{ s.plan | title }} plan</strong>
+                <div style="color:#8a8078;font-size:.85rem;margin-top:4px">
+                  {{ s.starts_at.strftime('%d %b %Y') if s.starts_at else '' }}
+                  to {{ s.expires_at.strftime('%d %b %Y') if s.expires_at else '' }}
+                  &middot; &#8377;{{ '%.2f' % (s.amount_paise / 100) }}
+                  {% if s.razorpay_payment_id %}&middot; {{ s.razorpay_payment_id }}{% endif %}
+                </div>
+              </div>
+              {% if s.razorpay_payment_id %}
+              <a class="btn btn-outline-secondary btn-sm"
+                 href="{{ url_for('practice_coding.subscription_receipt', payment_id=s.razorpay_payment_id) }}">
+                <i class="fas fa-file-invoice"></i> Receipt
+              </a>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        {% if grouped_purchases %}
+          <div id="purchaseList">
+            {% for section, section_purchases in grouped_purchases.items() %}
+              <div class="purchase-section-card">
+                <div class="section-header">
+                  <h2>{{ section }}</h2>
+                  <span class="item-count">{{ section_purchases|length }} Item(s)</span>
+                </div>
+                <div class="purchase-item-list">
+                  {% for purchase in section_purchases %}
+                    <div class="purchase-item">
+                      <div class="item-details">
+                        {% if purchase.course_code %}
+                          <span class="course-tag">{{ purchase.course_code }}</span>
+                        {% endif %}
+                        <h4>{{ purchase.title }}</h4>
+                        {% if purchase.subtitle %}<p>{{ purchase.subtitle }}</p>{% endif %}
+                        <div class="item-meta">
+                          <span><strong>Purchased:</strong> {{ purchase.payment_date.strftime('%d %b %Y, %I:%M %p') if purchase.payment_date else '-' }}</span>
+                          {% if purchase.validity_expires_at %}
+                            {% if purchase.is_expired %}
+                              <span class="expiry-badge expired"><strong>Expired:</strong> {{ purchase.validity_expires_at.strftime('%d %b %Y') }}</span>
+                            {% elif purchase.is_expiring_soon %}
+                              <span class="expiry-badge expiring-soon"><strong>Expires Soon:</strong> {{ purchase.validity_expires_at.strftime('%d %b %Y') }}</span>
+                            {% else %}
+                              <span><strong>Expires:</strong> {{ purchase.validity_expires_at.strftime('%d %b %Y, %I:%M %p') }}</span>
+                            {% endif %}
+                          {% endif %}
+                        </div>
+                      </div>
+                      <div class="item-actions">
+                        {% if purchase.access_url and not purchase.is_expired %}
+                          <a href="{{ purchase.access_url }}" class="btn btn-primary" title="Open this item">
+                            <i class="fas fa-arrow-up-right-from-square"></i>Open
+                          </a>
+                        {% elif purchase.is_expired %}
+                          <a href="#" class="btn btn-secondary disabled" title="This content has expired">
+                            <i class="fas fa-clock"></i>Expired
+                          </a>
+                        {% else %}
+                          <a href="#" class="btn btn-secondary disabled"
+                             title="This item type has no online page yet">
+                            <i class="fas fa-hourglass-half"></i>Coming soon
+                          </a>
+                        {% endif %}
+
+                        {% if purchase.download_link %}
+                          <a href="{{ purchase.download_link }}" class="btn btn-outline-secondary" download title="Download receipt">
+                            <i class="fas fa-file-invoice"></i>Receipt
+                          </a>
+                        {% endif %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+
+          <div id="noResultsMessage">
+            <i class="fas fa-search"></i>
+            <p>No purchases found matching your search.</p>
+          </div>
+
+        {% else %}
+          <div class="no-purchases">
+            <i class="fas fa-shopping-bag"></i>
+            <p>You have not purchased any items yet.</p>
+            <a href="{{ url_for('users.course_shop', course_code=course_code, unique_code=unique_code) }}" class="btn btn-primary">
+              <i class="fas fa-shopping-cart"></i> Start Shopping
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/users/courses_platform/payment/purchase.js') }}"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" xintegrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>

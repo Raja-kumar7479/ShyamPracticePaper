@@ -1,0 +1,360 @@
+{% extends 'users/base.html' %}
+
+{% block title %}ShyamPracticePaper | Professional Learning Platform{% endblock %}
+
+{% block head %}
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/index/index.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/index/index_page.css') }}">
+{% endblock %}
+
+{% block content %}
+    <input type="hidden" id="csrf_token_field" value="{{ csrf_token }}">
+
+    <section class="hero-section">
+        <div class="hero-container">
+            <div class="hero-content">
+                <span class="hero-badge">GATE &middot; JEE &middot; NEET &middot; PSU &middot; Placement</span>
+                <h1 class="hero-title">Practice like the <span>real exam day</span></h1>
+                <p class="hero-description">
+                    Full-length mock tests in a real exam interface, chapter-wise notes, previous year papers and placement preparation - all in one platform built for serious aspirants.
+                </p>
+                <div class="hero-actions">
+                    <a href="{{ url_for('users.browse_courses') }}" class="btn-primary">
+                        <i class="fas fa-graduation-cap"></i> Explore Courses
+                    </a>
+                    <a href="#why-us" class="btn-secondary">
+                        <i class="fas fa-circle-info"></i> Why ShyamPracticePaper
+                    </a>
+                </div>
+                <div class="hero-points">
+                    <span><i class="fas fa-check"></i> Real exam-style mock tests</span>
+                    <span><i class="fas fa-check"></i> Expert-curated notes &amp; PYQs</span>
+                    <span><i class="fas fa-check"></i> First 3 enrollments free</span>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="hero-card-grid">
+                    <div class="hero-subject-card card-1"><i class="fas fa-laptop-code"></i><span>GATE CS</span></div>
+                    <div class="hero-subject-card card-2"><i class="fas fa-atom"></i><span>JEE</span></div>
+                    <div class="hero-subject-card card-3"><i class="fas fa-stethoscope"></i><span>NEET</span></div>
+                    <div class="hero-subject-card card-4"><i class="fas fa-briefcase"></i><span>Placement</span></div>
+                </div>
+                <div class="hero-glow hero-glow-1"></div>
+                <div class="hero-glow hero-glow-2"></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="steps-section" data-reveal>
+        <div class="section-header">
+            <h5 class="section-subtitle">How It Works</h5>
+            <h2 class="section-title">Start practising in under a minute</h2>
+        </div>
+        <div class="steps-grid">
+            <div class="step-card" data-reveal>
+                <div class="step-card__icon"><i class="fas fa-user-plus"></i></div>
+                <span class="step-card__num">1</span>
+                <h4>Create your free account</h4>
+                <p>Sign up with email or Google. Your first 3 course enrollments are completely free.</p>
+            </div>
+            <div class="step-card" data-reveal>
+                <div class="step-card__icon"><i class="fas fa-list-check"></i></div>
+                <span class="step-card__num">2</span>
+                <h4>Pick your exam track</h4>
+                <p>GATE, JEE, NEET, PSU or placement - enroll and get instant access to notes and tests.</p>
+            </div>
+            <div class="step-card" data-reveal>
+                <div class="step-card__icon"><i class="fas fa-chart-simple"></i></div>
+                <span class="step-card__num">3</span>
+                <h4>Practise &amp; track progress</h4>
+                <p>Attempt timed mocks in the real exam interface and review detailed performance reports.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="exams-section" id="exams">
+        <div class="section-header">
+            <h5 class="section-subtitle">What We Cover</h5>
+            <h2 class="section-title">Preparation for every major exam</h2>
+            <p class="section-description">Choose your target and start with structured material, timed mock tests and past papers.</p>
+        </div>
+        <div class="exam-grid">
+            <a href="{{ url_for('users.browse_courses') }}" class="exam-card">
+                <div class="exam-card__icon"><i class="fas fa-laptop-code"></i></div>
+                <h3>GATE</h3>
+                <p>CS/IT, EC, EE, ME, CE and more. Subject-wise tests, PYQs and full syllabus mocks.</p>
+                <span class="exam-card__go">Explore <i class="fas fa-arrow-right"></i></span>
+            </a>
+            <a href="{{ url_for('users.browse_courses') }}" class="exam-card">
+                <div class="exam-card__icon"><i class="fas fa-atom"></i></div>
+                <h3>JEE Main &amp; Advanced</h3>
+                <p>Physics, Chemistry and Maths practice sets with advanced-level problem solving.</p>
+                <span class="exam-card__go">Explore <i class="fas fa-arrow-right"></i></span>
+            </a>
+            <a href="{{ url_for('users.browse_courses') }}" class="exam-card">
+                <div class="exam-card__icon"><i class="fas fa-stethoscope"></i></div>
+                <h3>NEET</h3>
+                <p>Biology, Physics and Chemistry mocks modelled on the latest NEET pattern.</p>
+                <span class="exam-card__go">Explore <i class="fas fa-arrow-right"></i></span>
+            </a>
+            <a href="{{ url_for('users.browse_courses') }}" class="exam-card">
+                <div class="exam-card__icon"><i class="fas fa-industry"></i></div>
+                <h3>PSU Recruitment</h3>
+                <p>BHEL, IOCL, NTPC, ONGC and other GATE-score based PSU openings.</p>
+                <span class="exam-card__go">Explore <i class="fas fa-arrow-right"></i></span>
+            </a>
+            <a href="{{ url_for('users.browse_courses') }}" class="exam-card">
+                <div class="exam-card__icon"><i class="fas fa-briefcase"></i></div>
+                <h3>Campus Placement</h3>
+                <p>Aptitude, reasoning, coding rounds and HR interview preparation.</p>
+                <span class="exam-card__go">Explore <i class="fas fa-arrow-right"></i></span>
+            </a>
+            <a href="{{ url_for('users.browse_courses') }}" class="exam-card">
+                <div class="exam-card__icon"><i class="fas fa-building-columns"></i></div>
+                <h3>Govt. &amp; Other Exams</h3>
+                <p>SSC, banking and state-level technical exams with topic-wise question banks.</p>
+                <span class="exam-card__go">Explore <i class="fas fa-arrow-right"></i></span>
+            </a>
+        </div>
+    </section>
+
+    <section class="mock-section">
+        <div class="mock-inner">
+            <div class="mock-header">
+                <h5 class="section-subtitle">Real Exam Experience</h5>
+                <h2 class="section-title">Mock tests that feel like the real thing</h2>
+            </div>
+            <div class="mock-points">
+                <div class="mock-point">
+                    <span class="mock-point__num">01</span>
+                    <div>
+                        <h4>Actual exam interface</h4>
+                        <p>Question palette, mark for review, section switching and a live countdown timer - the same layout as the real portal.</p>
+                    </div>
+                </div>
+                <div class="mock-point">
+                    <span class="mock-point__num">02</span>
+                    <div>
+                        <h4>Detailed solutions</h4>
+                        <p>Every question carries a worked explanation, not just the correct option.</p>
+                    </div>
+                </div>
+                <div class="mock-point">
+                    <span class="mock-point__num">03</span>
+                    <div>
+                        <h4>Performance analysis</h4>
+                        <p>Section-wise accuracy, time spent per question and your weak topics after every test.</p>
+                    </div>
+                </div>
+                <div class="mock-point">
+                    <span class="mock-point__num">04</span>
+                    <div>
+                        <h4>Previous year papers</h4>
+                        <p>Solve past papers in exam mode to know exactly where you stand.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="placement-section">
+        <div class="placement-inner">
+            <div class="placement-copy">
+                <h5 class="section-subtitle">Placement Preparation</h5>
+                <h2 class="section-title">Get job-ready, not just exam-ready</h2>
+                <p class="section-description">A complete track for campus and off-campus hiring - practise the same rounds companies actually conduct.</p>
+                <a href="{{ url_for('users.browse_courses') }}" class="btn-primary mt-3">Start Placement Prep</a>
+            </div>
+            <div class="placement-grid">
+                <div class="placement-item">
+                    <i class="fas fa-calculator"></i>
+                    <h4>Quantitative Aptitude</h4>
+                    <p>Timed sets on arithmetic, algebra and data interpretation.</p>
+                </div>
+                <div class="placement-item">
+                    <i class="fas fa-brain"></i>
+                    <h4>Logical Reasoning</h4>
+                    <p>Puzzles, series and analytical patterns asked in first rounds.</p>
+                </div>
+                <div class="placement-item">
+                    <i class="fas fa-code"></i>
+                    <h4>Coding Round</h4>
+                    <p>DSA problem sets in an online-judge style environment.</p>
+                </div>
+                <div class="placement-item">
+                    <i class="fas fa-comments"></i>
+                    <h4>Communication &amp; HR</h4>
+                    <p>Verbal ability, group discussion and interview practice.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features-section" id="why-us">
+        <div class="section-header">
+            <h5 class="section-subtitle">Why Choose Us</h5>
+            <h2 class="section-title">Transform Your Learning Experience</h2>
+            <p class="section-description">We provide comprehensive learning solutions designed to help you achieve your academic and career goals.</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-book-open"></i></div>
+                <h3 class="feature-title">Learn Without Limits</h3>
+                <p class="feature-description">Access expert-led notes, tutorials, and mock papers to build your knowledge from the ground up.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-wallet"></i></div>
+                <h3 class="feature-title">Smart Learning, Big Savings</h3>
+                <p class="feature-description">Cut down costs with unlimited access to top-quality free and premium learning resources.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-clock"></i></div>
+                <h3 class="feature-title">Learn on Your Schedule</h3>
+                <p class="feature-description">Study at your own pace, switch courses anytime, and master what matters most to you.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+                <h3 class="feature-title">Advance Your Career</h3>
+                <p class="feature-description">Upskill in Data Structures, ML, and Analytics with full program access - no hidden fees.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="about-section">
+        <div class="about-container">
+            <div class="about-visual">
+                <img src="https://cdn.pixabay.com/photo/2015/10/31/12/00/friends-1015314_1280.jpg" alt="Learning Group">
+            </div>
+            <div class="about-content">
+                <h5 class="section-subtitle">About Us</h5>
+                <h2 class="section-title">{% if username %}Welcome <span class="highlight-name">{{ username }}</span>{% else %}Learning Made Simple{% endif %}</h2>
+                <p class="section-description">At <strong class="brand-name">ShyamPracticePaper</strong>, we are committed to flexible, accessible, and engaging learning.</p>
+                <div class="feature-list">
+                    <div class="feature-list-item"><i class="fa fa-check-circle feature-list-icon"></i> Expert-Curated Content</div>
+                    <div class="feature-list-item"><i class="fa fa-check-circle feature-list-icon"></i> Real-Time Mock Tests</div>
+                    <div class="feature-list-item"><i class="fa fa-check-circle feature-list-icon"></i> Affordable Learning Plans</div>
+                    <div class="feature-list-item"><i class="fa fa-check-circle feature-list-icon"></i> Progress Tracking</div>
+                </div>
+                <a href="{{ url_for('users.browse_courses') }}" class="btn-primary mt-3">Start Learning</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section">
+        <div class="cta-container">
+            <h2 class="cta-title">Start Your Learning Journey Today</h2>
+            <p class="cta-description">Join thousands of learners and take the next step in your career.</p>
+            <a href="{{ url_for('users.browse_courses') }}" class="btn-primary cta-btn">
+                <i class="fas fa-rocket"></i> Get Started Now
+            </a>
+        </div>
+    </section>
+
+    <section class="testimonials-section" data-reveal>
+        <div class="section-header">
+            <h5 class="section-subtitle">Student Voices</h5>
+            <h2 class="section-title">Loved by serious aspirants</h2>
+        </div>
+        <div class="testimonials-grid">
+            <figure class="testimonial-card" data-reveal>
+                <div class="testimonial-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                <blockquote>The mock interface is exactly like the real GATE portal. By exam day the timer pressure felt completely normal to me.</blockquote>
+                <figcaption>
+                    <span class="testimonial-avatar">AR</span>
+                    <div><strong>Aman R.</strong><small>GATE CS Aspirant</small></div>
+                </figcaption>
+            </figure>
+            <figure class="testimonial-card" data-reveal>
+                <div class="testimonial-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
+                <blockquote>Topic-wise PYQs with worked solutions saved me hours every week. The weak-topic analysis told me exactly what to revise.</blockquote>
+                <figcaption>
+                    <span class="testimonial-avatar">PS</span>
+                    <div><strong>Priya S.</strong><small>NEET Aspirant</small></div>
+                </figcaption>
+            </figure>
+            <figure class="testimonial-card" data-reveal>
+                <div class="testimonial-stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-stroke"></i></div>
+                <blockquote>Used the placement track for aptitude and coding rounds. Cleared three online assessments in my campus season.</blockquote>
+                <figcaption>
+                    <span class="testimonial-avatar">VK</span>
+                    <div><strong>Vishal K.</strong><small>Placement Track</small></div>
+                </figcaption>
+            </figure>
+        </div>
+    </section>
+
+    <section class="faq-section">
+        <div class="section-header">
+            <h5 class="section-subtitle">Have Questions?</h5>
+            <h2 class="section-title">Frequently Asked Questions</h2>
+        </div>
+        <div class="faq-container">
+            <div class="faq-item">
+                <div class="faq-question">What is ShyamPracticePaper? <i class="fas fa-chevron-down"></i></div>
+                <div class="faq-answer">ShyamPracticePaper is a platform for GATE, JEE, NEET and other exams offering free and paid resources.</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">Why should I choose ShyamPracticePaper? <i class="fas fa-chevron-down"></i></div>
+                <div class="faq-answer">We offer expert-designed content, real-time mock environments, topic-wise sets, and affordable pricing.</div>
+            </div>
+            <div class="faq-item">
+                <div class="faq-question">How many courses can I access? <i class="fas fa-chevron-down"></i></div>
+                <div class="faq-answer">You can access multiple courses and mock series at once - your first 3 enrollments are always free.</div>
+            </div>
+        </div>
+    </section>
+
+    <div class="popup-flash-container" id="popupFlashContainer"></div>
+
+    <div class="popup" id="confirm-popup">
+        <div class="popup-content">
+            <span class="popup-close-btn" onclick="closePopup('confirm-popup')">&times;</span>
+            <h4>Enroll in <span id="confirm-course-code"></span>?</h4>
+            <p id="confirm-enroll-message" style="font-weight:500;margin-bottom:1.5rem;"></p>
+            <p style="color:#6b7280;font-size:0.875rem;">You will be asked to verify with a CAPTCHA before proceeding to payment.</p>
+            <button class="btn btn-primary" id="confirm-enroll-btn" style="width:100%;">Continue</button>
+            <button class="btn btn-secondary" onclick="closePopup('confirm-popup')" style="width:100%;margin-top:0.5rem;">Cancel</button>
+        </div>
+    </div>
+
+    <div class="popup" id="enrollment-limit-popup">
+        <div class="popup-content">
+            <span class="popup-close-btn" onclick="closePopup('enrollment-limit-popup')">&times;</span>
+            <h4>Enrollment Limit Reached</h4>
+            <p id="enrollment-limit-message">You have reached the maximum enrollment limit.</p>
+            <button class="btn btn-secondary" onclick="closePopup('enrollment-limit-popup')" style="width:100%;">OK</button>
+        </div>
+    </div>
+
+    <div class="popup" id="enrollment-popup">
+        <div class="popup-content">
+            <span class="popup-close-btn" onclick="closePopup('enrollment-popup')">&times;</span>
+            <h4>Verify Enrollment</h4>
+            <div id="enroll-info-msg"></div>
+            <form id="enroll-form" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <input type="hidden" name="course_code" id="final-course-code">
+                <input type="hidden" name="course_name" id="final-course-name">
+                <div class="form-group">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <label id="captcha-label" style="font-weight:600;">Loading CAPTCHA...</label>
+                        <button type="button" id="captcha-refresh" title="Get a new code"
+                                style="border:0;background:none;cursor:pointer;color:#992c25;font-size:1rem;line-height:1;">
+                            <i class="fas fa-rotate-right"></i>
+                        </button>
+                    </div>
+                    <input type="text" name="captcha" required autocomplete="off" placeholder="Type the code shown above" style="width:100%;margin-top:0.5rem;">
+                    <span id="captcha-error" class="error-message" style="color:#dc2626;font-size:0.8rem;"></span>
+                </div>
+                <button class="btn btn-primary" type="submit" style="width:100%;margin-top:0.75rem;">Verify & Enroll</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/users/shared/spp_checkout.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/users/courses_platform/enrollment/courses_enrollment.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/users/index/index.js') }}"></script>
+{% endblock %}

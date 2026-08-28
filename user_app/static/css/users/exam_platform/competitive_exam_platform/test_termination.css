@@ -1,0 +1,101 @@
+ body {
+      font-family: 'Times New Roman', Times, serif;
+      background-color: #fff;
+      text-align: center;
+      padding: 30px;
+      position: relative;
+    }
+    .warning-img {
+      margin-top: 40px;
+      margin-bottom: 20px;
+    }
+    .red-dot {
+      font-size: 30px;
+      color: #e74c3c;
+      line-height: 1;
+    }
+    .note-text {
+      color: #e74c3c;
+      font-weight: bold;
+    }
+    .instruction-text {
+      color: #555;
+      font-size: 16px;
+      line-height: 1.7;
+      margin-top: 20px;
+      margin-bottom: 40px;
+    }
+    .separator {
+      border-top: 1px solid #ddd;
+      margin: 40px auto;
+      width: 90%;
+    }
+    .how-to {
+      font-weight: bold;
+      font-size: 20px;
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .bottom-note {
+      color: #555;
+      font-size: 16px;
+    }
+    .language-select {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 14px;
+    }
+    .language-select select {
+      margin-left: 5px;
+    }
+
+   .watermark {
+    position: fixed;
+    color: rgba(0, 0, 0, 0.08);
+    font-size: 24px;
+    font-weight: bold;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+.watermark.top-left {
+    top: 10px;
+    left: 10px;
+}
+
+.watermark.top-right {
+    top: 10px;
+    right: 10px;
+}
+
+.watermark.bottom-left {
+    bottom: 10px;
+    left: 10px;
+}
+
+.watermark.bottom-right {
+    bottom: 10px;
+    right: 10px;
+}
+
+.watermark.center {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-30deg);
+    font-size: 48px;
+    opacity: 0.05;
+}
+
+    .highlighted-reason {
+    background-color: #ffe6e6;
+    color: #cc0000;
+    border: 1px solid #cc0000;
+    padding: 12px 16px;
+    font-size: 18px;
+    font-weight: bold;
+    margin: 20px auto;
+    max-width: 700px;
+    border-radius: 6px;
+    text-align: center;
+}

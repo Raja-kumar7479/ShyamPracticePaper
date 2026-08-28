@@ -1,0 +1,48 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# ---- Virtual environments ----
+.venv/
+venv/
+env/
+ENV/
+
+# ---- Flask / app runtime ----
+instance/
+flask_session/
+.flask_session/
+*.log
+
+# ---- Secrets / environment ----
+.env
+.env.*
+!.env.example
+
+# OAuth client secrets. client_secret.json holds a live Google client secret
+# and was not matched by the .env rules above, so it would have been committed.
+client_secret.json
+client_secret*.json
+**/google_signup_login/client_secret.json
+*service-account*.json
+
+# ---- Shared uploads (user-generated; should not live in git) ----
+shared_uploads/images/
+shared_uploads/proctor_snaps/
+shared_uploads/user_responses/
+shared_uploads/verification/
+shared_uploads/audio_checks/
+shared_uploads/receipt_*.pdf
+
+# ---- Editor / OS ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

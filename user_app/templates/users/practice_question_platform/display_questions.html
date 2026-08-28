@@ -1,0 +1,395 @@
+{% extends 'users/practice_question_platform/base.html' %}
+{% block title %}Questions{% endblock %}
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users/practice_question_platform/display_questions.css') }}">
+{% endblock %}
+{% block content %}
+
+<meta id="user-identity-meta" content="{{ email | default('', true) }}">
+
+<div class="pq-overlay" id="pre-session-popup" role="dialog" aria-modal="true" aria-labelledby="psp-title">
+    <div class="pq-box psb">
+
+        <div class="pq-icon pq-icon--blue"><i class="fas fa-book-open" aria-hidden="true"></i></div>
+        <h2 class="pq-title" id="psp-title">Ready to Practice?</h2>
+
+        <p class="pq-context">
+            {% if section == 'topic' %}
+                <strong>Topic:</strong> {{ topic }} &nbsp;&bull;&nbsp; <strong>Subject:</strong> {{ subject }}
+            {% elif section == 'subject' %}
+                <strong>Subject:</strong> {{ subject }}
+            {% elif section == 'year' %}
+                <strong>Year:</strong> {{ year }}
+            {% elif section == 'paper' %}
+                <strong>Paper:</strong> {{ course_code }}
+            {% endif %}
+        </p>
+
+        <div class="psb-stat-row">
+            <div class="psb-stat">
+                <div class="psb-stat-val">{{ questions|length }}</div>
+                <div class="psb-stat-label">Total</div>
+            </div>
+            <div class="psb-stat">
+                <div class="psb-stat-val">{{ questions|selectattr('question_type','equalto','MCQ')|list|length }}</div>
+                <div class="psb-stat-label">MCQ</div>
+            </div>
+            <div class="psb-stat">
+                <div class="psb-stat-val">{{ questions|selectattr('question_type','equalto','MSQ')|list|length }}</div>
+                <div class="psb-stat-label">MSQ</div>
+            </div>
+            <div class="psb-stat">
+                <div class="psb-stat-val">{{ questions|selectattr('question_type','equalto','NAT')|list|length }}</div>
+                <div class="psb-stat-label">NAT</div>
+            </div>
+        </div>
+
+        <div class="psb-divider"></div>
+
+        <div class="psb-timer-label">
+            <i class="fas fa-stopwatch" aria-hidden="true"></i>
+            Set Timer <span class="psb-timer-hint">(optional)</span>
+        </div>
+        <div class="psb-timer-input-wrap">
+            <input type="number" id="popup-timer-input" min="1" max="300"
+                   placeholder="e.g. 20" autocomplete="off" aria-label="Timer in minutes">
+            <span>minutes</span>
+        </div>
+        <div class="psb-timer-error" id="popup-timer-error" role="alert"></div>
+
+        <div class="psb-actions">
+            <button class="psb-btn psb-btn--practice" type="button" onclick="startPractice()">
+                <i class="fas fa-play" aria-hidden="true"></i> Start Practice
+            </button>
+            <button class="psb-btn psb-btn--quiz" type="button" onclick="startQuiz()">
+                <i class="fas fa-trophy" aria-hidden="true"></i> Start Quiz Mode
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<div class="pq-overlay" id="timer-expired-overlay" role="dialog" aria-modal="true" aria-labelledby="te-title">
+    <div class="pq-box teb">
+
+        <div class="pq-icon pq-icon--red"><i class="fas fa-hourglass-end" aria-hidden="true"></i></div>
+        <h2 class="pq-title" id="te-title">Time's Up!</h2>
+        <p class="pq-context">Your timer has ended. Here's how you did.</p>
+
+        <div class="teb-grid">
+            <div class="teb-cell">
+                <div class="teb-val" id="te-total">0</div>
+                <div class="teb-label">Total</div>
+            </div>
+            <div class="teb-cell">
+                <div class="teb-val teb-val--amber" id="te-attempted">0</div>
+                <div class="teb-label">Attempted</div>
+            </div>
+            <div class="teb-cell">
+                <div class="teb-val teb-val--gray" id="te-skipped">0</div>
+                <div class="teb-label">Skipped</div>
+            </div>
+            <div class="teb-cell">
+                <div class="teb-val teb-val--green" id="te-correct">0</div>
+                <div class="teb-label">Correct</div>
+            </div>
+            <div class="teb-cell" style="grid-column: 2 / 3;">
+                <div class="teb-val teb-val--red" id="te-incorrect">0</div>
+                <div class="teb-label">Incorrect</div>
+            </div>
+        </div>
+
+        <div class="teb-note">
+            <i class="fas fa-info-circle" aria-hidden="true"></i>
+            Your chosen options are highlighted. Green = correct, Red = wrong, Soft green = correct answer you missed.
+        </div>
+
+        <div class="teb-actions">
+            <button class="teb-btn teb-btn--review" type="button" onclick="closeTimerExpiredPopup()">
+                <i class="fas fa-list" aria-hidden="true"></i> Review All Questions
+            </button>
+            <button class="teb-btn teb-btn--reset" type="button" onclick="resetSession()">
+                <i class="fas fa-rotate-left" aria-hidden="true"></i> Reset &amp; Try Again
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<div class="pq-overlay" id="session-complete-overlay" role="dialog" aria-modal="true" aria-labelledby="sc-title">
+    <div class="pq-box scb">
+
+        <div class="pq-icon pq-icon--green"><i class="fas fa-star" aria-hidden="true"></i></div>
+        <h2 class="pq-title" id="sc-title">Test Complete!</h2>
+        <p class="pq-context">You answered all questions in this session.</p>
+
+        <div class="scb-score-row">
+            <div class="scb-score-cell">
+                <div class="scb-score-val" id="sc-total">0</div>
+                <div class="scb-score-label">Total</div>
+            </div>
+            <div class="scb-score-cell">
+                <div class="scb-score-val scb-score-val--green" id="sc-correct">0</div>
+                <div class="scb-score-label">Correct</div>
+            </div>
+            <div class="scb-score-cell">
+                <div class="scb-score-val scb-score-val--red" id="sc-incorrect">0</div>
+                <div class="scb-score-label">Wrong</div>
+            </div>
+        </div>
+
+        <div class="scb-actions">
+            <button class="scb-btn scb-btn--review" type="button"
+                    onclick="document.getElementById('session-complete-overlay').classList.remove('open')">
+                <i class="fas fa-list" aria-hidden="true"></i> Review Answers
+            </button>
+            <button class="scb-btn scb-btn--reset" type="button" onclick="resetSession()">
+                <i class="fas fa-rotate-left" aria-hidden="true"></i> Reset &amp; Attempt Again
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<div class="pq-overlay" id="quiz-summary-overlay" role="dialog" aria-modal="true" aria-labelledby="qs-title">
+    <div class="pq-box qsb">
+
+        <div class="pq-icon pq-icon--green"><i class="fas fa-check" aria-hidden="true"></i></div>
+        <h2 class="pq-title" id="qs-title">Quiz Submitted!</h2>
+        <p class="pq-context" id="qs-subtitle">Your quiz has been submitted.</p>
+        <div class="qsb-pct" id="qs-percent">0%</div>
+
+        <div class="qsb-grid">
+            <div class="qsb-cell">
+                <div class="qsb-cell-val" id="qs-total">0</div>
+                <div class="qsb-cell-label">Total</div>
+            </div>
+            <div class="qsb-cell">
+                <div class="qsb-cell-val qsb-cell-val--amber" id="qs-attempted">0</div>
+                <div class="qsb-cell-label">Attempted</div>
+            </div>
+            <div class="qsb-cell">
+                <div class="qsb-cell-val qsb-cell-val--green" id="qs-correct">0</div>
+                <div class="qsb-cell-label">Correct</div>
+            </div>
+            <div class="qsb-cell">
+                <div class="qsb-cell-val qsb-cell-val--red" id="qs-incorrect">0</div>
+                <div class="qsb-cell-label">Incorrect</div>
+            </div>
+            <div class="qsb-cell qsb-cell--unattempted" style="grid-column: 1 / -1;">
+                <div class="qsb-cell-val qsb-cell-val--amber" id="qs-unattempted">0</div>
+                <div class="qsb-cell-label">Not Attempted</div>
+            </div>
+        </div>
+
+        <div class="qsb-actions">
+            <button class="qsb-btn qsb-btn--review" type="button" onclick="closeQuizSummary()">
+                <i class="fas fa-list" aria-hidden="true"></i> Review Answers
+            </button>
+            <button class="qsb-btn qsb-btn--reset" type="button" onclick="resetSession()">
+                <i class="fas fa-rotate-left" aria-hidden="true"></i> Try Again
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<div class="page-header">
+    <div class="breadcrumb-nav">
+        <span class="bc-active">Practice</span><span class="bc-sep">›</span>
+        {% if section == 'paper' %}
+            <span>Paper</span><span class="bc-sep">›</span><span>{{ course_code }}</span>
+        {% elif section == 'topic' %}
+            <span>Topic Wise</span><span class="bc-sep">›</span><span>{{ subject }}</span><span class="bc-sep">›</span><span>{{ topic }}</span>
+        {% elif section == 'subject' %}
+            <span>Subject Wise</span><span class="bc-sep">›</span><span>{{ subject }}</span>
+        {% elif section == 'year' %}
+            <span>Year Wise</span><span class="bc-sep">›</span><span>{{ year }}</span>
+        {% endif %}
+    </div>
+
+    {% if section == 'paper' %}
+        <h2 class="page-title">{{ course_code }}</h2>
+    {% elif section == 'topic' %}
+        <h2 class="page-title">{{ subject }}</h2>
+        <p class="page-subtitle">Topic: <strong>{{ topic }}</strong></p>
+    {% elif section == 'subject' %}
+        <h2 class="page-title">{{ subject }}</h2>
+        <p class="page-subtitle">All questions for this subject</p>
+    {% elif section == 'year' %}
+        <h2 class="page-title">Year {{ year }}</h2>
+        <p class="page-subtitle">All questions from {{ year }}</p>
+    {% endif %}
+</div>
+
+<div class="quiz-topbar">
+
+    <span class="quiz-topbar-title">
+        <i class="fas fa-circle-dot" aria-hidden="true"></i>
+        {{ questions|length }} Question{% if questions|length != 1 %}s{% endif %}
+    </span>
+
+    <div class="global-timer-wrap" id="global-timer-wrap" aria-live="polite" aria-atomic="true">
+        <i class="fas fa-stopwatch" aria-hidden="true"></i>
+        <span class="global-timer-display" id="global-timer-display">00:00</span>
+    </div>
+
+    <div class="score-pills">
+        <span class="score-pill correct">
+            <span class="sdot"></span>
+            <span id="correct-count">0</span> Correct
+        </span>
+        <span class="score-pill incorrect">
+            <span class="sdot"></span>
+            <span id="incorrect-count">0</span> Wrong
+        </span>
+        <button class="topbar-reset-btn" type="button" onclick="resetSession()" title="Reset all questions">
+            <i class="fas fa-rotate-left" aria-hidden="true"></i>
+            <span>Reset</span>
+        </button>
+    </div>
+
+</div>
+
+<div class="questions-list">
+
+    {% for q in questions %}
+
+    <div class="question-card" id="question-{{ q.question_id }}">
+
+        <div class="q-top">
+            <div class="q-index">{{ loop.index }}</div>
+            <span class="q-label">Question {{ loop.index }}</span>
+
+            <span class="q-type-tag
+                {%- if q.question_type == 'MCQ' %} mcq
+                {%- elif q.question_type == 'MSQ' %} msq
+                {%- else %} nat{% endif %}">
+                {{ q.question_type }}
+            </span>
+
+            <span class="q-status-badge" id="q-status-badge-{{ q.question_id }}" style="display:none;" aria-live="polite"></span>
+        </div>
+
+        <div class="q-body">
+
+            <div class="q-text">{{ q.question_text|safe }}</div>
+
+            {% if q.question_image %}
+            <div class="q-image-wrap">
+                <img src="{{ q.question_image if q.question_image.startswith('/') else '/' ~ q.question_image }}"
+                     alt="Question image" loading="lazy">
+            </div>
+            {% endif %}
+
+            <form id="form-{{ q.question_id }}"
+                  onsubmit="submitAnswer(event, '{{ q.question_id }}', '{{ q.question_type }}')">
+
+                {% if q.question_type == 'NAT' %}
+                <div class="nat-wrap">
+                    <input class="nat-input" type="number" step="any"
+                           name="selected_option_{{ q.question_id }}"
+                           id="nat-{{ q.question_id }}"
+                           placeholder="Enter numeric answer"
+                           autocomplete="off">
+                </div>
+
+                {% else %}
+                <div class="options-list">
+                    {% for option in ['A', 'B', 'C', 'D'] %}
+                    {% if q['option_' + option.lower()] or (q.image_option_letters and option in q.image_option_letters) %}
+                    <label class="option-row" id="opt-{{ q.question_id }}-{{ option }}">
+                        {% if q.question_type == 'MSQ' %}
+                        <input type="checkbox"
+                               name="selected_option_{{ q.question_id }}"
+                               value="{{ option }}">
+                        {% else %}
+                        <input type="radio"
+                               name="selected_option_{{ q.question_id }}"
+                               value="{{ option }}">
+                        {% endif %}
+                        <span class="opt-bubble">{{ option }}</span>
+                        <span class="opt-text">{% if q['option_' + option.lower()] %}{{ q['option_' + option.lower()]|safe }}{% else %}<em class="text-muted">Option {{ option }} - shown on the image above</em>{% endif %}</span>
+                        <span class="opt-status" style="display:none;" aria-hidden="true">
+                            <i class="fas fa-check-circle"></i>
+                        </span>
+                    </label>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div class="q-footer">
+                    <button type="submit" class="submit-btn" id="submit-{{ q.question_id }}">
+                        Submit Answer
+                    </button>
+                </div>
+
+            </form>
+        </div>
+
+        <div class="result-area">
+            <div id="result-banner-{{ q.question_id }}"></div>
+            <div id="result-actions-{{ q.question_id }}" style="display:none;" class="result-actions">
+                <button type="button" class="action-btn" id="toggle-btn-{{ q.question_id }}"
+                        onclick="toggleExplanation('{{ q.question_id }}')">
+                    <i class="fas fa-eye" aria-hidden="true"></i> Show Solution
+                </button>
+                <button type="button" class="action-btn report-btn"
+                        onclick="openReportModal('{{ q.question_id }}')">
+                    <i class="fas fa-flag" aria-hidden="true"></i> Report Issue
+                </button>
+            </div>
+            <div id="explanation-{{ q.question_id }}" style="display:none;"></div>
+        </div>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
+<div id="pagination-wrap" class="pagination-wrap" role="navigation" aria-label="Question pages"></div>
+
+<div class="quiz-bottom-bar" id="quiz-bottom-bar">
+    <div class="qbb-info">
+        Quiz Mode - <strong>{{ questions|length }}</strong> questions
+    </div>
+    <button class="quiz-submit-btn" id="quiz-final-submit-btn" type="button" onclick="submitQuiz(false)">
+        <i class="fas fa-paper-plane" aria-hidden="true"></i> Submit Quiz
+    </button>
+</div>
+
+<div class="modal-overlay" id="report-issue-modal" role="dialog" aria-modal="true"
+     aria-labelledby="report-modal-heading">
+    <div class="modal-box">
+
+        <button class="modal-close-btn" onclick="closeReportModal()" aria-label="Close modal">&#2a1512;</button>
+
+        <div id="report-modal-body">
+            <div class="modal-header-area">
+                <div class="modal-icon-wrap"><i class="fas fa-flag" aria-hidden="true"></i></div>
+                <h5 id="report-modal-heading">Report an Issue</h5>
+                <p class="modal-sub">Describe the problem with this question and we'll look into it.</p>
+            </div>
+            <form onsubmit="submitReport(event)">
+                <textarea class="report-textarea" id="report-problem-textarea"
+                          placeholder="e.g. Wrong answer marked, typo in question, image not loading..."></textarea>
+                <div id="report-modal-feedback" role="alert"></div>
+                <button type="submit" class="submit-btn" id="submit-report-btn">Submit Report</button>
+            </form>
+        </div>
+
+        <div id="report-success-message" style="display:none;">
+            <div class="success-icon-wrap"><i class="fas fa-check" aria-hidden="true"></i></div>
+            <h5>Report Submitted</h5>
+            <p class="modal-sub">Thank you! We'll review this shortly.</p>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+{% block extra_scripts %}
+<script src="{{ url_for('static', filename='js/users/practice_question_platform/display_questions.js') }}"></script>
+{% endblock %}

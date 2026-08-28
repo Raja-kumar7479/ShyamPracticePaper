@@ -1,0 +1,164 @@
+{
+  "meta": {
+    "brand": "ShyamPracticePaper",
+    "support_email": "support@shyampracticepaper.com",
+    "last_updated": "29 July 2026"
+  },
+
+  "terms": {
+    "title": "Terms of Use",
+    "subtitle": "Account, login and sign-up rules",
+    "intro": "These terms cover creating an account on ShyamPracticePaper and signing in to it. By registering or logging in, you agree to the points below.",
+    "sections": [
+      {
+        "heading": "1. Who can create an account",
+        "body": "You may create an account if you are a genuine learner preparing for an examination and can provide a working email address that belongs to you. If you are under 18, use the platform with the knowledge of a parent or guardian.",
+        "points": []
+      },
+      {
+        "heading": "2. Your details must be correct",
+        "body": "The name, email address and phone number you enter must be your own and accurate.",
+        "points": [
+          "Your email address is how we verify your account, send receipts and help you recover a lost password.",
+          "A wrong or fake email means we cannot restore your access if you are locked out.",
+          "Your phone number is asked only at checkout and is used for payment confirmation and your receipt."
+        ]
+      },
+      {
+        "heading": "3. One account per person",
+        "body": "Each person should hold a single account. Creating multiple accounts to repeat free enrollments, reuse coupons or retake an assessment is not allowed, and any account found doing so may be suspended along with the content in it.",
+        "points": []
+      },
+      {
+        "heading": "4. Keeping your account safe",
+        "body": "You are responsible for what happens under your login.",
+        "points": [
+          "Choose a password of at least 8 characters with an uppercase letter, a number and a special character.",
+          "Do not share your password, your account or your course access links with anyone.",
+          "Your course links contain a personal access code. Sharing that link shares your paid content and may lead to suspension.",
+          "Tell us immediately at the support address below if you believe someone else has used your account."
+        ]
+      },
+      {
+        "heading": "5. Signing in with Google",
+        "body": "You may register or sign in using your Google account. In that case Google confirms your identity to us and we receive your name and email address only. We never see or store your Google password. If you later want to sign in with an email and password as well, you can set a password from your profile.",
+        "points": []
+      },
+      {
+        "heading": "6. Failed login attempts",
+        "body": "To protect your account from guessing attacks, repeated failed password attempts temporarily lock sign-in for a short cooling-off period. This is automatic and clears by itself; you do not need to contact us unless it keeps happening.",
+        "points": []
+      },
+      {
+        "heading": "7. Sessions",
+        "body": "You stay signed in for a limited period of inactivity, after which you will be asked to log in again. Always log out when using a shared or public computer.",
+        "points": []
+      },
+      {
+        "heading": "8. Suspension and closing your account",
+        "body": "We may suspend an account that is used to share paid material, tamper with payments, disrupt an assessment, or impersonate another person. You may ask us to close your account at any time by writing to the support address below.",
+        "points": []
+      },
+      {
+        "heading": "9. Changes to these terms",
+        "body": "If these terms change, the updated version appears on this page with a new date at the top. Continuing to use your account after that means you accept the update.",
+        "points": []
+      }
+    ]
+  },
+
+  "privacy": {
+    "title": "Privacy Policy",
+    "subtitle": "What we collect, why, and what we never do with it",
+    "intro": "This policy explains exactly what information ShyamPracticePaper collects when you register, sign in and use the platform, why we need each piece, and who else can see it. We do not sell your data to anyone.",
+    "sections": [
+      {
+        "heading": "1. Information you give us",
+        "body": "We collect only what the platform actually needs to work.",
+        "points": [
+          "Account details: your username, email address and a password. Your password is never stored as you typed it — it is stored as a one-way bcrypt hash that cannot be reversed back into your password, not even by us.",
+          "Google sign-in: if you register with Google, we receive your name, email address and a Google account identifier. We do not receive your Google password.",
+          "Phone number: collected at checkout only, and used for payment confirmation and your receipt.",
+          "Support messages: anything you send us by email so we can answer you."
+        ]
+      },
+      {
+        "heading": "2. Information created as you use the platform",
+        "body": "Using the platform generates records that belong to your account.",
+        "points": [
+          "Enrollments and purchases: which courses you joined, what you bought, the amount, the payment method and the payment reference.",
+          "Test activity: your answers, scores, time taken and result analysis for each attempt.",
+          "Assessment integrity records: if an attempt is monitored, we record events such as leaving the test window. For proctored placement assessments, periodic webcam snapshots are captured during the attempt — you are told before the test begins and must give consent to continue.",
+          "Last active time: so your profile can show when you were last online."
+        ]
+      },
+      {
+        "heading": "3. Technical information",
+        "body": "Like any website, our servers record basic technical details in security logs — your IP address and the time of a request. These are used to detect abuse, block automated attacks and apply rate limits. They are not used to build an advertising profile of you.",
+        "points": []
+      },
+      {
+        "heading": "4. Cookies",
+        "body": "We use a small number of cookies and ask your permission for the optional ones.",
+        "points": [
+          "Necessary cookies keep you signed in and protect forms against forged requests. The platform cannot work without them.",
+          "Optional cookies (analytics and marketing) are only set if you accept them in the cookie banner.",
+          "You can change your choice at any time from the cookie banner, and your preference is saved for your account."
+        ]
+      },
+      {
+        "heading": "5. Payments",
+        "body": "Payments are processed by Razorpay, a licensed payment gateway. Your card number, UPI PIN, CVV and bank credentials are entered on Razorpay's own secure window — they are never sent to or stored on our servers. We keep only the payment reference, amount, method and status so we can show your purchase history and issue receipts.",
+        "points": []
+      },
+      {
+        "heading": "6. Who else can see your data",
+        "body": "We share the minimum necessary with a small number of service providers, and with no one else.",
+        "points": [
+          "Razorpay — to take your payment and confirm it succeeded.",
+          "Google — only if you choose to sign in with Google.",
+          "Our email provider — to deliver verification mails, password resets and receipts.",
+          "Law enforcement or a court — only if we are legally required to.",
+          "We never sell, rent or trade your personal information, and we do not share your email address with advertisers."
+        ]
+      },
+      {
+        "heading": "7. How we protect your information",
+        "body": "Security is built into the platform, not added on afterwards.",
+        "points": [
+          "Passwords are stored as bcrypt hashes, never in readable form.",
+          "Every form and payment action is protected against forged cross-site requests, and sensitive endpoints are rate-limited.",
+          "Payment confirmations are verified by cryptographic signature and re-checked directly with the payment gateway before content is unlocked.",
+          "Course access uses a personal code per student, so material cannot be opened by guessing a link.",
+          "Receipt downloads use signed links that expire after a short time."
+        ]
+      },
+      {
+        "heading": "8. How long we keep it",
+        "body": "Account, enrollment and result data is kept while your account is open, so you can return to your courses and history. Payment and receipt records are kept for the period required by tax and accounting rules. Proctoring snapshots are kept only as long as needed to review the integrity of that assessment. Security logs are kept for a short period and then discarded.",
+        "points": []
+      },
+      {
+        "heading": "9. Your rights",
+        "body": "It is your data, and you stay in control of it.",
+        "points": [
+          "See it — most of your data is visible in your profile and purchase dashboard.",
+          "Correct it — you can update your username and password yourself from your profile.",
+          "Get a copy — write to us and we will send you the personal data we hold about you.",
+          "Delete it — ask us to close your account and we will remove your personal data, apart from payment records we are legally required to retain.",
+          "Withdraw cookie consent — change your choice in the cookie banner at any time."
+        ]
+      },
+      {
+        "heading": "10. Children",
+        "body": "The platform is intended for students preparing for competitive examinations and campus placements. We do not knowingly collect data from children under 13. If you believe a child has registered, contact us and we will remove the account.",
+        "points": []
+      },
+      {
+        "heading": "11. Changes and contact",
+        "body": "If this policy changes, the updated version appears here with a new date at the top. For any privacy question, correction or deletion request, write to us at the support address below and we will respond.",
+        "points": []
+      }
+    ]
+  }
+}

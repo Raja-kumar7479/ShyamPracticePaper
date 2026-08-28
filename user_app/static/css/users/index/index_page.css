@@ -1,0 +1,24 @@
+.course-box-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            transition: box-shadow 0.2s;
+        }
+        .course-box-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.09); }
+        .course-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+        .course-card-header h4 { font-size: 1rem; font-weight: 700; margin: 0; color: #2a1512; }
+        .course-card-desc { font-size: 0.85rem; color: #6b7280; margin: 0; line-height: 1.5; }
+        .course-card-price { font-size: 0.9rem; font-weight: 600; color: #992c25; }
+        .badge-purchased { font-size: 0.7rem; background: #fdf3e3; color: #059669; padding: 3px 8px; border-radius: 20px; white-space: nowrap; }
+        .btn-enrolled { background: #059669; color: #fff; border: none; border-radius: 8px; padding: 0.55rem 1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+        .btn-enrolled:hover { background: #047857; }
+        .btn-open { background: #992c25; color: #fff; border: none; border-radius: 8px; padding: 0.55rem 1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+        .btn-open:hover { background: #7a231d; }
+        .popup-flash { padding: 0.65rem 1rem; border-radius: 8px; font-size: 0.85rem; margin-bottom: 0.75rem; }
+        .popup-flash-error { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .popup-flash-success { background: #fdf3e3; color: #16a34a; border: 1px solid #f0dcc0; }
+        #enroll-info-msg { background: #fdf3e3; color: #7a231d; border: 1px solid #db9504; border-radius: 8px; padding: 0.6rem 1rem; font-size: 0.85rem; margin-bottom: 0.75rem; display: none; }

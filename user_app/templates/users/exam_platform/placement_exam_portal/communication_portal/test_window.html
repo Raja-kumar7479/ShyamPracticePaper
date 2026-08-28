@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <meta charset="UTF-8">
+    <title>Assessment Window | SAPM</title>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/communication_portal/test_window.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/exam_exit_guard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/exam_fullscreen_guard.css') }}">
+</head>
+<body>
+    <div id="examWindowGuard" hidden data-test-key="{{ test_key }}" data-exit-url="{{ url_for('users.round_assessments', round_name=round_name or 'Communication', course_code=course_code, unique_code=unique_code) }}"></div>
+    <div id="examExitGuard" hidden
+         data-release-url="{{ url_for('users.comm_window_closed', test_key=test_key) }}"
+         data-terminate-url="{{ url_for('users.comm_terminate', test_key=test_key) }}"
+         data-terminated-url="{{ url_for('users.assessment_terminated', test_key=test_key, round_name=round_name or 'Communication', course_code=course_code, unique_code=unique_code, violation_type='left_exam_window') }}"
+         data-away-seconds="0"
+         data-confirm="0"
+         data-confirm-text="Do you want to close the test? Your answers are saved - you can resume this assessment later from the dashboard."></div>
+
+    <div id="examFullscreenGuard" hidden
+         data-grace-seconds="20"
+         data-terminate-url="{{ url_for('users.comm_terminate', test_key=test_key) }}"
+         data-terminated-url="{{ url_for('users.assessment_terminated', test_key=test_key, round_name=round_name or 'Communication', course_code=course_code, unique_code=unique_code, violation_type='left_exam_window') }}"
+         data-require-fullscreen="1"
+         data-start-label="Start test"></div>
+
+    <input type="hidden" id="twOverallTime" value="{{ overall_time }}">
+    <input type="hidden" id="testKey" value="{{ test_key }}">
+    <div id="commTabGuard" hidden
+         data-test-key="{{ test_key }}"
+         data-busy-url="{{ url_for('users.assessment_busy', test_key=test_key, round_name=round_name or 'Communication', course_code=course_code, unique_code=unique_code) }}"></div>
+    <input type="hidden" id="roundName" value="{{ round_name }}">
+    <input type="hidden" id="courseCode" value="{{ course_code }}">
+    <input type="hidden" id="uniqueCode" value="{{ unique_code }}">
+    <input type="hidden" id="csrfToken" value="{{ csrf_token() }}">
+    <input type="hidden" id="sessionToken" value="{{ active_token }}">
+    <input type="hidden" id="resSec" value="{{ resume_section }}">
+    <input type="hidden" id="resQ" value="{{ resume_question }}">
+
+    <div id="offlineOverlay">
+        <div class="offline-box">
+            <i class="fas fa-wifi wifi-animate"></i>
+            <h2 style="margin:0 0 10px 0;">Connection Lost</h2>
+            <p style="color:#666;" id="offlineMsg">Please check your internet settings. <br>We are automatically trying to reconnect...</p>
+        </div>
+    </div>
+
+    <header class="header">
+        <div class="header-left"><img src="{{ url_for('static', filename='images/favicon.png') }}" alt="ShyamPracticePaper" style="width:26px;height:26px;border-radius:50%;background:#fff;">ShyamPracticePaper</div>
+        <div class="header-center" id="saveStat">Saved just now</div>
+        <div class="header-right">
+            <div class="status-icon tooltip" id="wifiIcon" title="Checking Connection..."><i class="fas fa-wifi"></i></div>
+            <div class="status-icon" title="Proctoring Active"><span class="rec-indicator"></span><i class="fas fa-video"></i></div>
+            <div style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 20px;">
+                <i class="far fa-clock"></i><strong id="globTimer">--:--</strong>
+            </div>
+            <button class="btn-finish-top" onclick="showSum()">Finish Test</button>
+        </div>
+    </header>
+
+   <div class="subheader">
+        <div class="sec-box" id="secName">Section Loading...</div>
+        <div class="pagination-wrap">
+            <div id="pages" style="display:flex; gap:4px;"></div>
+            <div class="filter-wrap">
+                <div class="grid-icon" onclick="togFilter()" title="Question List"><i class="fas fa-th"></i></div>
+                <div class="filter-box" id="filterBox">
+                    <div class="filter-header">Question Navigator</div>
+                    <div class="filter-grid" id="fGrid"></div>
+                    <div style="padding:10px; font-size:11px; background:#f9f9f9; border-top:1px solid #eee; display:flex; gap:10px; flex-wrap:wrap;">
+                        <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;background:#c8e6c9;border:1px solid #81c784;border-radius:2px;"></span> Answered</span>
+                        <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;background:#fff9c4;border:1px solid #fdd835;border-radius:2px;"></span> Review</span>
+                        <span style="display:flex;align-items:center;gap:4px;"><span style="width:8px;height:8px;background:#fafafa;border:1px solid #ddd;border-radius:2px;"></span> Unanswered</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div style="font-weight:bold; color:var(--primary); font-size:13px; display:flex; align-items:center; gap:5px;">
+            Section Time: <span id="secTimer" style="font-family:monospace; font-size:14px;">--:--</span>
+        </div>
+    </div>
+
+    <div id="introPanel" class="intro-overlay hidden">
+        <div class="intro-card">
+            <div style="font-size:24px; color:var(--primary); margin-bottom:15px; font-weight:bold;" id="introTitle">Section Name</div>
+            <div style="width:50px; height:4px; background:var(--primary); margin:0 auto 20px;"></div>
+            <div style="font-size:15px; color:#555; line-height:1.6; margin-bottom:30px;" id="introDesc">Description...</div>
+            <button class="btn-next" onclick="startSectionQuestions()" style="margin: 0 auto; padding: 12px 40px; font-size:15px;">Start Section <i class="fas fa-arrow-right"></i></button>
+        </div>
+    </div>
+
+    <main class="main" id="mainContent">
+        <div class="panel panel-left" id="panelLeft">
+            <div class="q-meta">
+                <div>
+                    <span class="q-tag">Question <span id="qNum">1</span></span>
+                    <span style="margin-left:10px; color:#999;">|</span>
+                    <span style="margin-left:10px;">Attempted: <span id="attCount" style="font-weight:bold; color:var(--primary);">0/0</span></span>
+                </div>
+                <div class="bookmark-btn" onclick="toggleRev()" id="revBtn"><i class="far fa-bookmark"></i> <span>Mark for Review</span></div>
+            </div>
+
+            <div id="qMedia" class="hidden">
+                <div class="audio-pill">
+                    <audio id="audioPlayer" controls controlsList="nodownload"></audio>
+                </div>
+            </div>
+
+            <h3 id="qInst" style="color:var(--primary); margin:0 0 15px 0; font-size:18px;"></h3>
+            <div id="qText"></div>
+        </div>
+
+        <div class="panel panel-right" id="panelRight">
+            <div id="alertBox" class="status-msg danger hidden"></div>
+
+            <div id="recUI" class="hidden" style="display:flex; flex-direction:column; align-items:center; width:100%;">
+                <div class="rec-header">Record your response</div>
+                <div class="rec-sub">Maximum Recording Time: <span id="maxTimeDisplay">00:00</span> Minutes</div>
+                <div class="alert-box" id="recAlert"><i class="fas fa-info-circle"></i><span>Start recording...</span></div>
+                <div class="mic-circle" id="micIcon"><i class="fas fa-microphone"></i></div>
+                <div class="timer-text" id="recTimerLabel">Recording Time 00:00 Minutes</div>
+                <div class="attempts-text" id="attLabel">Available attempts: 1/1</div>
+                <div id="recActionContainer">
+                    <button id="btnAction" class="btn-record" onclick="handleRecClick()">Start Audio Recording</button>
+                </div>
+            </div>
+
+            <div id="interactiveUI" style="width:100%;"></div>
+        </div>
+
+    </main>
+
+    <div class="footer">
+        <div class="footer-left">
+            <span>Proctor Status: <span class="text-success"><i class="fas fa-video"></i> Active</span></span>
+            <span>Audio: <span class="text-success" id="audioStatus"><i class="fas fa-volume-up"></i> Good</span></span>
+        </div>
+        <button class="btn-next" onclick="nextQ()">Next Question <i class="fas fa-chevron-right"></i></button>
+    </div>
+
+    <div id="modal" class="modal-overlay">
+        <div class="summary-card">
+            <div class="modal-header">
+                <div class="mh-left"><i class="fas fa-exclamation-triangle"></i> Finish Test</div>
+                <div class="mh-right"><i class="far fa-clock"></i> Remaining Time: <span id="remTime">--:--</span> <i class="fas fa-times-circle close-btn" onclick="closeSum()" style="margin-left:10px;"></i></div>
+            </div>
+            <div class="modal-body">
+                <div class="stats-row">
+                    <div class="donut-wrapper">
+                        <div class="donut-chart" id="mainDonut"></div>
+                        <div class="donut-hole"></div>
+                    </div>
+                    <div class="stats-text">
+                        <h4>Your Test Summary</h4>
+                        <div class="total-q" id="sumTotalQ">0</div>
+                        <div class="total-label">Total Questions</div>
+                        <ul class="legend-list">
+                            <li><span class="dot blue"></span> Attempted: <strong id="valAtt">0</strong></li>
+                            <li><span class="dot orange"></span> Marked for Revisit: <strong id="valRev">0</strong></li>
+                            <li><span class="dot grey"></span> Unattempted: <strong id="valUna">0</strong></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="sec-table-title">Section Summary</div>
+                <table class="sec-table">
+                    <thead>
+                        <tr>
+                            <th width="5%">#</th>
+                            <th width="45%">SECTION NAME</th>
+                            <th width="50%" style="text-align:right">STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="secTableBody"></tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-finish-final" onclick="confirmFinish()">Finish Test</button>
+                <button class="btn-back" onclick="closeSum()">No, Back to Test</button>
+            </div>
+        </div>
+    </div>
+
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/communication_portal/test_window.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/communication_portal/comm_tab_guard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/exam_exit_guard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/exam_window_guard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/exam_fullscreen_guard.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <meta charset="UTF-8">
+    <title>Test Terminated</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/communication_portal/test_completed.css') }}">
+</head>
+<body>
+    <div class="card">
+        <div class="icon-box">&#9888;</div>
+        <h1>Test Terminated</h1>
+        <p>{{ message or "This test session has been closed or expired. You cannot re-enter this assessment." }}</p>
+        <a href="/" id="tcClose">Return to Home</a>
+    </div>
+{% include 'users/exam_platform/placement_exam_portal/communication_portal/_sapm_footer.html' %}
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/communication_portal/test_completed.js') }}"></script>
+</body>
+</html>

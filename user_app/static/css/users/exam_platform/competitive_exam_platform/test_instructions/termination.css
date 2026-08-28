@@ -1,0 +1,152 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #ffffff;
+    font-family: 'Segoe UI', 'Lato', system-ui, -apple-system, sans-serif;
+    color: #5a6673;
+}
+
+.tm-lang {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 16px 26px 0;
+    font-size: 1rem;
+    color: #4a5bbf;
+}
+
+.tm-lang i {
+    color: #4a5bbf;
+}
+
+.tm-lang span {
+    font-weight: 500;
+}
+
+.tm-lang select {
+    border: 1px solid #b9c0cc;
+    border-radius: 3px;
+    padding: 5px 8px;
+    font-size: 0.95rem;
+    color: #33414e;
+    background: #ffffff;
+}
+
+.tm-wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 10px 24px 70px;
+    text-align: center;
+}
+
+.tm-art {
+    position: relative;
+    height: 250px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.tm-art__blob {
+    position: absolute;
+    width: 370px;
+    height: 215px;
+    background: #eaf7fb;
+    border-radius: 48% 52% 44% 56% / 56% 46% 54% 44%;
+}
+
+.tm-art__svg {
+    position: relative;
+    width: 380px;
+    max-width: 90vw;
+}
+
+.tm-note {
+    font-size: 1.28rem;
+    margin: 0 0 34px;
+    color: #5a6673;
+}
+
+.tm-note__label {
+    color: #e02020;
+    font-weight: 700;
+}
+
+.tm-reasons p {
+    font-size: 1.18rem;
+    line-height: 1.75;
+    margin: 0;
+    color: #6b7684;
+}
+
+.tm-reasons__last {
+    max-width: 1060px;
+    margin: 0 auto !important;
+}
+
+.tm-rule {
+    border: none;
+    border-top: 1px solid #e6e9ee;
+    margin: 40px auto;
+    max-width: 1080px;
+}
+
+.tm-proceed h2 {
+    font-size: 1.42rem;
+    font-weight: 700;
+    color: #33414e;
+    margin: 0 0 16px;
+}
+
+.tm-proceed p {
+    font-size: 1.15rem;
+    line-height: 1.7;
+    margin: 0 auto 6px;
+    max-width: 900px;
+    color: #6b7684;
+}
+
+.tm-actions {
+    margin-top: 34px;
+}
+
+.tm-btn {
+    display: inline-block;
+    background: #4a5bbf;
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 12px 32px;
+    border-radius: 5px;
+}
+
+.tm-btn:hover {
+    background: #3c4ba3;
+    color: #ffffff;
+}
+
+@media (max-width: 720px) {
+    .tm-note {
+        font-size: 1.05rem;
+    }
+
+    .tm-reasons p,
+    .tm-proceed p {
+        font-size: 1rem;
+    }
+
+    .tm-art {
+        height: 200px;
+    }
+
+    .tm-art__blob {
+        width: 280px;
+        height: 170px;
+    }
+}

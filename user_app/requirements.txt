@@ -1,0 +1,50 @@
+# ============================================================
+# Project dependencies (pinned to known-good versions)
+# Install with:  pip install -r requirements.txt
+# ============================================================
+
+# ---- Web framework ----
+Flask==3.0.1
+Werkzeug==3.0.1
+
+# ---- Flask extensions ----
+Flask-Limiter==2.9.1
+Flask-Mail==0.9.1
+Flask-Session==0.8.0
+Flask-SocketIO==5.6.1
+
+# ---- Realtime / async transport ----
+python-socketio==5.16.3
+python-engineio==4.13.3
+eventlet==0.41.1
+
+# ---- Database ----
+mysql-connector-python==8.0.33
+
+# ---- Cache / session / rate-limit backend ----
+redis==8.0.1
+
+# ---- Auth & security ----
+bcrypt==4.2.1
+pyotp==2.6.0
+google-auth==2.56.0
+google-auth-oauthlib==1.4.0
+
+# ---- Payments ----
+razorpay==1.3.0
+
+# ---- PDF / receipts ----
+reportlab==4.2.2
+
+# ---- HTTP client ----
+requests==2.34.2
+
+# ---- Configuration ----
+python-dotenv==0.21.0
+
+# ---- Production WSGI server (Linux / Render) ----
+gunicorn==23.0.0
+
+# ---- Compatibility pin ----
+# razorpay 1.3.0 still imports pkg_resources, which setuptools>=81 removed.
+setuptools<81

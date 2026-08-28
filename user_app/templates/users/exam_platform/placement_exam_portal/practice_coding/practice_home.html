@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coding Practice - ShyamPracticePaper</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/practice_coding/practice_home.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <style>
+        .pc-login-cta { display:inline-flex; align-items:center; gap:6px; padding:7px 14px;
+            border-radius:8px; background:#992c25; color:#fff; font-size:13px; font-weight:600;
+            text-decoration:none; }
+        .pc-login-cta:hover { background:#7d2018; }
+        .pc-previewbar { display:flex; align-items:center; gap:10px; margin:0; padding:11px 18px;
+            background:#fff8e6; border-bottom:1px solid #f0e2b8; color:#7a5b12; font-size:13.5px; }
+        .pc-previewbar a { color:#992c25; font-weight:600; }
+        .pc-lock--login { color:#b0851f; }
+        .pc-preview-tag { display:inline-block; padding:1px 8px; border-radius:999px;
+            background:#e7f6ec; color:#1a7f4b; font-size:11px; font-weight:600; }
+    </style>
+</head>
+<body>
+
+<header class="pc-topbar">
+    <button class="pc-hamburger" id="pcHamburger" type="button" aria-label="Open menu">
+        <i class="fas fa-bars"></i>
+    </button>
+    <a class="pc-brand" href="{{ url_for('practice_coding.home') }}">
+        <img src="{{ url_for('static', filename='images/favicon.png') }}" alt="ShyamPracticePaper">
+        <span>ShyamPracticePaper</span>
+    </a>
+    <nav class="pc-topnav">
+        <span class="pc-topnav__item is-active">Problems</span>
+        <a class="pc-topnav__item" href="{{ url_for('practice_coding.quiz_home') }}">Quiz</a>
+    </nav>
+    <div class="pc-topbar__right">
+        <span class="pc-streak" title="Days in a row with an accepted solution">
+            <i class="fas fa-fire"></i> {{ streak }}
+        </span>
+        {% if premium %}
+            <span class="pc-premium-badge"><i class="fas fa-crown"></i> Premium</span>
+        {% else %}
+            <a class="pc-premium-cta" href="{{ url_for('practice_coding.premium') }}">Premium</a>
+        {% endif %}
+        {% if user %}
+        <span class="pc-user" title="{{ user.username }}">
+            <span class="pc-user__avatar">{{ (user.username or 'U')[0]|upper }}</span>
+        </span>
+        {% else %}
+        <a class="pc-login-cta" href="{{ login_url }}"><i class="fas fa-right-to-bracket"></i> Log in</a>
+        {% endif %}
+    </div>
+</header>
+
+{% if is_anon %}
+<div class="pc-previewbar">
+    <i class="fas fa-circle-info"></i>
+    <span>You're previewing coding practice. The first <strong>{{ preview_ids|length }}</strong>
+        free problems are open to open and run.
+        <a href="{{ login_url }}">Log in</a> to unlock every free problem and save your progress.</span>
+</div>
+{% endif %}
+
+<div class="pc-backdrop" id="pcBackdrop"></div>
+
+<div class="pc-layout">
+
+    <!-- ---------- left sidebar ---------- -->
+    <aside class="pc-side" id="pcSide">
+        <button class="pc-side__close" id="pcSideClose" type="button" aria-label="Close menu">
+            <i class="fas fa-xmark"></i>
+        </button>
+        <nav class="pc-side__mobilenav">
+            <a class="pc-side__item is-active" href="{{ url_for('practice_coding.home') }}">
+                <i class="fas fa-list-check"></i> Problems</a>
+            <a class="pc-side__item" href="{{ url_for('practice_coding.quiz_home') }}">
+                <i class="fas fa-clipboard-question"></i> Quiz</a>
+            <div class="pc-side__divider"></div>
+        </nav>
+        <a class="pc-side__item {{ 'is-active' if not active_tier }}"
+           href="{{ url_for('practice_coding.home') }}"><i class="fas fa-book"></i> Library</a>
+        <a class="pc-side__item {{ 'is-active' if active_tier == 'free' }}"
+           href="{{ url_for('practice_coding.home', tier='free') }}"><i class="fas fa-unlock"></i> Free Problems</a>
+        <a class="pc-side__item {{ 'is-active' if active_tier == 'paid' }}"
+           href="{{ url_for('practice_coding.home', tier='paid') }}"><i class="fas fa-crown"></i> Premium Problems</a>
+        <a class="pc-side__item" href="{{ url_for('practice_coding.bookmarks') }}">
+            <i class="fas fa-bookmark"></i> Bookmarks
+            {% if bookmark_count %}<span class="pc-side__count">{{ bookmark_count }}</span>{% endif %}
+        </a>
+        <div class="pc-side__divider"></div>
+        <div class="pc-side__label">My Progress</div>
+        {% for p in progress %}
+        <div class="pc-progress">
+            <div class="pc-progress__row">
+                <span>{{ p.subject }}</span><span>{{ p.solved }}/{{ p.total }}</span>
+            </div>
+            <div class="pc-progress__bar">
+                <span style="width: {{ (100 * p.solved / p.total) | round(0, 'floor') if p.total else 0 }}%"></span>
+            </div>
+        </div>
+        {% else %}
+        <div class="pc-side__stat"><span>Solved</span><strong>{{ solved_count }}</strong></div>
+        {% endfor %}
+    </aside>
+
+    <!-- ---------- centre: the problem list ---------- -->
+    <main class="pc-main">
+
+        <div class="pc-subjects">
+            <a class="pc-chip {{ 'is-active' if not active_subject }}"
+               href="{{ url_for('practice_coding.home', tier=active_tier, difficulty=active_difficulty) }}">
+                All Topics
+            </a>
+            {% for s in subjects %}
+            <a class="pc-chip {{ 'is-active' if active_subject == s.subject }}"
+               href="{{ url_for('practice_coding.home', subject=s.subject, tier=active_tier, difficulty=active_difficulty) }}">
+                {{ s.subject }} <span class="pc-chip__n">{{ s.n }}</span>
+            </a>
+            {% endfor %}
+        </div>
+
+        <div class="pc-actionrow">
+            <a class="pc-action" href="{{ url_for('practice_coding.random_pick') }}"
+               title="Jump to a random unsolved question">
+                <i class="fas fa-shuffle"></i> Pick Random
+            </a>
+        </div>
+
+        <form class="pc-tools" method="get" action="{{ url_for('practice_coding.home') }}">
+            {% if active_subject %}<input type="hidden" name="subject" value="{{ active_subject }}">{% endif %}
+            {% if active_tier %}<input type="hidden" name="tier" value="{{ active_tier }}">{% endif %}
+            <div class="pc-search">
+                <i class="fas fa-magnifying-glass"></i>
+                <input type="search" name="q" id="pcSearch" value="{{ search }}"
+                       placeholder="Search questions" autocomplete="off">
+                <button type="button" class="pc-search__clear" id="pcSearchClear"
+                        title="Clear the search" {% if not search %}hidden{% endif %}>&times;</button>
+                <span class="pc-search__spin" id="pcSearchSpin" hidden><i class="fas fa-circle-notch fa-spin"></i></span>
+            </div>
+
+            <select name="status" onchange="this.form.submit()" title="Your progress on each question">
+                <option value="">Status</option>
+                <option value="todo" {{ 'selected' if active_status == 'todo' }}>Todo</option>
+                <option value="attempted" {{ 'selected' if active_status == 'attempted' }}>Attempted</option>
+                <option value="solved" {{ 'selected' if active_status == 'solved' }}>Solved</option>
+            </select>
+
+            <select name="difficulty" onchange="this.form.submit()">
+                <option value="">Difficulty</option>
+                {% for d in ('Easy','Moderate','Hard') %}
+                <option value="{{ d }}" {{ 'selected' if active_difficulty == d }}>{{ d }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="sort" onchange="this.form.submit()" title="Sort the list">
+                <option value="default" {{ 'selected' if active_sort == 'default' }}>Sort</option>
+                <option value="title" {{ 'selected' if active_sort == 'title' }}>Title A-Z</option>
+                <option value="title_desc" {{ 'selected' if active_sort == 'title_desc' }}>Title Z-A</option>
+                <option value="difficulty" {{ 'selected' if active_sort == 'difficulty' }}>Easy first</option>
+                <option value="difficulty_desc" {{ 'selected' if active_sort == 'difficulty_desc' }}>Hard first</option>
+                <option value="acceptance_desc" {{ 'selected' if active_sort == 'acceptance_desc' }}>Acceptance high</option>
+                <option value="acceptance" {{ 'selected' if active_sort == 'acceptance' }}>Acceptance low</option>
+            </select>
+
+            <button type="submit" class="pc-go">Go</button>
+
+            <span class="pc-solvedmeter" title="Accepted solutions out of the whole bank">
+                <i class="fas fa-circle-check"></i>
+                <strong>{{ stats.solved }}</strong>/{{ stats.total }} Solved
+            </span>
+
+            {% set filtering = active_status or active_difficulty or search or active_subject
+                               or active_tier or (active_sort and active_sort != 'default') %}
+            <a class="pc-clear {{ 'is-off' if not filtering }}"
+               href="{{ url_for('practice_coding.home') }}"
+               title="{{ 'Clear search, status, difficulty, sort and topic' if filtering else 'No filters are active' }}">
+                <i class="fas fa-rotate-left"></i> Reset filters
+            </a>
+        </form>
+
+        <div class="pc-list">
+            {% for q in questions %}
+            <a class="pc-row {{ loop.cycle('', 'pc-row--alt') }}"
+               href="{{ url_for('practice_coding.solve', slug=q.slug) }}">
+                <span class="pc-row__status">
+                    {% if q.id in solved %}
+                        <i class="fas fa-circle-check pc-solved" title="Solved"></i>
+                    {% elif q.id in attempted %}
+                        <i class="fas fa-circle-half-stroke pc-attempted" title="Attempted, not solved yet"></i>
+                    {% endif %}
+                </span>
+                <span class="pc-row__title">{{ loop.index }}. {{ q.title }}</span>
+                <span class="pc-row__subject">{{ q.subject }}</span>
+                <span class="pc-row__acc">{{ q.acceptance if q.acceptance is not none else '--' }}%</span>
+                <span class="pc-row__diff pc-diff--{{ q.difficulty|lower }}">
+                    {{ 'Med.' if q.difficulty == 'Moderate' else q.difficulty }}
+                </span>
+                <span class="pc-row__companies">
+                    {% if company_map.get(q.id) %}
+                        <span class="pc-cobadge" title="{{ company_map[q.id] | join(', ') }}">
+                            <i class="fas fa-building"></i> {{ company_map[q.id] | length }}
+                        </span>
+                    {% endif %}
+                </span>
+                <span class="pc-row__lock">
+                    {% if q.is_paid and not premium %}
+                        <i class="fas fa-lock" title="Premium question"></i>
+                    {% elif q.is_paid %}
+                        <i class="fas fa-crown pc-crown" title="Premium (unlocked)"></i>
+                    {% elif is_anon and q.id not in preview_ids %}
+                        <i class="fas fa-lock pc-lock--login" title="Log in to unlock"></i>
+                    {% elif is_anon %}
+                        <span class="pc-preview-tag" title="Open in preview">Preview</span>
+                    {% endif %}
+                </span>
+            </a>
+            {% else %}
+            <div class="pc-empty">
+                No questions here yet{% if active_subject or active_difficulty or search %} for this filter{% endif %}.
+            </div>
+            {% endfor %}
+
+            {% if total_questions > questions|length %}
+            <div class="pc-more" id="pcMore"
+                 data-offset="{{ questions|length }}"
+                 data-total="{{ total_questions }}">
+                <span class="pc-more__spin"><i class="fas fa-circle-notch fa-spin"></i> Loading more…</span>
+                <button type="button" class="pc-more__btn" id="pcMoreBtn">
+                    Load more ({{ total_questions - questions|length }} left)
+                </button>
+            </div>
+            {% endif %}
+        </div>
+        {% if total_questions %}
+        <p class="pc-count" id="pcCount">
+            Showing <strong id="pcShown">{{ questions|length }}</strong> of {{ total_questions }} questions
+        </p>
+        {% endif %}
+    </main>
+
+    <!-- ---------- right rail: calendar + companies ---------- -->
+    <aside class="pc-rail">
+        {% if daily %}
+        <a class="pc-daily" href="{{ url_for('practice_coding.daily') }}">
+            <div class="pc-daily__head">
+                <span><i class="fas fa-calendar-day"></i> Daily Challenge</span>
+                {% if daily.id in solved %}<span class="pc-daily__done"><i class="fas fa-circle-check"></i> Done</span>{% endif %}
+            </div>
+            <strong>{{ daily.title }}</strong>
+            <div class="pc-daily__meta">
+                <span class="pc-diff--{{ daily.difficulty|lower }}">{{ daily.difficulty }}</span>
+                &middot; {{ daily.subject }}
+                {% if daily.is_paid %}&middot; <i class="fas fa-crown" style="color:#ffa116"></i>{% endif %}
+            </div>
+        </a>
+        {% endif %}
+
+        {% if leaderboard %}
+        <div class="pc-card">
+            <div class="pc-card__head"><strong><i class="fas fa-trophy" style="color:#ffa116"></i> Top Solvers This Month</strong></div>
+            <div class="pc-lb">
+                {% for row in leaderboard %}
+                <div class="pc-lb__row {{ 'is-me' if row.user_id == my_user_id }}">
+                    <span class="pc-lb__rank {{ 'pc-lb__rank--top' if loop.index <= 3 }}">{{ loop.index }}</span>
+                    <span class="pc-lb__name">{{ row.username }}{% if row.user_id == my_user_id %} (you){% endif %}</span>
+                    <span class="pc-lb__solved">{{ row.solved }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="pc-card">
+            <div class="pc-card__head">
+                <strong id="pcCalTitle"></strong>
+                <span class="pc-cal__nav">
+                    <button type="button" id="pcCalPrev">&lsaquo;</button>
+                    <button type="button" id="pcCalNext">&rsaquo;</button>
+                </span>
+            </div>
+            <div class="pc-cal" id="pcCal"></div>
+        </div>
+
+        <div class="pc-card">
+            <div class="pc-card__head"><strong>Trending Companies</strong></div>
+            <div class="pc-companies">
+                {% for co in companies %}
+                <a class="pc-company" href="{{ url_for('practice_coding.company', slug=co.slug) }}">
+                    {{ co.name }} <span class="pc-company__n">{{ co.question_count }}</span>
+                </a>
+                {% else %}
+                <span style="color:#9a9a9a;font-size:13px">
+                    Companies appear here once questions are tagged with them.
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+    </aside>
+</div>
+
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/practice_coding/practice_home.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/practice_coding/practice_list.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/practice_coding/practice_search.js') }}"></script>
+</body>
+</html>

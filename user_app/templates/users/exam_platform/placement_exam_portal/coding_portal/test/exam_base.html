@@ -1,0 +1,79 @@
+{% extends layout %}
+{% block title %}{{ question.title }} | {{ test.title }}{% endblock %}
+
+{% block body %}
+
+<div class="exam-shell">
+  {% include "users/exam_platform/placement_exam_portal/coding_portal/partials/exam_header.html" %}
+  {% include "users/exam_platform/placement_exam_portal/coding_portal/partials/question_nav.html" %}
+
+  <div class="exam-body">
+    <section class="pane-question">
+      <div class="q-toprow">
+        <div class="q-heading">Question {{ question_index }}</div>
+        <button class="btn-revisit" id="btn-revisit" type="button">
+          <svg width="12" height="14" viewBox="0 0 12 14" fill="none"
+               stroke="currentColor" stroke-width="1.4">
+            <path d="M1.5 1h9v12L6 9.8 1.5 13z"></path>
+          </svg>
+          Revisit Later
+        </button>
+      </div>
+      <div class="q-howto">How to Attempt?</div>
+      <div class="q-statement q-box">{{ question.statement_html | safe }}</div>
+
+      {% if question.output_spec %}
+        <p class="muted" style="margin-top:14px">Your output should have the columns given below:</p>
+        <div class="q-outcols">
+          {% for col in question.output_spec.split(',') %}<span>{{ col.strip() }}</span>{% endfor %}
+        </div>
+      {% endif %}
+
+      {% block question_extra %}{% endblock %}
+
+      <div class="q-marks">Marks: {{ question.marks }}</div>
+    </section>
+
+
+    <div class="vsplitter" id="pane-splitter"
+         title="Drag to resize · double-click to reset"></div>
+
+    <section class="pane-response">
+      <div class="response-head">
+        <span class="label">&laquo; Enter your Response</span>
+        {% block response_head_extra %}{% endblock %}
+      </div>
+      {% block response %}{% endblock %}
+    </section>
+  </div>
+
+  {% include "users/exam_platform/placement_exam_portal/coding_portal/partials/footer.html" %}
+</div>
+
+<form id="finish-form" method="post"
+      action="{{ url_for('coding_test.finish', attempt_id=attempt.id) }}" class="hidden">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
+
+<div id="examFullscreenGuard" hidden
+     data-grace-seconds="{{ away_seconds | default(20) }}"
+     data-terminate-url="{{ url_for('coding_test.terminate', attempt_id=attempt.id) }}"
+     data-terminated-url="{{ url_for('coding_test.terminated', attempt_id=attempt.id) }}"
+     data-require-fullscreen="1"
+     data-start-label="Start test"></div>
+{% endblock %}
+
+{% block scripts %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/exam_fullscreen_guard.css') }}">
+<script src="{{ url_for('static', filename='js/users/exam_platform/exam_fullscreen_guard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/editor.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/autosave.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/timer.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/examcore.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/examnav.js') }}"></script>
+{% block section_lib %}{% endblock %}
+<script>
+  CJ.examNav.boot({{ exam_config | tojson }});
+</script>
+{% endblock %}

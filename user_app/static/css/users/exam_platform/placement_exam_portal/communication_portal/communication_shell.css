@@ -1,0 +1,165 @@
+.sapm-logo-img {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    margin-right: 8px;
+    flex: 0 0 auto;
+}
+
+.logo-area img {
+    max-width: 34px;
+    max-height: 34px;
+}
+
+body > .sapm-footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    margin-top: 0;
+}
+
+
+body {
+    padding-bottom: var(--sapm-footer-h, 64px);
+    box-sizing: border-box;
+}
+
+body > .frame {
+    flex: 0 0 auto;
+}
+
+
+.layout {
+    grid-template-columns: minmax(0, 1fr) 72px minmax(0, 1fr);
+}
+
+.left {
+    padding: 56px 46px;
+    min-width: 0;
+    overflow-y: auto;
+
+    justify-content: flex-start;
+}
+
+.right {
+    padding: 46px 46px;
+    min-width: 0;
+    gap: 14px;
+}
+
+
+.main-title {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: break-word;
+    word-break: normal;
+    hyphens: none;
+    font-size: 30px;
+    line-height: 1.25;
+}
+
+.left .greet,
+.left .meta {
+    max-width: 100%;
+}
+
+
+.divider-col {
+    position: relative;
+    background: #ffffff;
+    border-left: 1px solid #edf0f3;
+    border-right: 1px solid #edf0f3;
+}
+
+
+.right table {
+    width: 100%;
+    table-layout: auto;
+    border-collapse: collapse;
+}
+
+.right th,
+.right td {
+    padding: 10px 12px;
+    vertical-align: middle;
+    word-break: normal;
+    overflow-wrap: anywhere;
+}
+
+.right th {
+    font-size: 11px;
+    letter-spacing: .4px;
+    line-height: 1.35;
+    white-space: normal;
+}
+
+.right td {
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.right .form-control,
+.right input[type="text"],
+.right input[type="email"],
+.right select {
+    width: 100%;
+    max-width: 100%;
+}
+
+.right img,
+.right video,
+.right canvas {
+    max-width: 100%;
+    height: auto;
+}
+
+@media (max-width: 1400px) {
+    .layout {
+        grid-template-columns: minmax(0, 1fr) 64px minmax(0, 1fr);
+    }
+
+    .left {
+        padding: 44px 34px;
+    }
+
+    .right {
+        padding: 36px 34px;
+    }
+
+    .main-title {
+        font-size: 26px;
+    }
+}
+
+@media (max-width: 1100px) {
+    .layout {
+        grid-template-columns: 1fr;
+    }
+
+    .left,
+    .right {
+        padding: 26px 20px;
+    }
+
+    .main-title {
+        font-size: 24px;
+    }
+}
+
+.right {
+    scrollbar-gutter: stable;
+}
+
+.right .card-area,
+.right .info-bar,
+.right .heading,
+.right .section-header {
+    flex-shrink: 0;
+}
+
+.frame {
+    height: 750px;
+}

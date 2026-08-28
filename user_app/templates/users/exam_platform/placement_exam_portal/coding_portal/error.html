@@ -1,0 +1,12 @@
+{% extends "users/exam_platform/placement_exam_portal/coding_portal/base.html" %}
+{% block title %}{{ code }} | ShyamPracticePaper{% endblock %}
+
+{% block body %}
+<div class="card-page">
+  <div class="card center">
+    <div style="font-size:44px;font-weight:700;color:var(--fg-faint)">{{ code }}</div>
+    <p class="muted">{{ message }}</p>
+    <a class="btn btn-primary" href="{{ url_for('coding_test.dashboard') }}">Back to assessments</a>
+  </div>
+</div>
+{% endblock %}

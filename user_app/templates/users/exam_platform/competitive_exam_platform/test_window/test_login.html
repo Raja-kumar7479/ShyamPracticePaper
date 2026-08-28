@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test Login</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/brand-bootstrap.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+    <link href="{{ url_for('static', filename='css/users/exam_platform/competitive_exam_platform/test_login.css') }}" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/competitive_exam_platform/test_window/test_login.css') }}">
+</head>
+<body>
+    <div class="top-bar"></div>
+
+    <div class="main-header">
+        <div class="system-info">
+            <div class="notice">
+                Kindly contact the invigilator if there are any discrepancies in the Name and Photograph displayed on the screen.
+            </div>
+        </div>
+
+        <div class="header-right">
+            <div class="candidate-info">
+                <h2>Candidate Name :</h2>
+                <div class="name">{{ username }}</div>
+                <div class="subject"><span>{{ test.subject_title }}</span></div>
+                <div class="subject"><span>{{ test.subject_subtitle }}</span></div>
+            </div>
+            <div class="candidate-photo">
+                {% set name_parts = username.split(' ') %}
+                <div class="avatar-initials">
+                    {{ name_parts[0][0] }}{% if name_parts|length > 1 %}{{ name_parts[1][0] }}{% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% with flash_scopes = ['test', 'login'] %}
+        {% include 'users/_flash.html' %}
+    {% endwith %}
+
+    <form id="test-login-form" method="POST" action="{{ url_for('users.test_login', section_id=section_id, test_key=test_key, course_code=course_code, unique_code=unique_code) }}">
+        <div class="login-container">
+            <div class="login-header-box">Login</div>
+
+            <div class="input-group-box">
+              <span class="icon-box"><i class="fa fa-user"></i></span>
+              <input type="text" id="fake_login_id" placeholder="Login ID" readonly required />
+            </div>
+
+            <div class="input-group-box">
+              <span class="icon-box"><i class="fa fa-lock"></i></span>
+              <input type="text" id="fake_test_key" placeholder="Password" readonly required />
+              <span class="icon-box right"><i class="fa fa-keyboard"></i></span>
+            </div>
+
+            <input type="hidden" name="login_id" value="{{ test.test_id }}" />
+            <input type="hidden" name="test_key" value="{{ test.test_key }}" />
+
+
+            <div class="text-center">
+                <button type="submit" class="sign-in-box">Sign In</button>
+            </div>
+
+            <div id="flash-container" class="mt-3"></div>
+        </div>
+    </form>
+
+    <script src="{{ url_for('static', filename='js/users/exam_platform/competitive_exam_platform/test_window/test_login.js') }}"></script>
+</body>
+</html>

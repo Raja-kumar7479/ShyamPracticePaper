@@ -1,0 +1,91 @@
+{% extends 'users/practice_question_platform/base.html' %}
+
+{% block title %}
+Select Year
+{% endblock %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users/practice_question_platform/year_select.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div class="breadcrumb-nav">
+        <span class="bc-active">Practice</span>
+        <span class="bc-sep">›</span>
+        <span>Year Wise</span>
+    </div>
+
+    <h2 class="page-title">
+        Select Paper Year
+    </h2>
+
+    <p class="page-subtitle">
+        Access authentic past papers by year for
+        <strong>{{ course_code }}</strong>.
+    </p>
+
+</div>
+
+<div class="year-list">
+
+{% for year in years %}
+
+<a href="{{ url_for(
+        'users.show_year_questions',
+        unique_code=unique_code,
+        course_code=course_code,
+        year=year.year
+    ) }}{% if unique_code %}?code={{ unique_code }}{% endif %}"
+   class="year-card">
+
+    <div class="year-left">
+
+        <div class="year-icon">
+            <i class="fas fa-file-shield"></i>
+        </div>
+
+        <div>
+            <div class="year-title">
+                Academic Year {{ year.year }}
+            </div>
+
+            <div class="year-sub">
+                Mock Tests &amp; Original Question Sets Included
+            </div>
+        </div>
+
+    </div>
+
+    <div class="year-right">
+        <span class="avail-badge">
+            Available
+        </span>
+
+        <i class="fas fa-chevron-right year-arrow"></i>
+    </div>
+</a>
+
+{% else %}
+
+<div class="empty-state">
+
+    <i class="fas fa-folder-open"
+       style="font-size: 1.85rem;color:var(--border);display:block;margin-bottom:1rem;">
+    </i>
+
+    <h5 style="font-family:'Sora',sans-serif;font-weight:700;">
+        No papers found
+    </h5>
+
+    <p style="color:var(--text-muted);font-size:0.85rem;margin-top:0.4rem;">
+        No past papers available for this course yet.
+    </p>
+
+</div>
+
+{% endfor %}
+</div>
+{% endblock %}

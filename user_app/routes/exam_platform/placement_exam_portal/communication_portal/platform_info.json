@@ -1,0 +1,102 @@
+{
+  "platform": {
+    "short_name": "SAPM",
+    "full_name": "Shyam Assessment Platform Monitor",
+    "tagline": "Secure, fair and transparent online assessments",
+    "copyright": "SAPM – Shyam Assessment Platform Monitor © 2025–2035",
+    "powered_by": "Powered By ShyamPracticePaper - SPP",
+    "contact_email": "support@shyampracticepaper.com",
+    "effective_date": "December 26, 2025"
+  },
+  "sections": {
+    "about": {
+      "title": "About SAPM",
+      "icon": "bi-shield-check",
+      "intro": "SAPM is the secure assessment engine of ShyamPracticePaper (SPP). It conducts proctored online exams — communication, aptitude and technical rounds — so you can practise under real placement conditions.",
+      "points": [
+        "Runs fully in your browser. No software installation is required.",
+        "Checks your system, camera and microphone before the test begins.",
+        "Verifies your identity so every candidate competes fairly.",
+        "Records and transcribes your spoken answers during communication rounds.",
+        "Scores speaking accuracy, pace and clarity with our own speech engine.",
+        "Shows your complete report — recordings, transcripts and improvement tips — right after you submit."
+      ],
+      "note": "SAPM is built and operated entirely by ShyamPracticePaper. No third-party proctoring service is involved, and your monitoring data never leaves our servers."
+    },
+    "privacy": {
+      "title": "Privacy Notice",
+      "icon": "bi-lock",
+      "intro": "We collect only what a fair, proctored assessment needs — nothing more. This notice explains what we collect, why, and your rights.",
+      "groups": [
+        {
+          "heading": "What we collect",
+          "points": [
+            "Your name and email, from your ShyamPracticePaper account.",
+            "Webcam snapshots during the test, to confirm the right candidate is appearing.",
+            "Voice recordings and transcripts, to score your answers and build your report.",
+            "Your submitted answers and timing information.",
+            "Basic device checks (camera, microphone, browser) before the test starts."
+          ]
+        },
+        {
+          "heading": "How we use it",
+          "points": [
+            "Only for assessment integrity, scoring and your improvement report.",
+            "Never for advertising, profiling or resale. We do not sell or share your data.",
+            "Recordings and reports are visible only to you and authorised SPP administrators."
+          ]
+        },
+        {
+          "heading": "Retention and deletion",
+          "points": [
+            "Recordings, snapshots and proctoring logs are deleted automatically soon after your result window closes.",
+            "Scores and attempt summaries are kept so your progress history stays available.",
+            "Deleting your ShyamPracticePaper account permanently removes your personal data."
+          ]
+        },
+        {
+          "heading": "Security and payments",
+          "points": [
+            "Data is stored on ShyamPracticePaper servers and protected with access controls.",
+            "Your session is guarded by a secure, single-use test token.",
+            "Payments are processed by Razorpay; card details never touch our servers."
+          ]
+        },
+        {
+          "heading": "Your rights",
+          "points": [
+            "See your own recordings, transcripts and scores in your report after each test.",
+            "Request a copy or correction of your data from your registered email.",
+            "Delete your account — and your data — anytime from your profile page."
+          ]
+        }
+      ],
+      "note": "If anything here is unclear, or you want to exercise any right, write to us before your next assessment — we reply from a human, not a bot."
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "icon": "bi-file-text",
+      "intro": "By starting an SAPM assessment you agree to the following rules.",
+      "points": [
+        "Only the registered candidate may take the test. Impersonation ends the session immediately.",
+        "One test window at a time. Multiple windows, devices or tab switching invalidates the session.",
+        "Camera and microphone access is required for proctored rounds and must stay on.",
+        "Each test can be submitted once. Results are available for a limited time after submission.",
+        "Questions, passages and test recordings are the property of ShyamPracticePaper and must not be copied or shared."
+      ],
+      "note": "These terms may be updated as the platform evolves. The version on this page is always the current one."
+    },
+    "cookies": {
+      "title": "Manage Cookies",
+      "icon": "bi-cookie",
+      "intro": "SAPM uses exactly one cookie — a strictly necessary session cookie from ShyamPracticePaper.",
+      "points": [
+        "It keeps you signed in and protects your test with a secure session token.",
+        "It prevents your exam from being opened in two places at once.",
+        "It is HttpOnly — scripts on the page cannot read it — and expires when your session ends.",
+        "No advertising, analytics or third-party tracking cookies are set."
+      ],
+      "note": "You can clear this cookie anytime by signing out or clearing your browser data for this site — you will simply need to sign in again. During payment, Razorpay may set its own cookies on its checkout page under its own policy."
+    }
+  }
+}

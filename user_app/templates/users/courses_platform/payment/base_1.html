@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <meta charset="UTF-8">
+    <title>{% block title %}Secure Payment{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/courses_platform/payment/payment.css') }}">
+    {% block head %}
+    {% endblock %}
+</head>
+<body {% block body_attr %}{% endblock %}>
+    {% with flash_scopes = ['payment', 'cart', 'purchase', 'download'] %}
+        {% include 'users/_flash.html' %}
+    {% endwith %}
+    <div class="watermark-container">
+        <div class="top-left">shyampracticepaper | Secure Payment</div>
+        <div class="top-right">shyampracticepaper | Secure Payment</div>
+        <div class="bottom-left">shyampracticepaper | Secure Payment</div>
+        <div class="bottom-right">shyampracticepaper | Secure Payment</div>
+        <div class="center">shyampracticepaper | Secure Payment</div>
+        <div class="mid-left">shyampracticepaper | Secure Payment</div>
+        <div class="mid-right">shyampracticepaper | Secure Payment</div>
+        <div class="top-center">shyampracticepaper | Secure Payment</div>
+        <div class="bottom-center">shyampracticepaper | Secure Payment</div>
+    </div>
+    {% block content %}
+    {% endblock %}
+    {% block scripts %}
+    {% endblock %}
+</body>
+</html>

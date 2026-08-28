@@ -1,0 +1,3 @@
+body { background-color: #fafafa; font-family: 'Segoe UI', sans-serif; }
+        .soon-card { background: white; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); padding: 60px 40px; max-width: 520px; margin: 10vh auto; text-align: center; border-top: 5px solid #992c25; }
+        .soon-icon { font-size: 3.5rem; color: #992c25; margin-bottom: 20px; }

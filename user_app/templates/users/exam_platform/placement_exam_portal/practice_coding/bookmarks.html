@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookmarks - Coding Practice</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/practice_coding/practice_home.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body>
+
+<header class="pc-topbar">
+    <a class="pc-brand" href="{{ url_for('practice_coding.home') }}">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="SPP">
+        <span>Coding Practice</span>
+    </a>
+    <nav class="pc-topnav">
+        <a class="pc-topnav__item" href="{{ url_for('practice_coding.home') }}">Problems</a>
+        <a class="pc-topnav__item" href="{{ url_for('practice_coding.quiz_home') }}">Quiz</a>
+        <span class="pc-topnav__item is-active">Bookmarks</span>
+    </nav>
+    <div class="pc-topbar__right">
+        {% if premium %}
+            <span class="pc-premium-badge"><i class="fas fa-crown"></i> Premium</span>
+        {% else %}
+            <a class="pc-premium-cta" href="{{ url_for('practice_coding.premium') }}">Premium</a>
+        {% endif %}
+        <span class="pc-user" title="{{ user.username }}">
+            <span class="pc-user__avatar">{{ (user.username or 'U')[0]|upper }}</span>
+        </span>
+    </div>
+</header>
+
+<main class="pc-bmwrap">
+    <div class="pc-bmhead">
+        <h1><i class="fas fa-bookmark"></i> My Bookmarks</h1>
+        <p class="pc-bmsub">Questions you saved, and how far you got on each.</p>
+    </div>
+
+    {% if rows %}
+    <div class="pc-bmstats">
+        <span class="pc-bmstat"><strong>{{ rows|length }}</strong> saved</span>
+        <span class="pc-bmstat pc-bmstat--ok"><strong>{{ solved }}</strong> solved</span>
+        <span class="pc-bmstat pc-bmstat--mid"><strong>{{ attempted }}</strong> attempted</span>
+        <span class="pc-bmstat"><strong>{{ todo }}</strong> not started</span>
+    </div>
+
+    <div class="pc-list">
+        {% for q in rows %}
+        <a class="pc-row {{ loop.cycle('', 'pc-row--alt') }}"
+           href="{{ url_for('practice_coding.solve', slug=q.slug) }}">
+            <span class="pc-row__status">
+                {% if q.state == 'solved' %}
+                    <i class="fas fa-circle-check pc-solved" title="Solved"></i>
+                {% elif q.state == 'attempted' %}
+                    <i class="fas fa-circle-half-stroke pc-attempted" title="Attempted, not solved yet"></i>
+                {% endif %}
+            </span>
+            <span class="pc-row__title">{{ loop.index }}. {{ q.title }}</span>
+            <span class="pc-row__subject">{{ q.subject }}</span>
+            <span class="pc-row__acc">
+                {% if q.state == 'solved' %}<span class="pc-bmtag pc-bmtag--ok">Submitted</span>
+                {% elif q.state == 'attempted' %}<span class="pc-bmtag pc-bmtag--mid">{{ q.attempts }} tr{{ 'y' if q.attempts == 1 else 'ies' }}</span>
+                {% else %}<span class="pc-bmtag">Not submitted</span>{% endif %}
+            </span>
+            <span class="pc-row__diff pc-diff--{{ q.difficulty|lower }}">
+                {{ 'Med.' if q.difficulty == 'Moderate' else q.difficulty }}
+            </span>
+            <span class="pc-row__companies"></span>
+            <span class="pc-row__lock">
+                {% if q.locked %}<i class="fas fa-lock" title="Premium question"></i>
+                {% elif q.is_paid %}<i class="fas fa-crown pc-crown" title="Premium (unlocked)"></i>{% endif %}
+            </span>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="pc-bmempty">
+        <i class="far fa-bookmark fa-3x"></i>
+        <h3>No bookmarks yet</h3>
+        <p>Open any problem and press the bookmark icon to save it here for later.</p>
+        <a class="pc-bmbtn" href="{{ url_for('practice_coding.home') }}">Browse problems</a>
+    </div>
+    {% endif %}
+</main>
+
+</body>
+</html>

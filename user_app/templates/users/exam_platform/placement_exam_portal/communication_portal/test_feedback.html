@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <meta charset="UTF-8">
+    <title>Feedback</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/communication_portal/test_feedback.css') }}">
+</head>
+<body>
+    <input type="hidden" id="testKey" value="{{ test_key }}">
+    <input type="hidden" id="roundName" value="{{ round_name }}">
+    <input type="hidden" id="courseCode" value="{{ course_code }}">
+    <input type="hidden" id="uniqueCode" value="{{ unique_code }}">
+
+    <div class="card" id="feedbackForm">
+        <h2>How was your experience?</h2>
+        <div class="stars">
+            <span class="star" onclick="rate(1)">★</span><span class="star" onclick="rate(2)">★</span>
+            <span class="star" onclick="rate(3)">★</span><span class="star" onclick="rate(4)">★</span><span class="star" onclick="rate(5)">★</span>
+        </div>
+        <textarea id="comments" placeholder="Comments (Optional)..."></textarea>
+        <button onclick="submitFeedback()">Submit Feedback</button>
+    </div>
+
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/communication_portal/test_feedback.js') }}"></script>
+{% include 'users/exam_platform/placement_exam_portal/communication_portal/_sapm_footer.html' %}
+</body>
+</html>

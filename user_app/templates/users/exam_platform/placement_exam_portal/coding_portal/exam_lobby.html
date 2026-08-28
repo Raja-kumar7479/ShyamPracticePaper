@@ -1,0 +1,74 @@
+{% extends "users/exam_platform/placement_exam_portal/coding_portal/intro_base.html" %}
+
+{% block title %}Lobby - {{ test.title }}{% endblock %}
+
+{% block step2_class %}active{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/coding_portal/exam_lobby.css') }}">
+{% endblock %}
+
+{% block right_content %}
+    <div class="info-bar">
+        <span class="status-dot" id="readyStatus"></span>
+        <span id="readyMsg">Preparing your assessment...</span>
+        &nbsp; | &nbsp; <span id="topTimer" class="text-muted">Ready? 10s</span>
+    </div>
+
+    <div class="section-header"><span class="section-tab">Sections you will attempt</span></div>
+
+    <div class="section-card">
+        {# Scrolls sideways on a narrow panel instead of crushing the columns. #}
+        <div class="table-scroll">
+            <table class="table-custom">
+                <thead>
+                    <tr><th>SECTION NAME</th><th>TYPE</th><th>QUESTIONS</th><th>DURATION</th></tr>
+                </thead>
+                <tbody>
+                    {% for sec in sections %}
+                    <tr>
+                        <td>{{ sec.title }}</td>
+                        <td><span class="type-pill type-pill--{{ sec.section_type }}">{{ sec.section_type|upper }}</span></td>
+                        <td>{{ sec.question_count }} Question{{ '' if sec.question_count == 1 else 's' }}</td>
+                        <td>{{ sec.duration_min }} Min</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="note-text">
+            * Sections are attempted in the order shown. Each section has its own timer, and when it
+            runs out that section is submitted automatically. Your code is saved as you type.
+        </div>
+
+        <div class="start-area">
+            <a href="{{ url_for('coding_test.start', slug=test.slug, **(code_kwargs | default({}))) }}" class="text-decoration-none" id="startLink">
+                <button id="btnStart" class="btn-start" disabled>Start Test</button>
+            </a>
+            <span class="timer-text" id="btnTimerText">Start in 10s</span>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+<script type="application/json" id="examLaunchConfig">{{ {
+    "csrf": csrf_token(),
+    "coreCss": [
+        url_for('static', filename='css/users/exam_platform/placement_exam_portal/coding_portal/tokens.css'),
+        url_for('static', filename='css/users/exam_platform/placement_exam_portal/coding_portal/base.css'),
+        url_for('static', filename='css/users/exam_platform/placement_exam_portal/coding_portal/layout.css'),
+        url_for('static', filename='css/users/exam_platform/exam_fullscreen_guard.css')
+    ],
+    "coreJs": [
+        url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/common.js'),
+        url_for('static', filename='js/users/exam_platform/exam_fullscreen_guard.js'),
+        url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/editor.js'),
+        url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/autosave.js'),
+        url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/timer.js'),
+        url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/examcore.js'),
+        url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/examnav.js')
+    ]
+} | tojson }}</script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/exam_lobby.js') }}"></script>
+{% endblock %}

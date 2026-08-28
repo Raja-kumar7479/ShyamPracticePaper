@@ -1,0 +1,94 @@
+html { scrollbar-gutter: stable; }
+
+html {
+    box-sizing: border-box;
+}
+
+*, *::before, *::after {
+    box-sizing: inherit;
+}
+
+body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #0d1b3e;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    padding: 24px 16px 96px;
+}
+
+.card {
+    background: #ffffff;
+    padding: 44px 40px;
+    border-radius: 12px;
+    text-align: center;
+    width: 100%;
+    max-width: 450px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.card h1 {
+    color: #dc3545;
+    margin-top: 0;
+    font-size: 28px;
+}
+
+.card p {
+    color: #555555;
+    line-height: 1.6;
+    margin-bottom: 30px;
+}
+
+.card a {
+    display: inline-block;
+    background: #003a7d;
+    color: #ffffff;
+    padding: 12px 25px;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+.card a:hover {
+    background: #002a5c;
+    color: #ffffff;
+}
+
+.icon-box {
+    font-size: 50px;
+    color: #dc3545;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 520px) {
+    body {
+        padding: 18px 12px 150px;
+    }
+
+    .card {
+        padding: 30px 20px;
+    }
+
+    .card h1 {
+        font-size: 22px;
+    }
+
+    .card p {
+        font-size: 0.95rem;
+        margin-bottom: 24px;
+    }
+
+    .card a {
+        display: block;
+        padding: 12px 18px;
+    }
+
+    .icon-box {
+        font-size: 40px;
+        margin-bottom: 14px;
+    }
+}

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Result | {{ test.title }}</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/brand-bootstrap.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/round_assessments.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/coding_portal/result.css') }}">
+    <script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/round_assessments.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/result.js') }}" defer></script>
+</head>
+<body>
+<div class="container py-5">
+
+    <div class="ra-head">
+        <div class="ra-head__main">
+            <button type="button" class="ra-sidebar-toggle" id="raSidebarToggle" aria-label="Toggle menu"
+                    aria-controls="raSidebar" aria-expanded="false" title="Toggle menu">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="ra-head__titles">
+                <h2 class="fw-bold">{{ test.title }}</h2>
+            </div>
+        </div>
+        <div class="ra-head__actions">
+            {% if attempt.status == 'expired' %}
+                <span class="badge bg-danger p-2">Terminated</span>
+            {% else %}
+                <span class="badge bg-success p-2">Submitted</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- ============ score hero ============ -->
+    <section class="cr-hero">
+        <div class="cr-ring" style="--pct: {{ summary.score_pct }}"
+             role="img" aria-label="Scored {{ summary.score }} out of {{ summary.max_score }}">
+            <div class="cr-ring__inner">
+                <strong>{{ summary.score }}</strong>
+                <span>of {{ summary.max_score }}</span>
+            </div>
+        </div>
+
+        <div class="cr-hero__stats">
+            <div class="cr-stat">
+                <strong class="cr-stat__num">{{ summary.score_pct }}%</strong>
+                <span class="cr-stat__lbl">Score</span>
+            </div>
+            <div class="cr-stat">
+                <strong class="cr-stat__num cr-ok">{{ summary.solved }}</strong>
+                <span class="cr-stat__lbl">Solved</span>
+            </div>
+            <div class="cr-stat">
+                <strong class="cr-stat__num">{{ summary.attempted }}/{{ summary.total_questions }}</strong>
+                <span class="cr-stat__lbl">Attempted</span>
+            </div>
+            <div class="cr-stat">
+                <strong class="cr-stat__num">{{ summary.cases_passed }}/{{ summary.cases_total }}</strong>
+                <span class="cr-stat__lbl">Test cases</span>
+            </div>
+            <div class="cr-stat">
+                <strong class="cr-stat__num">{{ fmt_duration(summary.duration_seconds) }}</strong>
+                <span class="cr-stat__lbl">
+                    {% if summary.allotted_seconds %}
+                        of {{ fmt_duration(summary.allotted_seconds) }}
+                        {% if summary.ran_over %}<i class="fas fa-circle-info cr-hint"
+                            title="The attempt was left open past the limit, so the full duration is shown."></i>{% endif %}
+                    {% else %}Time taken{% endif %}
+                </span>
+            </div>
+            <div class="cr-stat">
+                <strong class="cr-stat__num">{{ summary.tries }}</strong>
+                <span class="cr-stat__lbl">Submissions</span>
+            </div>
+        </div>
+    </section>
+
+    {% if summary.allotted_seconds %}
+    <section class="cr-timebar">
+        <div class="cr-timebar__head">
+            <span><i class="fas fa-hourglass-half"></i> Time used</span>
+            <strong>{{ fmt_duration(summary.duration_seconds) }} of {{ fmt_duration(summary.allotted_seconds) }}
+                ({{ summary.time_used_pct }}%)</strong>
+        </div>
+        <div class="cr-mini-track">
+            <span class="{{ 'is-full' if summary.time_used_pct >= 100 }}" style="width: {{ summary.time_used_pct }}%"></span>
+        </div>
+        {% if summary.ran_over %}
+        <p class="cr-timebar__note">
+            <i class="fas fa-circle-info"></i>
+            This attempt stayed open past the time limit, so the full duration is shown.
+        </p>
+        {% elif summary.tries == 0 %}
+        <p class="cr-timebar__note">
+            <i class="fas fa-circle-info"></i>
+            No code was submitted during this attempt, so every question counts as skipped.
+        </p>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    {% if certificate_url %}
+    <section class="cr-share">
+        <div class="cr-share__text">
+            <strong><i class="fas fa-award"></i> Share your achievement</strong>
+            <span>Your verified certificate is ready. Post it on LinkedIn or send it to friends.</span>
+        </div>
+        <div class="cr-share__actions">
+            <a class="cr-share-btn cr-share-btn--cert" href="{{ certificate_url }}" target="_blank" rel="noopener">
+                <i class="fas fa-certificate"></i> View Certificate</a>
+            <button type="button" class="cr-share-btn" id="crCopyLink" data-link="{{ certificate_url }}">
+                <i class="fas fa-link"></i> Copy Link</button>
+            <a class="cr-share-btn cr-share-btn--wa" target="_blank" rel="noopener"
+               href="https://wa.me/?text={{ ('I scored ' ~ summary.score ~ '/' ~ summary.max_score ~ ' in ' ~ test.title ~ ' on ShyamPracticePaper! Verify: ' ~ certificate_url) | urlencode }}">
+                <i class="fab fa-whatsapp"></i> WhatsApp</a>
+            <a class="cr-share-btn cr-share-btn--li" target="_blank" rel="noopener"
+               href="https://www.linkedin.com/sharing/share-offsite/?url={{ certificate_url | urlencode }}">
+                <i class="fab fa-linkedin"></i> LinkedIn</a>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- ============ comparison ============ -->
+    {% if cohort.participants %}
+    <section class="cr-panel">
+        <div class="cr-panel__head">
+            <h3><i class="fas fa-ranking-star"></i> How you compare</h3>
+            <span class="cr-panel__meta">{{ cohort.participants }} candidate{{ '' if cohort.participants == 1 else 's' }} finished this test</span>
+        </div>
+
+        <div class="cr-compare">
+            {% set top = cohort.topper if cohort.topper > 0 else 1 %}
+            <div class="cr-bar">
+                <div class="cr-bar__label"><i class="fas fa-crown"></i> Topper</div>
+                <div class="cr-bar__track">
+                    <span class="cr-bar__fill cr-bar__fill--top" style="width: {{ (100 * cohort.topper / top) | round(0, 'floor') }}%"></span>
+                </div>
+                <div class="cr-bar__val">{{ cohort.topper }}</div>
+            </div>
+            <div class="cr-bar">
+                <div class="cr-bar__label"><i class="fas fa-users"></i> Average</div>
+                <div class="cr-bar__track">
+                    <span class="cr-bar__fill cr-bar__fill--avg" style="width: {{ (100 * cohort.average / top) | round(0, 'floor') }}%"></span>
+                </div>
+                <div class="cr-bar__val">{{ cohort.average }}</div>
+            </div>
+            <div class="cr-bar cr-bar--me">
+                <div class="cr-bar__label"><i class="fas fa-user"></i> You</div>
+                <div class="cr-bar__track">
+                    <span class="cr-bar__fill cr-bar__fill--me" style="width: {{ (100 * cohort.mine / top) | round(0, 'floor') }}%"></span>
+                </div>
+                <div class="cr-bar__val">{{ cohort.mine }}</div>
+            </div>
+        </div>
+
+        <div class="cr-chips">
+            <span class="cr-chip"><i class="fas fa-hashtag"></i> Rank <strong>{{ cohort.rank }}</strong> of {{ cohort.participants }}</span>
+            <span class="cr-chip"><i class="fas fa-arrow-trend-up"></i> Percentile <strong>{{ cohort.percentile }}</strong></span>
+            <span class="cr-chip {{ 'cr-chip--good' if summary.vs_average >= 0 else 'cr-chip--bad' }}">
+                {{ '+' if summary.vs_average >= 0 else '' }}{{ summary.vs_average }} vs average
+            </span>
+            <span class="cr-chip {{ 'cr-chip--good' if summary.vs_topper >= 0 else '' }}">
+                {{ summary.vs_topper }} vs topper
+            </span>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- ============ per section ============ -->
+    {% if sections | length > 1 %}
+    <section class="cr-panel">
+        <div class="cr-panel__head"><h3><i class="fas fa-layer-group"></i> By section</h3></div>
+        <div class="cr-secgrid">
+            {% for name, s in sections.items() %}
+            <div class="cr-seccard">
+                <div class="cr-seccard__top">
+                    <span class="ra-sec-pill">{{ s.type }}</span>
+                    <strong>{{ s.score }}/{{ s.marks }}</strong>
+                </div>
+                <div class="cr-seccard__name">{{ name }}</div>
+                <div class="cr-mini-track">
+                    <span style="width: {{ (100 * s.score / s.marks) | round(0, 'floor') if s.marks else 0 }}%"></span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- ============ per question ============ -->
+    <section class="cr-panel">
+        <div class="cr-panel__head">
+            <h3><i class="fas fa-list-check"></i> Question by question</h3>
+            <div class="cr-filters">
+                <button type="button" class="cr-fbtn is-active" data-qfilter="all">All</button>
+                <button type="button" class="cr-fbtn" data-qfilter="solved">Solved</button>
+                <button type="button" class="cr-fbtn" data-qfilter="failed">Failed</button>
+                <button type="button" class="cr-fbtn" data-qfilter="skipped">Skipped</button>
+            </div>
+        </div>
+
+        <div class="cr-qlist">
+            {% for r in rows %}
+            {% set state = 'solved' if r.solved else ('skipped' if not r.verdict else 'failed') %}
+            <article class="cr-q cr-q--{{ state }}" data-qstate="{{ state }}">
+                <header class="cr-q__head">
+                    <span class="cr-q__num">{{ loop.index }}</span>
+                    <div class="cr-q__title">
+                        <h4>{{ r.title }}</h4>
+                        <div class="cr-q__tags">
+                            <span class="ra-sec-pill">{{ r.section_type }}</span>
+                            {% if r.difficulty %}<span class="cr-diff cr-diff--{{ r.difficulty|lower }}">{{ r.difficulty }}</span>{% endif %}
+                            {% if r.language %}<span class="cr-lang"><i class="fas fa-code"></i> {{ r.language }}</span>{% endif %}
+                        </div>
+                    </div>
+                    <div class="cr-q__verdict">
+                        {% if r.verdict == 'AC' %}
+                            <span class="cr-verdict cr-verdict--ok"><i class="fas fa-circle-check"></i> {{ r.verdict_label }}</span>
+                        {% elif r.verdict %}
+                            <span class="cr-verdict cr-verdict--bad"><i class="fas fa-circle-xmark"></i> {{ r.verdict_label }}</span>
+                        {% else %}
+                            <span class="cr-verdict cr-verdict--none"><i class="far fa-circle"></i> {{ r.verdict_label }}</span>
+                        {% endif %}
+                        <div class="cr-q__score">{{ r.score }} / {{ r.marks }}</div>
+                    </div>
+                </header>
+
+                <div class="cr-q__metrics">
+                    <div class="cr-metric">
+                        <span class="cr-metric__lbl">Test cases</span>
+                        <span class="cr-metric__val">{{ r.passed }} / {{ r.total_cases or 'NA' }}</span>
+                        {% if r.total_cases %}
+                        <div class="cr-mini-track cr-mini-track--sm">
+                            <span class="{{ 'is-full' if r.case_pct == 100 else '' }}" style="width: {{ r.case_pct }}%"></span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="cr-metric">
+                        <span class="cr-metric__lbl">Submissions</span>
+                        <span class="cr-metric__val">{{ r.tries }}</span>
+                    </div>
+                    <div class="cr-metric">
+                        <span class="cr-metric__lbl">Time spent <i class="fas fa-circle-info cr-hint" title="Estimated from the gaps between your submissions"></i></span>
+                        <span class="cr-metric__val">{{ fmt_duration(r.approx_seconds) if r.approx_seconds else 'NA' }}</span>
+                    </div>
+                    <div class="cr-metric">
+                        <span class="cr-metric__lbl">Judge runtime</span>
+                        <span class="cr-metric__val">{{ (r.runtime_ms ~ ' ms') if r.runtime_ms is not none else 'NA' }}</span>
+                    </div>
+                </div>
+
+                {% if r.error_message %}
+                <pre class="cr-err">{{ r.error_message }}</pre>
+                {% endif %}
+
+                {% if r.code %}
+                <div class="cr-code">
+                    <button type="button" class="cr-code__toggle" aria-expanded="false">
+                        <i class="fas fa-chevron-right"></i>
+                        <span>View my submitted code</span>
+                        <span class="cr-code__lang">{{ r.language }}</span>
+                    </button>
+                    <div class="cr-code__body" hidden>
+                        <button type="button" class="cr-copy" data-copy>
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                        <pre><code>{{ r.code }}</code></pre>
+                    </div>
+                </div>
+                {% endif %}
+            </article>
+            {% endfor %}
+        </div>
+
+        <div class="cr-empty" id="crFilterEmpty" hidden>
+            <i class="fas fa-filter-circle-xmark fa-2x"></i>
+            <p>No questions in this view.</p>
+        </div>
+    </section>
+</div>
+
+<div class="ra-sidebar-backdrop" id="raSidebarBackdrop"></div>
+<aside class="ra-sidebar" id="raSidebar" aria-hidden="true">
+    <a href="{{ url_for('users.index') }}" class="ra-brand">
+        <img src="{{ url_for('static', filename='images/favicon.png') }}" alt="ShyamPracticePaper" class="ra-brand__logo">
+        <span class="ra-brand__text">ShyamPracticePaper</span>
+    </a>
+    <button type="button" class="ra-sidebar__close" id="raSidebarClose" aria-label="Close menu">&times;</button>
+
+    <nav class="ra-sidebar__nav">
+        <div class="ra-sidebar__label">Go to</div>
+        <a class="ra-sidebar__test" href="{{ dashboard_url }}"><i class="fas fa-list"></i><span>All Assessments</span></a>
+        <a class="ra-sidebar__test" href="{{ url_for('practice_coding.home') }}"><i class="fas fa-code"></i><span>Coding Practice</span></a>
+        <a class="ra-sidebar__test" href="{{ url_for('users.index') }}"><i class="fas fa-house"></i><span>Home</span></a>
+    </nav>
+
+    <div class="ra-sidebar__footer">
+        <div class="ra-sb-user">
+            <div class="ra-sb-user__avatar">{{ (user.username or user.email or 'U')[:1]|upper }}</div>
+            <div class="ra-sb-user__info">
+                <div class="ra-sb-user__name">{{ user.username or user.email }}</div>
+                <div class="ra-sb-user__role">{{ 'Terminated' if attempt.status == 'expired' else 'Submitted' }}</div>
+            </div>
+            <a href="{{ url_for('users.user_logout') }}" class="ra-sb-user__logout" title="Logout">
+                <i class="fas fa-right-from-bracket"></i>
+            </a>
+        </div>
+    </div>
+</aside>
+</body>
+</html>

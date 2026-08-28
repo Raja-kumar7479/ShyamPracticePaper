@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+  <meta charset="UTF-8" />
+  <title>Exam Instructions</title>
+  <link href="{{ url_for('static', filename='css/users/exam_platform/competitive_exam_platform/instruction.css') }}" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" />
+  <style>
+
+  </style>
+</head>
+<body>
+    <div id="examWindowGuard" hidden data-test-key="{{ test_key }}" data-exit-url="{{ url_for('users.open_mock_test_section', section_id=section_id, course_code=course_code, unique_code=unique_code) }}"></div>
+
+ <div class="top-bar"></div>
+<div class="header">Instructions</div>
+
+<div class="container">
+  <div class="left-panel">
+    <div class="instruction-box">
+      <h2>Paper-specific instructions</h2>
+
+      <p><b>Please read the following carefully.</b></p>
+      <p>This question paper has <strong>{{ total_questions }}</strong> questions for a total of <strong>{{ total_marks }}</strong> marks. It consists of <strong>{{ num_sections_text }}</strong> sections:
+          {% for section in sections %}
+              {% if loop.last and sections|length > 1 %} and {% endif %}
+              <strong>{{ section.section_name }}</strong> for <strong>{{ section.section_total_marks }}</strong> marks
+              {% if not loop.last %}, {% endif %}
+          {% endfor %}
+          . Both sections are compulsory. The marks distribution is as follows.
+      </p>
+
+      <div style="display: flex; justify-content: center; margin: 30px 0;">
+          <table border="1" cellpadding="10" cellspacing="0" style="border-collapse: collapse; text-align: center;">
+            <thead>
+              <tr>
+                <th>Section</th>
+                <th>Number of 1-mark questions</th>
+                <th>Number of 2-mark questions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for section in sections %}
+              <tr>
+                <td>{{ section.section_name }}</td>
+                <td>{{ section.one_mark_questions }}</td>
+                <td>{{ section.two_mark_questions }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+      </div>
+
+      <p>To switch sections, click on the tab of the section.</p>
+<hr style="border: none; border-top: 1px solid #ccc; margin: 30px 0;" />
+
+<form action="{{ url_for('users.process_readiness', section_id=section_id, test_key=test_key, course_code=course_code, unique_code=unique_code) }}" method="POST">
+    <div style="margin-top: 20px;">
+      <label>
+        <input type="checkbox" name="readiness_checkbox" id="readiness_checkbox" required />
+        I have read and understood the instructions. All computer hardware allotted to me are in proper working condition. I declare that I am not in possession of / not wearing / not carrying any prohibited gadget like mobile phone, bluetooth devices etc. /any prohibited material with me into the Examination Hall. I agree that in case of not adhering to the instructions, I shall be liable to be debarred from this Test and/or to disciplinary action, which may include ban from future Tests / Examinations
+      </label>
+    </div>
+
+    <div style="margin-top: 20px; display: flex; justify-content: space-between;">
+      <a href="{{ url_for('users.test_instruction', section_id=section_id, test_key=test_key, course_code=course_code, unique_code=unique_code) }}" style="text-decoration: none;">
+        <button type="button" class="ins-btn ins-btn--ghost">&lt; Previous</button>
+      </a>
+
+        <button type="submit" id="ready_to_begin_button" class="ins-btn ins-btn--primary">
+          I am ready to begin
+        </button>
+    </div>
+</form>
+
+    </div>
+  </div>
+
+   <div class="right-panel">
+     <img src="https://api.dicebear.com/8.x/pixel-art/svg?seed={{ username }}" alt="{{ username }}'s pixel art avatar" class="profile-img">
+     <p class="username">{{ username }}</p>
+   </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/users/exam_platform/exam_window_guard.js') }}"></script>
+</body>
+</html>

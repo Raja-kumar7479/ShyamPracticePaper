@@ -1,0 +1,307 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+}
+
+body {
+    min-height: 100vh;
+    background: #fafafa;
+    color: #444;
+    font-size: 15px;
+}
+
+.container-fluid {
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 32px 20px;
+}
+
+.signup-container {
+    background: #fff;
+    padding: 38px 34px 32px;
+    border-radius: 14px;
+    border: 1px solid #ececec;
+    box-shadow: 0 12px 40px -18px rgba(92, 26, 21, 0.28);
+    max-width: 420px;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+}
+
+.signup-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #992c25, #db9504 50%, #992c25);
+}
+
+.auth-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 22px;
+    text-decoration: none;
+}
+
+.auth-brand__logo {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #db9504;
+    object-fit: cover;
+    flex-shrink: 0;
+    box-shadow: 0 4px 14px -4px rgba(92, 26, 21, 0.3);
+}
+
+.auth-brand__name {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #2a1512;
+    letter-spacing: -0.01em;
+}
+
+h3.text-center {
+    color: #2a1512;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 1.32rem;
+    letter-spacing: -0.01em;
+}
+
+.auth-sub {
+    text-align: center;
+    font-size: 0.88rem;
+    color: #6b7280;
+    margin-bottom: 26px;
+    line-height: 1.55;
+}
+
+.form-group {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.form-label {
+    position: absolute;
+    top: 13px;
+    left: 15px;
+    color: #8a8a8a;
+    font-size: 0.92rem;
+    font-weight: 400;
+    transition: all 0.22s ease;
+    pointer-events: none;
+    background: #fff;
+    padding: 0 5px;
+}
+
+.form-control {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    background: #fff;
+    color: #2a1512;
+    width: 100%;
+    transition: border-color 0.22s, box-shadow 0.22s;
+}
+
+.form-control::placeholder {
+    color: transparent;
+}
+
+.form-control:focus {
+    border-color: #992c25;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(153, 44, 37, 0.12);
+}
+
+.form-control:focus ~ .form-label,
+.form-control:not(:placeholder-shown) ~ .form-label {
+    top: -9px;
+    left: 11px;
+    font-size: 0.74rem;
+    font-weight: 500;
+    color: #992c25;
+}
+
+.btn-continue {
+    background-color: #db9504 !important;
+    color: #5c1a15 !important;
+    font-weight: 600 !important;
+    font-size: 0.92rem !important;
+    padding: 12px 20px !important;
+    border-radius: 8px !important;
+    border: none !important;
+    transition: background-color 0.22s, transform 0.18s !important;
+    width: 100%;
+    letter-spacing: 0.02em;
+}
+
+.btn-continue:hover,
+.btn-continue:focus,
+.btn-continue:active,
+.btn-continue.active,
+.btn-continue:focus-visible,
+.btn-continue:not(:disabled):not(.disabled):active,
+.btn-continue:not(:disabled):not(.disabled):active:focus {
+    background-color: #b87a03 !important;
+    background-image: none !important;
+    color: #5c1a15 !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.btn-continue:hover { transform: translateY(-1px); }
+.btn-continue:active,
+.btn-continue:not(:disabled):not(.disabled):active { transform: translateY(0); }
+
+.signup-container .btn:focus,
+.signup-container .btn:active,
+.signup-container .btn.active,
+.signup-container .btn:focus-visible,
+.signup-container a:focus,
+.signup-container button:focus {
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.signup-container .btn-link {
+    color: #992c25 !important;
+    text-decoration: none;
+}
+.signup-container .btn-link:hover {
+    color: #7a231d !important;
+    text-decoration: underline;
+}
+
+.toggle-password {
+    cursor: pointer;
+    color: #8a8a8a;
+    position: absolute;
+    top: 50%;
+    right: 14px;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    font-size: 1rem;
+    user-select: none;
+    transition: color 0.2s;
+}
+
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+.toggle-password:hover {
+    color: #992c25;
+}
+
+.text-center a {
+    color: #992c25;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.text-center a:hover {
+    color: #7a231d;
+    text-decoration: underline;
+}
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 22px 0 18px;
+    color: #9ca3af;
+    font-size: 0.78rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e8e8e8;
+}
+
+#google-login-link {
+    background-color: #fff;
+    color: #2a1512;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 11px;
+    padding: 11px 16px;
+    text-decoration: none;
+    border-radius: 8px !important;
+    border: 1px solid #ddd !important;
+    transition: all 0.22s ease;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+#google-login-link:hover {
+    background-color: #fafafa;
+    border-color: #992c25 !important;
+    color: #2a1512;
+}
+
+#google-login-link img {
+    height: 20px;
+}
+
+.footer {
+    font-size: 0.8rem;
+    color: #9ca3af;
+    margin-top: 22px;
+    text-align: center;
+}
+
+.footer a {
+    color: #6b7280;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.footer a:hover {
+    color: #992c25;
+}
+
+@media (max-width: 480px) {
+    .container-fluid {
+        padding: 20px 14px;
+    }
+    .signup-container {
+        padding: 30px 22px 26px;
+    }
+    h3.text-center {
+        font-size: 1.18rem;
+    }
+    .auth-brand__logo {
+        width: 58px;
+        height: 58px;
+    }
+}

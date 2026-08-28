@@ -1,0 +1,54 @@
+
+<header class="exam-header">
+  <div class="brand">
+    <img class="exam-brand-logo" src="{{ url_for('static', filename='images/logo.png') }}" alt="ShyamPracticePaper">
+    <span class="exam-brand-name">ShyamPracticePaper</span>
+    <span class="brand-sub">| SPP</span>
+  </div>
+
+  <div class="spacer"></div>
+
+  {% if user %}
+  <div class="exam-user" title="Signed in">
+    <span class="exam-user__avatar">{{ (user.username or 'U')[0]|upper }}</span>
+    <span class="exam-user__name">{{ user.username }}</span>
+  </div>
+  {% endif %}
+
+  <div class="save-state">
+    <span class="dot"></span>
+    <span id="save-state-text">Saved just now</span>
+  </div>
+
+  <div class="spacer"></div>
+
+
+  <span class="net-icon" id="net-icon" title="Network status">
+    <svg width="18" height="14" viewBox="0 0 18 14" fill="none"
+         stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+      <path d="M1 5a12 12 0 0 1 16 0"></path>
+      <path d="M4 8a8 8 0 0 1 10 0"></path>
+      <path d="M6.6 10.7a4.5 4.5 0 0 1 4.8 0"></path>
+      <circle cx="9" cy="12.6" r=".9" fill="currentColor" stroke="none"></circle>
+    </svg>
+  </span>
+
+  <span class="rec-cam" title="Proctoring camera (not active)">
+    <span class="rec-dot"></span>
+    <svg width="17" height="13" viewBox="0 0 17 13" fill="none"
+         stroke="currentColor" stroke-width="1.4">
+      <rect x="1" y="1.5" width="10.5" height="10" rx="2"></rect>
+      <path d="M11.5 5.5 16 3v7l-4.5-2.5z"></path>
+    </svg>
+  </span>
+
+  <span class="timer-pill">
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none"
+         stroke="currentColor" stroke-width="1.5">
+      <circle cx="8" cy="8" r="6.5"></circle><path d="M8 4.5V8l2.5 1.5"></path>
+    </svg>
+    <span class="js-timer">--:--</span>
+  </span>
+
+  <button class="btn-finish-red" id="btn-finish" type="button">Finish Test</button>
+</header>

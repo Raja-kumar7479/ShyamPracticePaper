@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ doc.title }} | {{ meta.brand or 'ShyamPracticePaper' }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/auth/legal.css') }}">
+</head>
+<body>
+    <header class="legal-top">
+        <div class="legal-top__inner">
+            <a href="{{ url_for('users.index') }}" class="legal-brand">
+                <img src="{{ url_for('static', filename='images/favicon.png') }}" alt="">
+                <span>{{ meta.brand or 'ShyamPracticePaper' }}</span>
+            </a>
+            <a href="{{ url_for('users.user_login') }}" class="legal-back">
+                <i class="fas fa-arrow-left"></i> Back to login
+            </a>
+        </div>
+    </header>
+
+    <main class="legal-wrap">
+        <div class="legal-head">
+            <h1>{{ doc.title }}</h1>
+            {% if doc.subtitle %}<p class="sub">{{ doc.subtitle }}</p>{% endif %}
+            {% if meta.last_updated %}
+            <span class="legal-updated"><i class="fas fa-clock-rotate-left"></i> Last updated {{ meta.last_updated }}</span>
+            {% endif %}
+        </div>
+
+        <nav class="legal-tabs">
+            <a href="{{ url_for('users.terms_of_use') }}" class="legal-tab {{ 'is-active' if active == 'terms' }}">Terms of Use</a>
+            <a href="{{ url_for('users.privacy_policy') }}" class="legal-tab {{ 'is-active' if active == 'privacy' }}">Privacy Policy</a>
+        </nav>
+
+        {% if doc.intro %}
+        <div class="legal-intro">{{ doc.intro }}</div>
+        {% endif %}
+
+        {% if doc.sections %}
+            {% for section in doc.sections %}
+            <section class="legal-section">
+                {% if section.heading %}<h2>{{ section.heading }}</h2>{% endif %}
+                {% if section.body %}<p>{{ section.body }}</p>{% endif %}
+                {% if section.points %}
+                <ul>
+                    {% for point in section.points %}
+                    <li>{{ point }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </section>
+            {% endfor %}
+        {% else %}
+            <div class="legal-empty">This document has not been published yet.</div>
+        {% endif %}
+
+        <div class="legal-foot">
+            <span>
+                {% if meta.support_email %}
+                Questions? Write to <a href="mailto:{{ meta.support_email }}">{{ meta.support_email }}</a>
+                {% endif %}
+            </span>
+            <span>&copy; {{ meta.brand or 'ShyamPracticePaper' }}</span>
+        </div>
+    </main>
+</body>
+</html>

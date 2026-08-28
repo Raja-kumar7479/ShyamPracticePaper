@@ -1,0 +1,78 @@
+:root { --sapm-footer-h: 64px; }
+
+body > .sapm-footer {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: 0;
+}
+
+.sapm-footer {
+    position: relative;
+    z-index: 50;
+    background: #ffffff;
+    border-top: 1px solid #e5e7eb;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    font-size: 0.78rem;
+    color: #6b7280;
+    margin-top: auto;
+}
+
+.sapm-footer__brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.sapm-footer__brand img {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+}
+
+.sapm-footer__links {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.sapm-footer__links a {
+    color: #6b7280;
+    text-decoration: none;
+}
+
+.sapm-footer__links a:hover {
+    color: #003a7d;
+    text-decoration: underline;
+}
+
+.sapm-footer__powered {
+    color: #003a7d;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.sapm-footer__powered:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+    .sapm-footer {
+    position: relative;
+    z-index: 50;
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+.sapm-footer a {
+    pointer-events: auto;
+    cursor: pointer;
+}

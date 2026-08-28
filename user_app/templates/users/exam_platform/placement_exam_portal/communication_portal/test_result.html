@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Result - {{ report.title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/brand-bootstrap.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/communication_portal/test_result.css') }}">
+</head>
+<body>
+
+<div class="tr-sb-backdrop" id="trSidebarBackdrop"></div>
+<aside class="tr-sidebar" id="trSidebar" aria-hidden="true">
+    <button type="button" class="tr-sidebar__close" id="trSidebarClose" aria-label="Close menu">&times;</button>
+    <a href="{{ url_for('users.index') }}" class="tr-brand">
+        <img src="{{ url_for('static', filename='images/favicon.png') }}" alt="ShyamPracticePaper" class="tr-brand__logo">
+        <span class="tr-brand__text">ShyamPracticePaper</span>
+    </a>
+
+    <nav class="tr-sidebar__nav">
+        <div class="tr-sidebar__label">Result</div>
+        <button type="button" class="tr-nav is-active" data-goto="panel-overview">
+            <i class="fas fa-gauge-high"></i><span>Overview</span></button>
+        <button type="button" class="tr-nav tr-nav--guide" data-goto="panel-guide">
+            <i class="fas fa-lightbulb"></i><span>Skill Guide</span></button>
+
+        <div class="tr-sidebar__label">Sections</div>
+        {% for sec in report.sections %}
+        <button type="button" class="tr-nav" data-goto="panel-sec-{{ sec.index }}">
+            <i class="fas {{ sec.icon }}"></i>
+            <span>{{ sec.title }}</span>
+        </button>
+        {% endfor %}
+
+        <div class="tr-sidebar__label">Go to</div>
+        <a class="tr-nav" href="{{ url_for('users.round_assessments', round_name=round_name, course_code=course_code, unique_code=unique_code) }}">
+            <i class="fas fa-list"></i><span>All Assessments</span></a>
+        <a class="tr-nav" href="{{ url_for('users.view_course_dashboard', course_code=course_code, unique_code=unique_code) }}">
+            <i class="fas fa-house"></i><span>Course Home</span></a>
+        <button type="button" class="tr-nav" id="trPrintBtn"><i class="fas fa-file-arrow-down"></i><span>Download PDF</span></button>
+    </nav>
+
+    <div class="tr-sidebar__footer">
+        <div class="tr-sb-user">
+            <div class="tr-sb-user__avatar">{{ (username or email)[:1]|upper }}</div>
+            <div class="tr-sb-user__info">
+                <div class="tr-sb-user__name">{{ username or email }}</div>
+                <div class="tr-sb-user__role">Signed in</div>
+            </div>
+            <a href="{{ url_for('users.user_logout') }}" class="tr-sb-user__logout" title="Logout">
+                <i class="fas fa-right-from-bracket"></i>
+            </a>
+        </div>
+    </div>
+</aside>
+
+<main class="tr-stage">
+
+    <section class="tr-panel is-active" id="panel-overview">
+        <div class="tr-panel__head">
+            <div class="tr-panel__headmain">
+                <button type="button" class="tr-sb-toggle" id="trSidebarToggle" aria-label="Open menu" aria-controls="trSidebar" aria-expanded="false" title="Toggle menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div>
+                <h1 class="tr-panel__title">{{ report.title }}</h1>
+                <p class="tr-panel__sub">{{ round_name }} Round
+                    {% if completed_at %}&middot; Completed {{ completed_at.strftime('%d %b %Y, %I:%M %p') }}{% endif %}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="tr-hero">
+            <div class="tr-hero__chart">
+                <canvas id="overallChart" width="180" height="180"></canvas>
+                <div class="tr-hero__score">
+                    {% if report.overall_pct is not none %}<strong>{{ report.overall_pct }}%</strong><span>score</span>
+                    {% elif report.speaking_accuracy is not none %}<strong>{{ report.speaking_accuracy }}%</strong><span>speech</span>
+                    {% else %}<strong><i class="fas fa-check"></i></strong><span>done</span>{% endif %}
+                </div>
+            </div>
+            <div class="tr-hero__stats">
+                <div class="tr-stat"><i class="fas fa-list-check"></i><strong>{{ report.attempted }}/{{ report.total_questions }}</strong><span>Attempted</span></div>
+                <div class="tr-stat tr-stat--good"><i class="fas fa-circle-check"></i><strong>{{ report.correct }}/{{ report.scorable }}</strong><span>Correct</span></div>
+                <div class="tr-stat tr-stat--bad"><i class="fas fa-circle-xmark"></i><strong>{{ report.skipped }}</strong><span>Skipped</span></div>
+                {% if report.speaking_accuracy is not none %}
+                <div class="tr-stat tr-stat--info"><i class="fas fa-microphone"></i><strong>{{ report.speaking_accuracy }}%</strong><span>Speech accuracy</span></div>{% endif %}
+                {% if percentile %}
+                <div class="tr-stat tr-stat--rank"><i class="fas fa-ranking-star"></i><strong>Top {{ 100 - percentile.percentile }}%</strong><span>of {{ percentile.takers }} takers</span></div>{% endif %}
+            </div>
+        </div>
+
+        {% if certificate_url %}
+        <div class="tr-share">
+            <div class="tr-share__text">
+                <strong><i class="fas fa-award"></i> Share your achievement</strong>
+                <span>Your verified certificate is ready. Post it on LinkedIn or send it to friends.</span>
+            </div>
+            <div class="tr-share__actions">
+                <a class="tr-share-btn tr-share-btn--cert" href="{{ certificate_url }}" target="_blank" rel="noopener">
+                    <i class="fas fa-certificate"></i> View Certificate</a>
+                <button type="button" class="tr-share-btn" id="trCopyLink" data-link="{{ certificate_url }}">
+                    <i class="fas fa-link"></i> Copy Link</button>
+                <a class="tr-share-btn tr-share-btn--wa" target="_blank" rel="noopener"
+                   href="https://wa.me/?text={{ ('I completed ' ~ report.title ~ ' on ShyamPracticePaper! Verify: ' ~ certificate_url) | urlencode }}">
+                    <i class="fab fa-whatsapp"></i> WhatsApp</a>
+                <a class="tr-share-btn tr-share-btn--li" target="_blank" rel="noopener"
+                   href="https://www.linkedin.com/sharing/share-offsite/?url={{ certificate_url | urlencode }}">
+                    <i class="fab fa-linkedin"></i> LinkedIn</a>
+            </div>
+        </div>
+        {% endif %}
+
+        <h4 class="tr-h"><i class="fas fa-layer-group"></i> Your sections</h4>
+        <div class="tr-cards">
+            {% for sec in report.sections %}
+            <button type="button" class="tr-scard tr-scard--{{ sec.dom_type|lower }}" data-goto="panel-sec-{{ sec.index }}">
+                <div class="tr-scard__icon"><i class="fas {{ sec.icon }}"></i></div>
+                <div class="tr-scard__body">
+                    <div class="tr-scard__type">{{ sec.dom_type|replace('_',' ')|title }}</div>
+                    <div class="tr-scard__name">{{ sec.title }}</div>
+                    <div class="tr-scard__facts">{{ sec.attempted }}/{{ sec.total }} attempted</div>
+                </div>
+                <div class="tr-scard__score">
+                    <div class="tr-scard__ring" style="--pct: {{ sec.ring_pct or 0 }};"><span>{{ sec.headline }}</span></div>
+                    <small>{{ sec.metric }}</small>
+                </div>
+                <i class="fas fa-chevron-right tr-scard__go"></i>
+            </button>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="tr-panel" id="panel-guide">
+        <div class="tr-panel__head">
+            <div class="tr-panel__headmain">
+                <button type="button" class="tr-sb-toggle" aria-label="Open menu" aria-controls="trSidebar" aria-expanded="false" title="Toggle menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div>
+                <h1 class="tr-panel__title"><i class="fas fa-lightbulb"></i> Skill Guide</h1>
+                <p class="tr-panel__sub">Personalised improvement plan based on your marks</p>
+                </div>
+            </div>
+            <span class="tr-verdict tr-verdict--{{ guide.verdict|lower|replace(' ','-') }}">{{ guide.verdict }}</span>
+        </div>
+
+        <div class="tr-guide-hero">
+            <div class="tr-guide-hero__pct">{{ guide.pct if guide.pct is not none else '-' }}{% if guide.pct is not none %}%{% endif %}</div>
+            <p>{{ guide.headline }}</p>
+        </div>
+
+        <h4 class="tr-h"><i class="fas fa-list-check"></i> What to work on</h4>
+        <ul class="tr-guide__tips">
+            {% for tip in guide.tips %}
+            <li><i class="fas fa-angles-right"></i><span>{{ tip }}</span></li>
+            {% endfor %}
+        </ul>
+
+        <h4 class="tr-h"><i class="fas fa-chart-simple"></i> Section strength</h4>
+        <div class="tr-bars">
+            {% for sec in report.sections %}
+            <div class="tr-bar">
+                <div class="tr-bar__label"><i class="fas {{ sec.icon }}"></i> {{ sec.title }}</div>
+                <div class="tr-bar__track">
+                    <span class="{{ 'is-good' if (sec.ring_pct or 0) >= 60 else 'is-bad' }}" style="width: {{ sec.ring_pct or 0 }}%"></span>
+                </div>
+                <div class="tr-bar__val">{{ sec.headline }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    {% for sec in report.sections %}
+    <section class="tr-panel" id="panel-sec-{{ sec.index }}">
+        <div class="tr-panel__head">
+            <div class="tr-panel__headmain">
+                <button type="button" class="tr-sb-toggle" aria-label="Open menu" aria-controls="trSidebar" aria-expanded="false" title="Toggle menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div>
+                <h1 class="tr-panel__title"><i class="fas {{ sec.icon }}"></i> {{ sec.title }}</h1>
+                <p class="tr-panel__sub">{{ sec.dom_type|replace('_',' ')|title }} &middot; Section {{ sec.index }} of {{ report.sections|length }}
+                    &middot; {{ sec.attempted }}/{{ sec.total }} attempted</p>
+                </div>
+            </div>
+            <div class="tr-scard__score">
+                <div class="tr-scard__ring tr-scard__ring--lg" style="--pct: {{ sec.ring_pct or 0 }};"><span>{{ sec.headline }}</span></div>
+                <small>{{ sec.metric }}</small>
+            </div>
+        </div>
+
+        {% if sec.section_instruction %}
+        <p class="tr-hint"><i class="fas fa-circle-info"></i> {{ sec.section_instruction }}</p>
+        {% endif %}
+
+        {% for q in sec.questions %}
+        <article class="tr-q tr-q--{{ q.status }}">
+            <div class="tr-q__head">
+                <span class="tr-q__num">Q{{ loop.index }}</span>
+                {% if q.instruction %}<span class="tr-q__instr">{{ q.instruction }}</span>{% endif %}
+                <span class="tr-q__status tr-q__status--{{ q.status }}">
+                    {% if q.status == 'correct' %}<i class="fas fa-check"></i> Correct
+                    {% elif q.status == 'incorrect' %}<i class="fas fa-xmark"></i> Incorrect
+                    {% elif q.status == 'recorded' %}<i class="fas fa-microphone"></i> Recorded
+                    {% elif q.status == 'answered' %}<i class="fas fa-pen"></i> Answered
+                    {% else %}<i class="fas fa-minus"></i> Not attempted{% endif %}
+                </span>
+            </div>
+
+            <div class="tr-q__prompt">
+                <div class="tr-q__label">Question</div>
+                <div class="tr-q__text">{{ q.text|safe if q.text else '-' }}</div>
+                <div class="tr-q__meta">
+                    {% if q.word_limit %}<span><i class="fas fa-pen-nib"></i> {{ q.word_limit }} words</span>{% endif %}
+                    {% if q.recording_time %}<span><i class="fas fa-microphone"></i> {{ q.recording_time }}s to speak</span>{% endif %}
+                    {% if q.thinking_time %}<span><i class="fas fa-hourglass-half"></i> {{ q.thinking_time }}s to think</span>{% endif %}
+                </div>
+            </div>
+
+            {% if q.options %}
+            <div class="tr-q__label">{{ q.options_title or 'Options' }}</div>
+            <div class="tr-q__options">
+                {% for key, val in q.options.items() %}
+                <div class="tr-opt{{ ' tr-opt--correct' if q.correct_option and key == q.correct_option|lower }}{{ ' tr-opt--yours' if q.your_answer and key == q.your_answer|lower }}">
+                    <span class="tr-opt__key">{{ key|upper }}</span>
+                    <span class="tr-opt__val">{{ val|safe }}</span>
+                    {% if q.correct_option and key == q.correct_option|lower %}<i class="fas fa-check"></i>{% endif %}
+                    {% if q.your_answer and key == q.your_answer|lower and key != (q.correct_option or '')|lower %}<i class="fas fa-xmark"></i>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if q.status == 'incorrect' and q.your_answer and q.correct_option %}
+            <p class="tr-q__mistake"><i class="fas fa-triangle-exclamation"></i>
+                You chose <strong>{{ q.your_answer|upper }}</strong>, the correct answer is <strong>{{ q.correct_option|upper }}</strong>. Review why option {{ q.correct_option|upper }} fits.</p>
+            {% elif q.status == 'skipped' %}
+            <p class="tr-q__mistake tr-q__mistake--warn"><i class="fas fa-triangle-exclamation"></i>
+                Left blank - an unattempted question can never score. Attempt everything in the real exam.</p>
+            {% endif %}
+
+            {% if q.audio_path %}
+            <div class="tr-q__audio">
+                <audio controls preload="none" src="{{ q.audio_path if q.audio_path.startswith('/') else '/' ~ q.audio_path }}"></audio>
+                {% if q.duration %}<span class="text-muted small">{{ q.duration|round(1) }}s recorded</span>{% endif %}
+            </div>
+            {% endif %}
+
+            {% if q.transcription %}
+            <div class="tr-transcript"><div class="tr-q__label">What we heard</div>{{ q.transcription }}</div>
+            {% elif q.status == 'answered' and not q.options and q.your_answer %}
+            <div class="tr-transcript"><div class="tr-q__label">Your response</div>{{ q.your_answer }}</div>
+            {% endif %}
+
+            {% if q.speech %}
+            <div class="tr-analysis">
+                <div class="tr-analysis__head">
+                    <span class="tr-pill tr-pill--info">{{ q.speech.verdict }}</span>
+                    <span class="tr-pill">{{ q.speech.accuracy_pct }}% text match</span>
+                    <span class="tr-pill">{{ q.speech.wpm }} wpm &middot; {{ q.speech.pace }}</span>
+                </div>
+                {% if q.speech.missed_words %}
+                <p class="tr-analysis__missed"><strong>Missed words:</strong>
+                    {% for w in q.speech.missed_words %}<span class="tr-chip">{{ w }}</span>{% endfor %}</p>{% endif %}
+                {% if q.speech.tips %}<ul class="tr-analysis__tips">{% for t in q.speech.tips %}<li>{{ t }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            {% endif %}
+
+            {% if q.content %}
+            <div class="tr-analysis tr-analysis--content">
+                <div class="tr-analysis__head">
+                    <span class="tr-pill tr-pill--{{ 'good' if q.content.overall_pct >= 60 else 'bad' }}">Content: {{ q.content.verdict }}</span>
+                    <span class="tr-pill">{{ q.content.word_count }} words</span>
+                </div>
+                <div class="tr-meters">
+                    <div class="tr-meter"><label>Relevance to topic <b>{{ q.content.relevance_pct }}%</b></label>
+                        <div class="tr-meter__bar"><span style="width: {{ q.content.relevance_pct }}%"></span></div></div>
+                    <div class="tr-meter"><label>Language quality <b>{{ q.content.quality_pct }}%</b></label>
+                        <div class="tr-meter__bar"><span style="width: {{ q.content.quality_pct }}%"></span></div></div>
+                </div>
+                {% if q.content.covered_keywords %}
+                <p class="tr-analysis__missed"><strong>Points you covered:</strong>
+                    {% for w in q.content.covered_keywords %}<span class="tr-chip tr-chip--good">{{ w }}</span>{% endfor %}</p>{% endif %}
+                {% if q.content.missing_keywords %}
+                <p class="tr-analysis__missed"><strong>Points you missed:</strong>
+                    {% for w in q.content.missing_keywords %}<span class="tr-chip">{{ w }}</span>{% endfor %}</p>{% endif %}
+                {% if q.content.tips %}<ul class="tr-analysis__tips">{% for t in q.content.tips %}<li>{{ t }}</li>{% endfor %}</ul>{% endif %}
+            </div>
+            {% endif %}
+        </article>
+        {% else %}
+        <p class="text-muted">No questions in this section.</p>
+        {% endfor %}
+    </section>
+    {% endfor %}
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>window.TR_OVERALL = {{ (report.overall_pct if report.overall_pct is not none else report.speaking_accuracy) | tojson }};</script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/communication_portal/test_result.js') }}"></script>
+</body>
+</html>

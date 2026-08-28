@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Give Feedback</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/brand-bootstrap.css') }}">
+   <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/competitive_exam_platform/test_feedback.css') }}">
+  <style>
+  </style>
+</head>
+<body>
+<div id="pageData" hidden data-submit-feedback-url="{{ url_for('users.submit_feedback', section_id=section_id, test_key=test_key, course_code=course_code, unique_code=unique_code) }}"></div>
+    <div class="container my-5 d-flex justify-content-center">
+    <div class="feedback-container">
+      <div class="feedback-header">
+        <span>Give Feedback</span>
+      </div>
+      <div class="feedback-body">
+        <p>Please provide your feedback to help us provide better and quality services.</p>
+
+        <div class="feedback-row row">
+          <div class="col-12 col-md-7 feedback-label">How was the content of the test papers:</div>
+          <div class="col-12 col-md-5">
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="content" id="content-tough" value="Tougher then Standard">
+                <label class="form-check-label" for="content-tough">Tougher than Standard</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="content" id="content-standard" value="Suiting standard">
+                <label class="form-check-label" for="content-standard">Suiting Standard</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="content" id="content-easy" value="Easier then Standard">
+                <label class="form-check-label" for="content-easy">Easier than Standard</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="feedback-row row highlight-box">
+          <div class="col-12 col-md-7 feedback-label">How was the Online Test Series Software:</div>
+          <div class="col-12 col-md-5">
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="software" id="software-excellent" value="Excellent">
+                <label class="form-check-label" for="software-excellent">Excellent</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="software" id="software-good" value="Good">
+                <label class="form-check-label" for="software-good">Good</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="software" id="software-poor" value="Poor">
+                <label class="form-check-label" for="software-poor">Poor</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="feedback-row row">
+          <div class="col-12 col-md-7 feedback-label">Test paper uploading speed and Server connectivity:</div>
+          <div class="col-12 col-md-5">
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="speed" id="speed-good" value="Good">
+                <label class="form-check-label" for="speed-good">Good</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="speed" id="speed-normal" value="Normal">
+                <label class="form-check-label" for="speed-normal">Normal</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="speed" id="speed-slow" value="Slow">
+                <label class="form-check-label" for="speed-slow">Slow</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="suggestions" class="form-label">Any Suggestions:</label>
+          <textarea class="form-control" id="suggestions" rows="3"></textarea>
+        </div>
+
+        <button type="button" class="submit-btn" id="submitFeedbackBtn">Submit Feedback</button>
+      </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/competitive_exam_platform/test_results/test_feedback_form.js') }}"></script>
+
+</body>
+</html>

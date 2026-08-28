@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ question.title }} - Coding Practice</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/practice_coding/solve.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/practice_coding/solve_ui.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body>
+
+<!-- ================= top bar ================= -->
+<header class="pc-nav">
+    <div class="pc-nav__left">
+        <a class="pc-nav__logo" href="{{ url_for('practice_coding.home') }}" title="ShyamPracticePaper">
+            <img src="{{ url_for('static', filename='images/favicon.png') }}" alt="SPP">
+        </a>
+        <a class="pc-nav__list" href="{{ url_for('practice_coding.home') }}">
+            <i class="fas fa-list-ul"></i> <span>Problem List</span>
+        </a>
+    </div>
+
+    {% if not locked %}
+    <div class="pc-nav__center">
+        <button type="button" class="pc-nav__icon" id="pcRun" title="Run your code against the sample cases">
+            <i class="fas fa-play"></i>
+        </button>
+        {% if is_anon %}
+        <a class="pc-nav__submit" href="{{ login_url }}" title="Log in to submit your solution">
+            <i class="fas fa-right-to-bracket"></i> <span>Log in to Submit</span>
+        </a>
+        {% else %}
+        <button type="button" class="pc-nav__submit" id="pcSubmit" title="Submit for judging">
+            <i class="fas fa-cloud-arrow-up"></i> <span>Submit</span>
+        </button>
+        {% endif %}
+        <button type="button" class="pc-nav__icon" id="pcTimerBtn" title="Stopwatch">
+            <i class="far fa-clock"></i> <span class="pc-nav__timer" id="pcTimer">00:00</span>
+        </button>
+    </div>
+    {% endif %}
+
+    <div class="pc-nav__right">
+        {% if not locked and not is_anon %}
+        <button type="button" class="pc-nav__icon js-bookmark {{ 'is-on' if bookmarked else '' }}"
+                id="pcBookmark" title="{{ 'Remove bookmark' if bookmarked else 'Bookmark this problem' }}"
+                aria-pressed="{{ 'true' if bookmarked else 'false' }}">
+            <i class="{{ 'fas' if bookmarked else 'far' }} fa-bookmark"></i>
+        </button>
+        {% endif %}
+        {% if premium %}
+            <span class="pc-nav__premium is-active"><i class="fas fa-crown"></i> Premium</span>
+        {% else %}
+            <a class="pc-nav__premium" href="{{ url_for('practice_coding.premium') }}">Premium</a>
+        {% endif %}
+        {% if user %}
+        <span class="pc-nav__user" title="{{ user.username }}">
+            {{ (user.username or 'U')[0]|upper }}
+        </span>
+        {% endif %}
+    </div>
+</header>
+
+{% if locked %}
+<div class="pc-lockwrap">
+    <div class="pc-lockcard">
+        <div class="pc-lockicon"><i class="fas fa-lock"></i></div>
+        {% if lock_reason == 'login' %}
+        <h2>Log in to open this problem.</h2>
+        <p>You've reached the end of the free preview. Log in to unlock every free problem
+           and save your progress.</p>
+        <a class="pc-subscribe-btn" href="{{ login_url }}">Log in</a>
+        {% else %}
+        <h2>Subscribe to unlock.</h2>
+        <p>Thanks for practising with us! To view this question you must subscribe to premium.</p>
+        <a class="pc-subscribe-btn" href="{{ url_for('practice_coding.premium') }}">Subscribe</a>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+
+<div class="pc-mobiletoggle" id="pcViewToggle">
+    <button type="button" class="is-active" data-view="question"><i class="fas fa-file-lines"></i> Problem</button>
+    <button type="button" data-view="code"><i class="fas fa-code"></i> Code</button>
+</div>
+
+<div class="pc-solve">
+    <!-- ---------- left: problem / editorial / submissions ---------- -->
+    <section class="pc-question" id="pcLeftPane">
+        <div class="pc-ltabs" role="tablist">
+            <button type="button" class="pc-ltab is-active" data-ltab="description" role="tab" aria-selected="true">
+                <i class="fas fa-file-lines"></i> Description
+            </button>
+            <button type="button" class="pc-ltab" data-ltab="editorial" role="tab" aria-selected="false">
+                <i class="fas fa-book-open"></i> Editorial
+                {% if editorials %}<span class="pc-ltab__dot"></span>{% endif %}
+            </button>
+            <button type="button" class="pc-ltab" data-ltab="submissions" role="tab" aria-selected="false">
+                <i class="fas fa-clock-rotate-left"></i> Submissions
+                {% if history %}<span class="pc-ltab__count">{{ history|length }}</span>{% endif %}
+            </button>
+        </div>
+
+        <!-- ===== Description ===== -->
+        <div class="pc-lpanel" data-lpanel="description">
+            <div class="pc-qhead">
+                <h1>{{ question.title }}</h1>
+                <div class="pc-qmeta">
+                    <span class="pc-diff pc-diff--{{ question.difficulty|lower }}">{{ question.difficulty }}</span>
+                    {% if question.subject %}<span class="pc-subject-pill">{{ question.subject }}</span>{% endif %}
+                    {% if history and history[0].verdict == 'AC' %}
+                        <span class="pc-solvedtag"><i class="fas fa-circle-check"></i> Solved</span>
+                    {% elif history %}
+                        <span class="pc-attempttag"><i class="fas fa-circle-half-stroke"></i> Attempted</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if question.statement_html %}
+                <div class="pc-block">{{ question.statement_html | safe }}</div>
+            {% endif %}
+            {% if question.statement_image %}
+                <img class="pc-qimg" src="{{ question.statement_image }}" alt="Question">
+            {% endif %}
+
+            {% if question.input_spec or question.input_image %}
+            <h3>Input format</h3>
+            {% if question.input_spec %}<div class="pc-block pc-mono">{{ question.input_spec }}</div>{% endif %}
+            {% if question.input_image %}<img class="pc-qimg" src="{{ question.input_image }}" alt="Input format">{% endif %}
+            {% endif %}
+
+            {% if question.output_spec %}
+            <h3>Output format</h3>
+            <div class="pc-block pc-mono">{{ question.output_spec }}</div>
+            {% endif %}
+
+            {% if question.example_html or question.example_image %}
+            <h3>Example</h3>
+            {% if question.example_html %}<pre class="pc-example">{{ question.example_html }}</pre>{% endif %}
+            {% if question.example_image %}<img class="pc-qimg" src="{{ question.example_image }}" alt="Example">{% endif %}
+            {% endif %}
+
+            {% if samples %}
+            <h3>Sample test cases</h3>
+            {% for s in samples %}
+            <div class="pc-sample">
+                <div><span class="pc-sample__label">Input</span><pre>{{ s.input_text }}</pre></div>
+                <div><span class="pc-sample__label">Expected</span><pre>{{ s.expected_output }}</pre></div>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+
+        <!-- ===== Editorial ===== -->
+        <div class="pc-lpanel is-hidden" data-lpanel="editorial">
+            {% if editorials %}
+                <h1 class="pc-ed__h1">{{ question.title }}</h1>
+                {% for ed in editorials %}
+                <article class="pc-ed" data-approach="{{ loop.index }}">
+                    <header class="pc-ed__head">
+                        <span class="pc-ed__badge">Approach {{ loop.index }}</span>
+                        <h2>{{ ed.title }}</h2>
+                    </header>
+
+                    {% if ed.intro_html %}
+                    <div class="pc-ed__body">{{ ed.intro_html | safe }}</div>
+                    {% endif %}
+
+                    {% if ed.codes %}
+                    <div class="pc-ed__code">
+                        <div class="pc-ed__langs" role="tablist">
+                            {% for c in ed.codes %}
+                            <button type="button" class="pc-ed__lang {{ 'is-active' if loop.first }}"
+                                    data-edlang="{{ c.language }}" role="tab">{{ c.language }}</button>
+                            {% endfor %}
+                            <button type="button" class="pc-ed__copy" data-edcopy title="Copy code">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                        {% for c in ed.codes %}
+                        <pre class="pc-ed__pre {{ 'is-hidden' if not loop.first }}" data-edcode="{{ c.language }}"><code>{{ c.code }}</code></pre>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    {% if ed.outro_html %}
+                    <div class="pc-ed__body">{{ ed.outro_html | safe }}</div>
+                    {% endif %}
+
+                    {% if ed.time_complexity or ed.space_complexity %}
+                    <div class="pc-ed__cx">
+                        <h4>Complexity analysis</h4>
+                        <ul>
+                            {% if ed.time_complexity %}<li><strong>Time:</strong> {{ ed.time_complexity }}</li>{% endif %}
+                            {% if ed.space_complexity %}<li><strong>Space:</strong> {{ ed.space_complexity }}</li>{% endif %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </article>
+                {% endfor %}
+            {% else %}
+                <div class="pc-lempty">
+                    <i class="fas fa-book-open fa-2x"></i>
+                    <h4>No editorial yet</h4>
+                    <p>A step-by-step solution will appear here once it is published.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- ===== Submissions ===== -->
+        <div class="pc-lpanel is-hidden" data-lpanel="submissions">
+            {% if history %}
+            <table class="pc-history">
+                <thead><tr><th>Status</th><th>Language</th><th>Runtime</th><th>Test cases</th><th>When</th></tr></thead>
+                <tbody>
+                {% for h in history %}
+                    <tr class="pc-subrow {{ 'is-latest' if loop.first }}" data-subid="{{ h.id }}">
+                        <td>
+                            <span class="pc-verdict pc-verdict--{{ h.verdict|lower }}">
+                                {{ verdict_labels.get(h.verdict, h.verdict) }}
+                            </span>
+                            {% if loop.first %}<span class="pc-latesttag">Latest</span>{% endif %}
+                        </td>
+                        <td><span class="pc-langtag">{{ h.language }}</span></td>
+                        <td>{{ (h.execution_time * 1000) | round(0, 'floor') | int ~ ' ms' if h.execution_time else 'N/A' }}</td>
+                        <td>{{ h.passed }}/{{ h.total }}</td>
+                        <td>{{ h.created_at.strftime('%d %b, %H:%M') if h.created_at else '' }}</td>
+                    </tr>
+                    <tr class="pc-subcode is-hidden" data-subcode="{{ h.id }}">
+                        <td colspan="5">
+                            {% if h.error_message %}<pre class="pc-suberr">{{ h.error_message }}</pre>{% endif %}
+                            <pre class="pc-subpre"><code>{{ h.code }}</code></pre>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <p class="pc-muted pc-subhint"><i class="fas fa-circle-info"></i> Click a row to see the code you submitted.</p>
+            {% else %}
+            <div class="pc-lempty">
+                <i class="fas fa-clock-rotate-left fa-2x"></i>
+                <h4>No submissions yet</h4>
+                <p>Run and submit your solution and every attempt will be listed here.</p>
+            </div>
+            {% endif %}
+        </div>
+    </section>
+
+    <div class="pc-splitter" id="pcSplitter"></div>
+
+    <!-- ---------- right: the editor ---------- -->
+    <section class="pc-editorpane" id="pcEditorPane">
+        <div class="pc-editorbar">
+            <select id="pcLang" title="Language">
+                {% for lang in languages %}<option value="{{ lang }}">{{ lang }}</option>{% endfor %}
+            </select>
+            <span class="pc-editorbar__spacer"></span>
+            <button type="button" class="pc-iconbtn" id="pcReset" title="Reset to the starter code">
+                <i class="fas fa-rotate-left"></i>
+            </button>
+            {% if not is_anon %}
+            <button type="button" class="pc-iconbtn js-bookmark {{ 'is-on' if bookmarked else '' }}"
+                    title="{{ 'Remove bookmark' if bookmarked else 'Bookmark this problem' }}"
+                    aria-pressed="{{ 'true' if bookmarked else 'false' }}">
+                <i class="{{ 'fas' if bookmarked else 'far' }} fa-bookmark"></i>
+            </button>
+            {% endif %}
+            <button type="button" class="pc-iconbtn" id="pcExpand" title="Hide the problem and widen the editor (Esc to exit)">
+                <i class="fas fa-table-columns"></i>
+            </button>
+            <button type="button" class="pc-iconbtn" id="pcFullscreen"
+                    title="Full window" aria-pressed="false">
+                <i class="fas fa-expand"></i>
+            </button>
+        </div>
+
+        <div class="pc-editorwrap">
+            <div class="pc-gutter" id="pcGutter">1</div>
+            <textarea id="pcCode" spellcheck="false" autocomplete="off"
+                      placeholder="// Write your solution here"></textarea>
+        </div>
+
+        <!-- the console: its body scrolls so the editor keeps its height -->
+        <div class="pc-io" id="pcIo">
+            <!-- Drag the grip, or nudge it with the arrows, to give the editor
+                 or the results more room. Double-click resets it. -->
+            <div class="pc-io__grip" id="pcIoGrip" role="separator" aria-orientation="horizontal"
+                 aria-label="Resize the console. Use the arrow keys." tabindex="0"
+                 title="Drag to resize, double-click to reset">
+                <button type="button" class="pc-io__nudge" id="pcIoUp" title="Make the console taller">
+                    <i class="fas fa-chevron-up"></i>
+                </button>
+                <span class="pc-io__gripbar"></span>
+                <button type="button" class="pc-io__nudge" id="pcIoDown" title="Make the console shorter">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </div>
+
+            <div class="pc-io__tabs">
+                <button type="button" class="pc-io__tab is-active" data-tab="result">Test Result</button>
+                <button type="button" class="pc-io__tab" data-tab="custom">Custom Input</button>
+                <button type="button" class="pc-io__collapse" id="pcIoCollapse" title="Collapse the console">
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+            </div>
+            <div class="pc-io__body" data-tab="result" id="pcResult">
+                <p class="pc-muted">Run your code against the sample cases, or submit to be judged
+                   on all test cases (including hidden ones).</p>
+            </div>
+            <div class="pc-io__body is-hidden" data-tab="custom">
+                <textarea id="pcCustomInput" placeholder="stdin for a custom run"></textarea>
+                <button type="button" class="pc-btn" id="pcRunCustom">Run with this input</button>
+                <pre id="pcCustomOut" class="pc-customout"></pre>
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+window.PCP = {
+    questionId: {{ question.id }},
+    templates: {{ templates | tojson }},
+    runUrl: {{ url_for('practice_coding.api_run') | tojson }},
+    submitUrl: {{ url_for('practice_coding.api_submit') | tojson }},
+    bookmarkUrl: {{ url_for('practice_coding.api_bookmark', question_id=question.id) | tojson }}
+};
+</script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/practice_coding/solve.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/practice_coding/solve_ui.js') }}"></script>
+{% endif %}
+</body>
+</html>

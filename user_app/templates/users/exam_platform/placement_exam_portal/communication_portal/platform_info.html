@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ content.title }} | SAPM</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/communication_portal/platform_info.css') }}">
+</head>
+<body>
+
+<div class="mh-topbar">
+    <div class="mh-wrap mh-topbar__inner">
+        <span class="mh-top-item"><i class="bi bi-globe2"></i> English <i class="bi bi-caret-down-fill mh-caret"></i></span>
+        <a class="mh-top-item" href="mailto:{{ platform.contact_email }}"><i class="bi bi-envelope"></i> Contact Us</a>
+        <a class="mh-top-item" href="{{ url_for('users.user_login') }}"><i class="bi bi-key"></i> Login</a>
+    </div>
+</div>
+
+<header class="mh-header">
+    <div class="mh-wrap mh-header__inner">
+        <a class="mh-brand" href="{{ url_for('users.sapm_about') }}">
+            <span class="mh-brand__co">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="ShyamPracticePaper logo">
+                <span class="mh-brand__name">SHYAMPRACTICEPAPER</span>
+            </span>
+            <span class="mh-brand__divider"></span>
+            <span class="mh-brand__product">SAPM</span>
+        </a>
+        <nav class="mh-nav">
+            {% for key, sec in sections.items() %}
+            <a class="mh-nav__link {{ 'is-active' if key == active }}" href="{{ url_for('users.sapm_about', section=key) }}">{{ sec.title }}</a>
+            {% endfor %}
+            <a class="mh-cta" href="{{ url_for('users.index') }}">START PRACTICE</a>
+        </nav>
+    </div>
+</header>
+
+<div class="mh-titleband">
+    <div class="mh-wrap">
+        <h1>{{ content.title }}</h1>
+    </div>
+</div>
+
+<div class="mh-wrap mh-layout">
+    <aside class="mh-side">
+        <div class="mh-side__card">
+            <p class="mh-side__label">On this page</p>
+            <a class="mh-side__link" href="#intro">Introduction</a>
+            {% if content.groups %}
+                {% for g in content.groups %}
+                <a class="mh-side__link" href="#g{{ loop.index }}">{{ g.heading }}</a>
+                {% endfor %}
+            {% else %}
+                <a class="mh-side__link" href="#points">Key Points</a>
+            {% endif %}
+            {% if content.note %}<a class="mh-side__link" href="#note">Good to know</a>{% endif %}
+            <a class="mh-side__link" href="#contact">Contact</a>
+            <button type="button" class="mh-side__manage" id="openPrefs"><i class="bi bi-sliders"></i> Cookie preferences</button>
+        </div>
+    </aside>
+
+    <main class="mh-content">
+        <p class="mh-effective">Effective Date: {{ platform.effective_date }}</p>
+
+        <h2 class="mh-heading" id="intro">Introduction</h2>
+        <p class="mh-para">{{ content.intro }}</p>
+
+        {% if content.groups %}
+            {% for g in content.groups %}
+            <h2 class="mh-heading" id="g{{ loop.index }}">{{ g.heading }}</h2>
+            <ul class="mh-list">
+                {% for point in g.points %}
+                <li>{{ point }}</li>
+                {% endfor %}
+            </ul>
+            {% endfor %}
+        {% else %}
+            <h2 class="mh-heading" id="points">Key Points</h2>
+            <ul class="mh-list">
+                {% for point in content.points %}
+                <li>{{ point }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+
+        {% if content.note %}
+        <div class="mh-notebox" id="note"><i class="bi bi-lightbulb"></i><span>{{ content.note }}</span></div>
+        {% endif %}
+
+        <h2 class="mh-heading" id="contact">Contact</h2>
+        <p class="mh-para">For any questions about this page or your data, write to us at
+            <a class="mh-mail" href="mailto:{{ platform.contact_email }}">{{ platform.contact_email }}</a>.
+            SAPM is operated by <strong>ShyamPracticePaper (SPP)</strong>.</p>
+
+        <p class="mh-copy">{{ platform.copyright }} &middot; {{ platform.powered_by }}</p>
+    </main>
+</div>
+
+<div class="mh-modal" id="prefsModal" hidden>
+    <div class="mh-modal__card">
+        <div class="mh-modal__head">
+            <span><i class="bi bi-sliders"></i> Cookie Preferences</span>
+            <button type="button" class="mh-modal__close" id="closePrefs" aria-label="Close">&times;</button>
+        </div>
+        <div class="mh-modal__body">
+            <div class="mh-pref">
+                <div class="mh-pref__text">
+                    <strong>Strictly necessary</strong>
+                    <p>Keeps you signed in and protects your test session. The platform cannot run without it.</p>
+                </div>
+                <label class="mh-switch is-locked"><input type="checkbox" checked disabled><span></span></label>
+            </div>
+            <div class="mh-pref">
+                <div class="mh-pref__text">
+                    <strong>Analytics</strong>
+                    <p>Not used on SAPM. No analytics cookies are set.</p>
+                </div>
+                <label class="mh-switch is-locked"><input type="checkbox" disabled><span></span></label>
+            </div>
+            <div class="mh-pref">
+                <div class="mh-pref__text">
+                    <strong>Advertising</strong>
+                    <p>Not used on SAPM. No advertising or tracking cookies are set.</p>
+                </div>
+                <label class="mh-switch is-locked"><input type="checkbox" disabled><span></span></label>
+            </div>
+            <div class="mh-pref">
+                <div class="mh-pref__text">
+                    <strong>Payment (Razorpay)</strong>
+                    <p>Set only on the Razorpay checkout page during payment, under Razorpay's own policy.</p>
+                </div>
+                <label class="mh-switch"><input type="checkbox" id="prefPayment" checked><span></span></label>
+            </div>
+        </div>
+        <div class="mh-modal__foot">
+            <span class="mh-modal__saved" id="prefsSaved" hidden><i class="bi bi-check-circle-fill"></i> Preferences saved</span>
+            <button type="button" class="mh-btn-okay" id="savePrefs">Save preferences</button>
+        </div>
+    </div>
+</div>
+
+<div class="mh-cookiebar" id="cookieBar">
+    <span class="mh-cookiebar__msg">We use cookies to optimize the performance of this site and give you the best user experience. By using the site, you accept our use of cookies.</span>
+    <div class="mh-cookiebar__btns">
+        <button type="button" class="mh-btn-okay" id="cookieOkay">Okay</button>
+        <button type="button" class="mh-btn-manage" id="cookieManage">Manage Cookies</button>
+    </div>
+</div>
+
+<a class="mh-chat" href="mailto:{{ platform.contact_email }}" title="Chat with support">
+    <i class="bi bi-chat-dots-fill"></i>
+</a>
+
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/communication_portal/platform_info.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+{% extends 'users/practice_question_platform/base.html' %}
+
+{% block title %}
+Select Subject (Topic Wise)
+{% endblock %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users/practice_question_platform/topic_select.css') }}">
+{% endblock %}
+
+
+{% block content %}
+
+<div class="page-header">
+
+    <div class="breadcrumb-nav">
+        <span class="bc-active">Practice</span>
+        <span class="bc-sep">›</span>
+
+        <span>Topic Wise</span>
+        <span class="bc-sep">›</span>
+
+        <span>Select Subject</span>
+    </div>
+
+    <h2 class="page-title">
+        Select a Subject
+    </h2>
+
+    <p class="page-subtitle">
+        Pick a subject to browse its topics for
+        <strong>{{ course_code }}</strong>.
+    </p>
+
+</div>
+
+
+<div class="subject-list">
+
+{% for sub in subjects %}
+
+<a href="{{ url_for(
+        'users.browse_topic_subject',
+        unique_code=unique_code,
+        course_code=course_code,
+        subject=sub.subject
+    ) }}"
+   class="subject-row">
+
+    <div class="row-left">
+
+        <div class="row-icon">
+            <i class="fas fa-book"></i>
+        </div>
+
+        <div>
+            <div class="row-name">
+                {{ sub.subject }}
+            </div>
+
+            <div class="row-meta">
+                {{ course_code }} &bull; Browse topics
+            </div>
+        </div>
+
+    </div>
+
+    <i class="fas fa-chevron-right row-arrow"></i>
+
+</a>
+
+{% else %}
+
+<div class="empty-state">
+
+    <i class="fas fa-folder-open"
+       style="font-size: 1.85rem;color:var(--border);display:block;margin-bottom:1rem;">
+    </i>
+
+    <h5 style="font-family:'Sora',sans-serif;font-weight:700;">
+        No subjects available
+    </h5>
+
+    <p style="color:var(--text-muted);font-size:0.85rem;margin-top:0.4rem;">
+        No subjects found for this course.
+    </p>
+
+</div>
+{% endfor %}
+</div>
+{% endblock %}

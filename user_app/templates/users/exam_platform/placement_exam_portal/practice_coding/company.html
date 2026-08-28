@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ company.name }} Questions - Coding Practice</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/practice_coding/practice_home.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body>
+
+<header class="pc-topbar">
+    <a class="pc-brand" href="{{ url_for('practice_coding.home') }}">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="SPP">
+        <span>Coding Practice</span>
+    </a>
+    <nav class="pc-topnav">
+        <a class="pc-topnav__item" href="{{ url_for('practice_coding.home') }}">Problems</a>
+        <span class="pc-topnav__item is-active">Companies</span>
+    </nav>
+    <div class="pc-topbar__right">
+        {% if premium %}
+            <span class="pc-premium-badge"><i class="fas fa-crown"></i> Premium</span>
+        {% else %}
+            <a class="pc-premium-cta" href="{{ url_for('practice_coding.premium') }}">Premium</a>
+        {% endif %}
+        <span class="pc-user">{{ user.username }}</span>
+    </div>
+</header>
+
+<div class="pc-company-page">
+    <div class="pc-cohero">
+        <div class="pc-cohero__logo">{{ company.name[0] | upper }}</div>
+        <div>
+            <h1>{{ company.name }}</h1>
+            <p class="pc-cohero__meta">
+                {{ questions|length }} question{{ '' if questions|length == 1 else 's' }}
+                &middot; {{ questions | selectattr('is_paid') | list | length }} premium
+            </p>
+            <a class="pc-back-link" href="{{ url_for('practice_coding.home') }}">
+                <i class="fas fa-arrow-left"></i> All problems
+            </a>
+        </div>
+    </div>
+
+    {% if not premium and questions | selectattr('is_paid') | list | length %}
+    <div class="pc-copromo">
+        <div>
+            <strong>Unlock every {{ company.name }} question with Premium</strong>
+            <p>Free questions are open to everyone. Premium unlocks the rest of this
+               company's bank - and every other company's too.</p>
+        </div>
+        <a class="pc-subscribe-mini" href="{{ url_for('practice_coding.premium') }}">Subscribe</a>
+    </div>
+    {% endif %}
+
+    <div class="pc-cogrid">
+        {% for q in questions %}
+        <a class="pc-cocard" href="{{ url_for('practice_coding.solve', slug=q.slug) }}">
+            <div class="pc-cocard__top">
+                <span class="pc-row__diff pc-diff--{{ q.difficulty|lower }}">
+                    {{ 'Med.' if q.difficulty == 'Moderate' else q.difficulty }}
+                </span>
+                {% if q.id in solved %}
+                    <i class="fas fa-circle-check pc-solved" title="Solved"></i>
+                {% elif q.is_paid and not premium %}
+                    <i class="fas fa-lock" style="color:#9a9a9a" title="Premium question"></i>
+                {% elif q.is_paid %}
+                    <i class="fas fa-crown pc-crown" title="Premium (unlocked)"></i>
+                {% endif %}
+            </div>
+            <h3>{{ q.title }}</h3>
+            <div class="pc-cocard__meta">
+                <span>{{ q.subject }}</span>
+                <span>{{ q.acceptance if q.acceptance is not none else '--' }}% accepted</span>
+            </div>
+        </a>
+        {% else %}
+        <div class="pc-empty" style="grid-column:1/-1">No questions tagged with {{ company.name }} yet.</div>
+        {% endfor %}
+    </div>
+</div>
+
+</body>
+</html>

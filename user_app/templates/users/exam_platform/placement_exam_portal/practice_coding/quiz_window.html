@@ -1,0 +1,102 @@
+{# The taking window. The rendered data below deliberately contains NO correct
+   options and NO explanations - those only come back from the server after an
+   answer is committed (assessment) or the attempt is finished (quiz). #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ subject }} {{ mode | title }} - Coding Practice</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/practice_coding/quiz.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body>
+
+<header class="pc-topbar">
+    <a class="pc-brand-mini" href="{{ url_for('practice_coding.home') }}" title="ShyamPracticePaper">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="SPP">
+    </a>
+    <a class="pc-back" href="{{ url_for('practice_coding.quiz_home') }}"
+       onclick="return confirm('Leave this attempt? Unanswered questions will count as skipped.');">
+        <i class="fas fa-arrow-left"></i> <span class="pc-back__text">Subjects</span>
+    </a>
+    <span class="pc-title-mini">{{ subject }} &middot; {{ mode | title }}</span>
+    <div class="pc-topbar__right">
+        <span class="qz-progresstext" id="qzProgressText">1 / {{ questions|length }}</span>
+        <span class="pc-user" title="{{ user.username }}">
+            <span class="pc-user__avatar">{{ (user.username or 'U')[0]|upper }}</span>
+        </span>
+    </div>
+</header>
+
+<div class="qz-progress"><span id="qzProgressBar"></span></div>
+
+<div class="qz-subbar">
+    <span class="qz-timerchip"><i class="far fa-clock"></i> <strong id="qzTimer">00:00</strong></span>
+    <span class="qz-subbar__center">
+        <span class="qz-numbox" id="qzNumBox">1</span>
+        <button type="button" class="qz-palettebtn" id="qzPaletteBtn" aria-expanded="false" title="All questions">
+            <i class="fas fa-table-cells"></i>
+        </button>
+    </span>
+    <span class="qz-subbar__right" id="qzSubProgress"></span>
+</div>
+
+<div class="qz-window">
+    <section class="qz-qpane">
+        <div class="qz-qnum" id="qzQNum"></div>
+        <div class="qz-qtext" id="qzQText"></div>
+        <img class="qz-qimg is-hidden" id="qzQImage" alt="Question">
+    </section>
+
+    <section class="qz-apane">
+        <div class="qz-options" id="qzOptions"></div>
+
+        <div class="qz-feedback is-hidden" id="qzFeedback"></div>
+
+        <div class="qz-nav">
+            <button type="button" class="qz-btn qz-btn--ghost is-hidden" id="qzPrev">
+                <i class="fas fa-chevron-left"></i> Previous
+            </button>
+            <span class="qz-nav__spacer"></span>
+            <button type="button" class="qz-btn" id="qzNext">
+                Next <i class="fas fa-chevron-right"></i>
+            </button>
+            <button type="button" class="qz-btn qz-btn--submit is-hidden" id="qzSubmit">
+                <i class="fas fa-flag-checkered"></i> Submit
+            </button>
+        </div>
+
+        {# Rendered in both modes: the navigator button sits in the subbar for
+           quiz and assessment alike, so the panel has to exist for both or the
+           button opens nothing. Assessment stays forward-only - the script
+           locks the tiles for questions that have not been reached yet. #}
+        <div class="qz-palette-panel is-hidden" id="qzPalettePanel">
+            <div class="qz-palette-panel__head">Question Navigator <span class="qz-palette-panel__count" id="qzNavCount"></span></div>
+            <div class="qz-palette-panel__body">
+                <div class="qz-palette" id="qzPalette"></div>
+            </div>
+            <div class="qz-palette-panel__legend">
+                <span><i class="qz-lg qz-lg--answered"></i> Answered</span>
+                <span><i class="qz-lg qz-lg--current"></i> Current</span>
+                <span><i class="qz-lg"></i> Unanswered</span>
+                {% if mode != 'quiz' %}<span><i class="qz-lg qz-lg--locked"></i> Not reached</span>{% endif %}
+            </div>
+        </div>
+    </section>
+</div>
+
+<script>
+window.QZ = {
+    mode: {{ mode | tojson }},
+    attemptId: {{ attempt_id }},
+    answerUrl: {{ url_for('practice_coding.quiz_answer') | tojson }},
+    finishUrl: {{ url_for('practice_coding.quiz_finish') | tojson }},
+    questions: {{ questions | tojson }}
+};
+</script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/practice_coding/quiz_window.js') }}"></script>
+</body>
+</html>

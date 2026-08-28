@@ -1,0 +1,86 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Coding Assessment{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/brand-bootstrap.css') }}">
+    {% block head_scripts %}{% endblock %}
+    {% block extra_css %}{% endblock %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/coding_portal/intro_base.css') }}">
+</head>
+<body>
+
+<div class="frame">
+    <div class="layout">
+        <div class="left">
+            <div class="logo-area">
+                <img src="{{ url_for('static', filename='images/favicon.png') }}" alt="ShyamPracticePaper" class="sapm-logo-img">
+                <span class="fw-bold fs-6">ShyamPracticePaper</span>
+            </div>
+
+            <div class="greet">Hi {{ user.username if user else 'Candidate' }},<div style="height:8px"></div>Welcome to</div>
+
+            <h1 class="main-title" title="{{ test.title }}">{% block assessment_title %}{{ test.title }}{% endblock %}</h1>
+            <div class="underline"></div>
+
+            <div class="meta">
+                <div>
+                    <div class="label">Questions</div>
+                    <div class="value">{% block q_count %}{{ question_count }}{% endblock %}</div>
+                </div>
+                <div>
+                    <div class="label">Sections</div>
+                    <div class="value">{{ sections|length }}</div>
+                </div>
+                <div>
+                    <div class="label">Duration</div>
+                    <div class="value">{% block duration %}{{ test.total_duration_min }}{% endblock %} Min</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="divider-col">
+            <div class="timeline-wrapper">
+                <div class="timeline-icon {% block step1_class %}success{% endblock %}" title="System Compatibility">
+                    <i class="bi bi-laptop"></i>
+                </div>
+                <div class="timeline-icon {% block step2_class %}{% endblock %}" title="Ready to Start">
+                    <i class="bi bi-list-check"></i>
+                </div>
+                <div class="timeline-icon {% block step3_class %}{% endblock %}" title="Coding Test">
+                    <i class="bi bi-code-slash"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="right">
+            {% block right_content %}{% endblock %}
+        </div>
+    </div>
+</div>
+
+{% block scripts %}{% endblock %}
+
+<footer class="bottom-footer">
+    <div class="container-fluid">
+        <div class="footer-left"><span>SAPM - Shyam Assessment Platform Monitor © 2025-2035</span></div>
+        <div class="footer-right">
+            <a target="_blank" rel="noopener" href="{{ url_for('users.sapm_about', section='cookies') }}">Manage cookies</a>
+            <a target="_blank" rel="noopener" href="{{ url_for('users.sapm_about', section='privacy') }}">Privacy Notice</a>
+            <a target="_blank" rel="noopener" href="{{ url_for('users.sapm_about', section='terms') }}">Terms of Services</a>
+            <span class="powered-by">Powered By
+                <a target="_blank" rel="noopener" class="logo-footer" href="{{ url_for('users.sapm_about') }}">ShyamPracticePaper - SPP</a>
+            </span>
+        </div>
+    </div>
+</footer>
+</body>
+</html>

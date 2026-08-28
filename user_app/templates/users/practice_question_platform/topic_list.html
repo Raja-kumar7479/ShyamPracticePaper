@@ -1,0 +1,78 @@
+{% extends 'users/practice_question_platform/base.html' %}
+{% block title %}
+Select Topic
+{% endblock %}
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users/practice_question_platform/topic_list.css') }}">
+{% endblock %}
+{% block content %}
+<div class="page-header">
+
+    <div class="breadcrumb-nav">
+        <span class="bc-active">Practice</span>
+        <span class="bc-sep">›</span>
+
+        <span>Topic Wise</span>
+        <span class="bc-sep">›</span>
+
+        <span>{{ subject }}</span>
+    </div>
+
+    <h2 class="page-title">
+        {{ subject }}
+    </h2>
+
+    <p class="page-subtitle">
+        Select a topic to practice -
+        <strong>{{ course_code }}</strong>
+    </p>
+
+</div>
+
+<div class="topics-grid">
+
+{% if topics %}
+
+    {% for t in topics %}
+
+    <a href="{{ url_for(
+            'users.show_topic_questions',
+            unique_code=unique_code,
+            course_code=course_code,
+            subject=subject,
+            topic=t.topic
+        ) }}"
+       class="topic-card">
+
+        <div class="t-icon">
+            <i class="fas fa-tag"></i>
+        </div>
+
+        <span>
+            {{ t.topic }}
+        </span>
+
+    </a>
+
+    {% endfor %}
+
+{% else %}
+
+<div class="empty-state">
+
+    <i class="fas fa-layer-group"
+       style="font-size: 1.85rem;color:var(--border);display:block;margin-bottom:1rem;">
+    </i>
+
+    <h5 style="font-family:'Sora',sans-serif;font-weight:700;">
+        No topics available
+    </h5>
+
+    <p style="color:var(--text-muted);font-size:0.85rem;margin-top:0.4rem;">
+        No topics found for {{ subject }}.
+    </p>
+
+</div>
+{% endif %}
+</div>
+{% endblock %}

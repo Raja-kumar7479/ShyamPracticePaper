@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Welcome{% endblock %}</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/brand-bootstrap.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="{{ url_for('static', filename='css/users/auth/auth.css') }}" rel="stylesheet">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% with flash_scopes = ['login', 'signup', 'forgot', 'logout'] %}
+        {% include 'users/_flash.html' %}
+    {% endwith %}
+    <div class="container-fluid d-flex justify-content-center align-items-center" style="height: 100vh;">
+        <div class="signup-container">
+            <a href="{{ url_for('users.index') }}" class="auth-brand">
+                <img src="{{ url_for('static', filename='images/favicon.png') }}" alt="ShyamPracticePaper" class="auth-brand__logo">
+                <span class="auth-brand__name">ShyamPracticePaper</span>
+            </a>
+
+            {% block content %}{% endblock %}
+
+            <div class="footer">
+                <a href="{{ terms_url|default('/terms', true) }}" target="_blank" rel="noopener">Terms of Use</a>
+                &nbsp;·&nbsp;
+                <a href="{{ privacy_url|default('/privacy', true) }}" target="_blank" rel="noopener">Privacy Policy</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+    {% block extra_js %}{% endblock %}
+
+</body>
+</html>

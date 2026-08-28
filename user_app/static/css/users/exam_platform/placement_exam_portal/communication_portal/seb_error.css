@@ -1,0 +1,17 @@
+html { scrollbar-gutter: stable; }
+
+body{
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    text-align: center;
+}
+
+.card{
+    max-width: 500px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    padding: 40px;
+}

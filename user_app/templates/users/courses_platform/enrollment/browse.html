@@ -1,0 +1,131 @@
+{% extends 'users/base.html' %}
+
+{% block title %}
+{% if subgroup %}{{ subgroup }} · {{ group_name }} Courses
+{% elif group_name %}{{ group_name }} Courses
+{% else %}All Courses{% endif %} | ShyamPracticePaper
+{% endblock %}
+
+{% block head %}
+<meta name="csrf-token" content="{{ csrf_token }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users/courses_platform/enrollment/browse.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="br-hero">
+    <div class="br-hero-inner">
+        <nav class="br-crumbs" aria-label="Breadcrumb">
+            <a href="{{ url_for('users.browse_courses') }}">All Courses</a>
+            {% if group_name %}
+                <span class="br-sep">/</span>
+                {% if subgroup %}
+                    <a href="{{ url_for('users.browse_group', group_name=group_name) }}">{{ group_name }}</a>
+                    <span class="br-sep">/</span><span class="br-current">{{ subgroup }}</span>
+                {% else %}
+                    <span class="br-current">{{ group_name }}</span>
+                {% endif %}
+            {% endif %}
+        </nav>
+
+        {% set page_title = subgroup if subgroup else (group_name if group_name else 'Explore Our Courses') %}
+        <h1 class="br-title">
+            {%- for word in page_title.split() -%}
+            <span class="br-word"><span class="br-cap">{{ word[0] }}</span>{{ word[1:] }}</span>
+            {%- if not loop.last %} {% endif -%}
+            {%- endfor -%}
+        </h1>
+        <p class="br-sub">
+            {% if subgroup %}Courses under {{ group_name }} · {{ subgroup }}.
+            {% elif group_name %}Choose a specialisation or jump straight into a course.
+            {% else %}Pick your exam track and start preparing with mock tests, notes and past papers.{% endif %}
+        </p>
+    </div>
+</section>
+
+<main class="br-wrap">
+    {% if level == 'groups' %}
+        {% if groups %}
+        <div class="br-grid">
+            {% for g in groups %}
+            <a class="br-card br-card-group" href="{{ url_for('users.browse_group', group_name=g.name) }}">
+                <div class="br-icon"><i class="fas fa-graduation-cap"></i></div>
+                <h3>{{ g.name }}</h3>
+                <p class="br-meta">
+                    {{ g.course_count }} course{{ '' if g.course_count == 1 else 's' }}
+                    {% if g.subgroup_count %} · {{ g.subgroup_count }} specialisation{{ '' if g.subgroup_count == 1 else 's' }}{% endif %}
+                </p>
+                <span class="br-go">Explore <i class="fas fa-arrow-right"></i></span>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="br-empty"><i class="fas fa-box-open"></i><p>No courses published yet. Please check back soon.</p></div>
+        {% endif %}
+
+    {% else %}
+        {% if subgroups and not subgroup %}
+        <h2 class="br-section-title">Specialisations</h2>
+        <div class="br-grid">
+            {% for s in subgroups %}
+            <a class="br-card br-card-sub" href="{{ url_for('users.browse_group', group_name=group_name, sub=s.subgroup) }}">
+                <div class="br-icon br-icon-alt"><i class="fas fa-layer-group"></i></div>
+                <h3>{{ s.subgroup }}</h3>
+                <p class="br-meta">{{ s.course_count }} course{{ '' if s.course_count == 1 else 's' }}</p>
+                <span class="br-go">View courses <i class="fas fa-arrow-right"></i></span>
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if courses %}
+        <h2 class="br-section-title">
+            {% if subgroups %}All Courses{% else %}Courses{% endif %}
+        </h2>
+        <div class="br-grid br-grid-courses">
+            {% for c in courses %}
+            <article class="br-card br-card-course{% if c.is_enrolled %} is-enrolled{% endif %}" data-course-code="{{ c.code }}">
+                <div class="br-course-top">
+                    <span class="br-kicker">{% if c.subgroup and c.subgroup != subgroup %}{{ c.subgroup }}{% else %}{{ c.name }}{% endif %}</span>
+                    {% if c.is_enrolled %}
+                        <span class="br-badge-enrolled"><i class="fas fa-circle-check"></i> Enrolled</span>
+                    {% elif c.is_purchased_content %}
+                        <span class="br-badge-paid"><i class="fas fa-circle-check"></i> Purchased</span>
+                    {% endif %}
+                </div>
+                <h3 class="br-code">{{ c.code }}</h3>
+                <div class="br-desc">{{ c.description|safe }}</div>
+                <div class="br-actions">
+                    {% if c.is_enrolled %}
+                        <a class="br-btn br-btn-enrolled" href="{{ url_for('users.view_course_dashboard', course_code=c.code, unique_code=c.unique_code) }}">
+                            <i class="fas fa-door-open"></i> Open
+                        </a>
+                    {% elif logged_in %}
+                        <button class="br-btn br-btn-primary" type="button"
+                                onclick="handleEnrollment('{{ c.code }}', '{{ c.name|e }}')">
+                            <i class="fas fa-graduation-cap"></i> Enroll Now
+                        </button>
+                        <p class="br-hint"><i class="fas fa-shield-halved"></i> Quick verification, then instant access</p>
+                    {% else %}
+                        <button class="br-btn br-btn-outline" type="button"
+                                onclick="exploreCoursePreview('{{ c.code }}')">
+                            <i class="fas fa-door-open"></i> Preview Course
+                        </button>
+                        <p class="br-hint"><i class="fas fa-right-to-bracket"></i> Log in to enroll and save progress</p>
+                    {% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% elif not subgroups %}
+        <div class="br-empty"><i class="fas fa-box-open"></i><p>No courses available here yet.</p></div>
+        {% endif %}
+    {% endif %}
+</main>
+
+{% include 'users/_enroll_modals.html' %}
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/users/shared/spp_checkout.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/courses_platform/enrollment/courses_enrollment.js') }}"></script>
+{% endblock %}

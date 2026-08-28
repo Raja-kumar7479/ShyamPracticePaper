@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assessment Interrupted | ShyamPracticePaper</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/competitive_exam_platform/test_instructions/termination.css') }}">
+</head>
+<body>
+
+<div class="tm-lang">
+    <i class="fas fa-globe"></i>
+    <span>Change Language</span>
+    <select aria-label="Language"><option>English</option></select>
+</div>
+
+<main class="tm-wrap">
+
+    <div class="tm-art" aria-hidden="true">
+        <div class="tm-art__blob"></div>
+        <svg class="tm-art__svg" viewBox="0 0 200 150" role="img">
+            <rect x="46" y="26" width="108" height="76" rx="6" fill="#ffffff" stroke="#8b95c9" stroke-width="4"/>
+            <path d="M52 96 L112 40 L148 96 Z" fill="#7fd3e8" opacity=".85"/>
+            <rect x="86" y="106" width="28" height="10" fill="#8b95c9"/>
+            <rect x="70" y="116" width="60" height="7" rx="3" fill="#8b95c9"/>
+            <path d="M100 46 L118 80 H82 Z" fill="#ef4444"/>
+            <rect x="98.5" y="56" width="3" height="12" rx="1.5" fill="#ffffff"/>
+            <circle cx="100" cy="73" r="1.9" fill="#ffffff"/>
+            <path d="M14 62 h30" stroke="#e2e8f0" stroke-width="5" stroke-linecap="round"/>
+            <path d="M6 76 h26" stroke="#e2e8f0" stroke-width="5" stroke-linecap="round"/>
+            <path d="M160 52 h30" stroke="#e2e8f0" stroke-width="5" stroke-linecap="round"/>
+            <path d="M170 68 h24" stroke="#e2e8f0" stroke-width="5" stroke-linecap="round"/>
+        </svg>
+    </div>
+
+    <p class="tm-note"><span class="tm-note__label">Note :</span> System records every single interruption during the Assessment.</p>
+
+    <div class="tm-reasons">
+        <p>Interruption is recorded in the system due one of the following possible reasons:</p>
+        <p>1) You were trying to minimize OR toggle Assessment Console.</p>
+        <p>2) You have pressed special keys from your keyboard which are not allowed during Assessment.</p>
+        <p>3) You have tried to move out of Assessment Console which is not allowed.</p>
+        <p>4) You have tried to refresh the page.</p>
+        <p class="tm-reasons__last">This window will close down and you have to re-launch the Assessment only after it is unlocked. Please be advised not to move out of console during the assessment and not to navigate to other applications during the assessment.</p>
+    </div>
+
+    <hr class="tm-rule">
+
+    <section class="tm-proceed">
+        <h2>How to proceed</h2>
+        <p>This window will close down now.</p>
+        <p>Please ensure that you do not move out of Assessment window during the assessment. Use only mouse to navigate.</p>
+    </section>
+
+    <div class="tm-actions">
+        {% if resume_url %}
+        <a class="tm-btn tm-btn--primary" id="tmResume" href="{{ resume_url }}">
+            Resume Test
+        </a>
+        {% endif %}
+        <a class="tm-btn" id="tmClose" href="{{ dashboard_url if dashboard_url else (url_for('users.open_mock_test_section', section_id=section_id, course_code=course_code, unique_code=unique_code) if section_id else url_for('users.purchase_dashboard', course_code=course_code, unique_code=unique_code)) }}">
+            Close and Go to Dashboard
+        </a>
+    </div>
+
+</main>
+
+<script src="{{ url_for('static', filename='js/users/exam_platform/competitive_exam_platform/test_instructions/termination.js') }}"></script>
+</body>
+</html>

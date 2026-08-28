@@ -1,0 +1,118 @@
+.year-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: 860px;
+}
+
+.year-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.2rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-decoration: none;
+    color: inherit;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.year-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, var(--primary), #992c25);
+    border-radius: 0 2px 2px 0;
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.year-card:hover {
+    border-color: var(--primary);
+    box-shadow: 0 8px 24px rgba(153, 44, 37,0.1);
+    transform: translateX(8px);
+    text-decoration: none;
+    color: inherit;
+}
+
+.year-card:hover::before { opacity: 1; }
+
+.year-left {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+}
+
+.year-icon {
+    width: 50px; height: 50px;
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    border-radius: 13px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.97rem;
+    flex-shrink: 0;
+    transition: var(--transition);
+}
+
+.year-card:hover .year-icon {
+    background: linear-gradient(135deg, var(--primary), #992c25);
+    color: white;
+}
+
+.year-title {
+    font-family: 'Sora', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.year-sub {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.year-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.avail-badge {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 4px 11px;
+    background: rgba(16,185,129,0.1);
+    color: var(--success);
+    border-radius: 50px;
+    border: 1px solid rgba(16,185,129,0.2);
+}
+
+.year-arrow {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    transition: var(--transition);
+}
+
+.year-card:hover .year-arrow {
+    color: var(--primary);
+    transform: translateX(3px);
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1.5px dashed var(--border);
+}
+
+@media (max-width: 576px) {
+    .year-card { padding: 1rem 1.1rem; }
+    .year-icon { width: 42px; height: 42px; font-size: 1rem; }
+    .avail-badge { display: none; }
+}

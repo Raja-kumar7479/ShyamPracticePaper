@@ -1,0 +1,27 @@
+.brand-home-link,
+    .nav-logo,
+    .brand-logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        white-space: nowrap;
+        min-width: 0;
+        line-height: 1.2;
+    }
+    .brand-home-link > span,
+    .nav-logo > span,
+    .brand-logo > span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .brand-logo-img {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #fff;
+        border: 2px solid #db9504;
+        object-fit: cover;
+        flex-shrink: 0;
+        vertical-align: middle;
+    }

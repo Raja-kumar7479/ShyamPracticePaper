@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium - Coding Practice</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/practice_coding/premium.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body>
+
+<header class="pc-topbar">
+    <a class="pc-back" href="{{ url_for('practice_coding.home') }}">
+        <i class="fas fa-arrow-left"></i> Problems
+    </a>
+    <span class="pc-title-mini">Premium</span>
+    <span></span>
+</header>
+
+<main class="pm-wrap">
+    <h1 class="pm-title">Premium</h1>
+    <p class="pm-sub">Get started with a Coding Practice subscription that works for you.</p>
+
+    {% if quiz_count %}
+    <p style="text-align:center;margin:-24px 0 34px">
+        <span style="display:inline-block;background:rgba(255,161,22,.12);border:1px solid rgba(255,161,22,.4);border-radius:20px;padding:8px 20px;color:#ffb64d;font-weight:600">
+            <i class="fas fa-gift"></i>
+            Bonus: {{ quiz_count }} premium quiz questions included free
+        </span>
+    </p>
+    {% endif %}
+
+    {% if subscription %}
+    <div class="pm-active">
+        <i class="fas fa-crown"></i>
+        You are a <strong>Premium</strong> member ({{ subscription.plan }}) until
+        <strong>{{ subscription.expires_at.strftime('%d %b %Y') }}</strong>.
+        <a href="{{ url_for('practice_coding.home', tier='paid') }}">Open premium problems &rarr;</a>
+    </div>
+    {% else %}
+
+    <div class="pm-plans">
+        <div class="pm-plan">
+            <div class="pm-plan__head">
+                <h2>Monthly</h2><span>billed monthly</span>
+            </div>
+            <p class="pm-plan__desc">Access all premium questions. Best for short-term preparation.</p>
+            <div class="pm-price">
+                <span class="pm-price__amount">&#8377;{{ '%.0f' % (plans.monthly.amount / 100) }}</span>
+                <span class="pm-price__per">/mo</span>
+            </div>
+            <button type="button" class="pm-subscribe" data-plan="monthly">Subscribe</button>
+        </div>
+
+        <div class="pm-plan pm-plan--featured">
+            <div class="pm-plan__badge">&#127881; Most popular</div>
+            <div class="pm-plan__head">
+                <h2>Yearly</h2><span>billed yearly (&#8377;{{ '%.0f' % (plans.yearly.amount / 100) }})</span>
+            </div>
+            <p class="pm-plan__desc">
+                Only &#8377;{{ '%.2f' % (plans.yearly.amount / 1200) }}/month - save over 40% vs the monthly plan.
+            </p>
+            <div class="pm-price">
+                <span class="pm-price__amount">&#8377;{{ '%.2f' % (plans.yearly.amount / 1200) }}</span>
+                <span class="pm-price__per">/mo</span>
+            </div>
+            <button type="button" class="pm-subscribe" data-plan="yearly">Subscribe</button>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="pm-error is-hidden" id="pmError"></div>
+
+    {% if not subscription %}
+    <div class="pm-modal is-hidden" id="pmModal" role="dialog" aria-modal="true"
+         aria-labelledby="pmModalTitle">
+        <div class="pm-modal__box">
+            <div class="pm-modal__head">
+                <h2 id="pmModalTitle">Checkout</h2>
+                <button type="button" class="pm-modal__x" id="pmClose" aria-label="Close">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+
+            <p class="pm-modal__plan" id="pmPlanLine"></p>
+
+            <ol class="pm-steps">
+                <li class="pm-steps__i is-active" data-step-dot="1"><span>1</span> Phone</li>
+                <li class="pm-steps__i" data-step-dot="2"><span>2</span> Billing details</li>
+                <li class="pm-steps__i" data-step-dot="3"><span>3</span> Pay</li>
+            </ol>
+
+            <div class="pm-modal__err is-hidden" id="pmModalErr"></div>
+
+            <form id="pmForm" novalidate>
+                <div class="pm-step" data-step="1">
+                    <label class="pm-field">
+                        <span>Phone number</span>
+                        <div class="pm-phone">
+                            <span class="pm-phone__cc">+91</span>
+                            <input type="tel" id="pmPhone" name="phone" inputmode="numeric"
+                                   autocomplete="tel-national" maxlength="10"
+                                   placeholder="10-digit mobile number" required>
+                        </div>
+                        <small>Used for the payment receipt and any order updates.</small>
+                    </label>
+                </div>
+
+                <div class="pm-step is-hidden" data-step="2">
+                    <div class="pm-summary">
+                        <div class="pm-summary__row">
+                            <span>Plan</span><strong id="pmSumPlan"></strong>
+                        </div>
+                        <div class="pm-summary__row">
+                            <span>Account</span><strong>{{ user.email }}</strong>
+                        </div>
+                        <div class="pm-summary__row">
+                            <span>Phone</span><strong id="pmSumPhone"></strong>
+                        </div>
+                        <div class="pm-summary__row">
+                            <span>Price</span><strong id="pmSumPrice"></strong>
+                        </div>
+                        <div class="pm-summary__row is-hidden" id="pmSumDiscountRow">
+                            <span>Discount</span>
+                            <strong class="pm-summary__discount" id="pmSumDiscount"></strong>
+                        </div>
+                        <div class="pm-summary__row pm-summary__row--total">
+                            <span>Total payable</span><strong id="pmSumTotal"></strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pm-modal__foot">
+                    <button type="button" class="pm-btn pm-btn--ghost is-hidden" id="pmBack">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </button>
+                    <button type="submit" class="pm-btn" id="pmNext">Next</button>
+                </div>
+            </form>
+
+            <p class="pm-modal__note">
+                <i class="fas fa-lock"></i>
+                Payment is processed securely by Razorpay. We never see your card details.
+            </p>
+        </div>
+    </div>
+    {% endif %}
+
+    <h2 class="pm-section">What you get</h2>
+    <div class="pm-features">
+        <div class="pm-feature"><i class="fas fa-lock-open"></i>
+            <div><h3>Access to Premium Questions</h3>
+            <p>Every paid question in the bank unlocks instantly, including new ones added later.</p></div></div>
+        <div class="pm-feature"><i class="fas fa-building"></i>
+            <div><h3>Company-style Questions</h3>
+            <p>Practice with questions written in the style asked by top companies.</p></div></div>
+        <div class="pm-feature"><i class="fas fa-bolt"></i>
+            <div><h3>Full Judge Access</h3>
+            <p>Run against all test cases, including the hidden ones that decide a real verdict.</p></div></div>
+        <div class="pm-feature"><i class="fas fa-code"></i>
+            <div><h3>Six Languages</h3>
+            <p>Python, Java, C, C++, C# and JavaScript with starter templates per question.</p></div></div>
+        <div class="pm-feature"><i class="fas fa-clock-rotate-left"></i>
+            <div><h3>Submission History</h3>
+            <p>Every attempt is saved so you can see how your solutions improved.</p></div></div>
+        <div class="pm-feature"><i class="fas fa-chart-line"></i>
+            <div><h3>Progress Tracking</h3>
+            <p>Solved counts per subject show exactly where to focus next.</p></div></div>
+        <div class="pm-feature"><i class="fas fa-circle-question"></i>
+            <div><h3>Premium Quizzes Included</h3>
+            <p>Every paid MCQ quiz question - Java, SQL, Algorithms and more - unlocks with the same subscription. No extra payment.</p></div></div>
+    </div>
+
+    <h2 class="pm-section">Frequently asked questions</h2>
+    <div class="pm-faq">
+        {% for q, a in [
+            ('Where is this plan available?',
+             'Everywhere. Prices are shown in INR and payment is processed securely by Razorpay.'),
+            ('What do I get with a premium subscription?',
+             'Every paid question unlocks immediately, on the practice page and from your purchases dashboard, for as long as the subscription is active.'),
+            ('When does my subscription start?',
+             'The moment your payment is verified. Monthly runs 30 days, yearly runs 365 days.'),
+            ('I paid but premium is not showing.',
+             'Refresh the page first. If it still does not show, contact support with your payment ID - the payment is recorded against your account email.'),
+            ('What if I subscribe and want to cancel?',
+             'A subscription is a one-time payment for its period, so there is nothing to cancel - it simply does not renew by itself.')
+        ] %}
+        <details class="pm-faq__item">
+            <summary>{{ q }}<i class="fas fa-plus"></i></summary>
+            <p>{{ a }}</p>
+        </details>
+        {% endfor %}
+    </div>
+</main>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+window.PCP_BILLING = {
+    orderUrl: {{ url_for('practice_coding.subscribe_order') | tojson }},
+    verifyUrl: {{ url_for('practice_coding.subscribe_verify') | tojson }},
+    email: {{ user.email | tojson }},
+    username: {{ user.username | tojson }},
+    plans: {
+        monthly: { label: 'Monthly', paise: {{ plans.monthly.amount | tojson }} },
+        yearly: { label: 'Yearly', paise: {{ plans.yearly.amount | tojson }} }
+    }
+};
+</script>
+<script src="{{ url_for('static', filename='js/users/shared/spp_checkout.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/practice_coding/premium.js') }}"></script>
+</body>
+</html>

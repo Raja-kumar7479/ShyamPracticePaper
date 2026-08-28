@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Assessment Portal{% endblock %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/brand-bootstrap.css') }}">
+  {% block head_scripts %}{% endblock %}
+
+  {% block extra_css %}{% endblock %}
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/communication_portal/base1.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/communication_portal/communication_shell.css') }}">
+</head>
+<body>
+    <div id="examWindowGuard" hidden data-test-key="{{ test_key }}" data-exit-url="{{ url_for('users.round_assessments', round_name=round_name or 'Communication', course_code=course_code, unique_code=unique_code) }}"></div>
+
+    {% if test_key %}
+    <div id="commTabGuard" hidden
+         data-test-key="{{ test_key }}"
+         data-busy-url="{{ url_for('users.assessment_busy', test_key=test_key, round_name=round_name or 'Communication', course_code=course_code, unique_code=unique_code) }}"></div>
+    {% endif %}
+    {% with flash_scopes = ['test'] %}
+        {% include 'users/_flash.html' %}
+    {% endwith %}
+<div class="frame">
+    <div class="layout">
+        <div class="left">
+            <div class="logo-area"><img src="{{ url_for('static', filename='images/favicon.png') }}" alt="ShyamPracticePaper" class="sapm-logo-img"><span class="fw-bold fs-6">ShyamPracticePaper</span></div>
+            <div class="greet">Hi {{ username }},<div style="height:8px"></div>Welcome to</div>
+
+            <h1 class="main-title" title="{{ data.assessment_title }}">{% block assessment_title %}{{ data.assessment_title }}{% endblock %}</h1>
+            <div class="underline"></div>
+
+            <div class="meta">
+                <div><div class="label">Questions</div><div class="value">{% block q_count %}{{ data.total_questions }}{% endblock %}</div></div>
+                <div><div class="label">Sections</div><div class="value">{{ section_count }}</div></div>
+                <div><div class="label">Duration</div><div class="value">{% block duration %}{{ data.duration_minutes }}{% endblock %} Min</div></div>
+            </div>
+        </div>
+
+        <div class="divider-col">
+            <div class="timeline-wrapper">
+                <div class="timeline-icon {% block step1_class %}success{% endblock %}" title="System Compatibility"><i class="bi bi-laptop"></i></div>
+                <div class="timeline-icon {% block step2_class %}{% endblock %}" id="iconPerms" title="Media Permissions"><i class="bi bi-mic"></i></div>
+                <div class="timeline-icon {% block step3_class %}{% endblock %}" id="iconVerify" title="Candidate Verification"><i class="bi bi-person-vcard"></i></div>
+                <div class="timeline-icon {% block step4_class %}{% endblock %}" title="Exam"><i class="bi bi-file-earmark-text"></i></div>
+            </div>
+        </div>
+
+        <div class="right">
+            {% block right_content %}{% endblock %}
+        </div>
+    </div>
+</div>
+{% block scripts %}{% endblock %}
+{% include 'users/exam_platform/placement_exam_portal/communication_portal/_sapm_footer.html' %}
+
+
+{% if test_key and not exam_guard_self %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/exam_exit_guard.css') }}">
+<div id="examExitGuard" hidden
+     data-release-url="{{ url_for('users.comm_window_closed', test_key=test_key) }}"
+     data-terminate-url="{{ url_for('users.comm_terminate', test_key=test_key) }}"
+     data-terminated-url="{{ url_for('users.assessment_terminated', test_key=test_key, round_name=round_name, course_code=course_code, unique_code=unique_code) }}"
+     data-away-seconds="20"
+     data-confirm="1"
+     data-confirm-text="Do you want to close the assessment? You can resume it later from your dashboard."></div>
+<script src="{{ url_for('static', filename='js/users/exam_platform/exam_exit_guard.js') }}"></script>
+{% endif %}
+
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/communication_portal/comm_tab_guard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/exam_window_guard.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,97 @@
+
+<div class="exam-subbar">
+
+
+  <div class="section-dd-wrap">
+    <button class="section-chip section-dd-toggle" id="section-dd-toggle" type="button">
+      <span class="type-tag">{{ section.section_type }}</span>
+      {{ sec_index + 1 }}. {{ section.title }}
+      <span class="dd-caret">▾</span>
+    </button>
+    <div class="section-dd" id="section-dd">
+      {% for s in sections %}
+        {% if s.id == section.id %}
+          <span class="section-dd-item is-current">
+            {{ loop.index }}. {{ s.title }}
+            <span class="type-mini">{{ s.section_type }}</span>
+          </span>
+        {% else %}
+          <a class="section-dd-item"
+             href="{{ url_for('coding_test.section_page', attempt_id=attempt.id, section_id=s.id) }}">
+            {{ loop.index }}. {{ s.title }}
+            <span class="type-mini">{{ s.section_type }}</span>
+          </a>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+
+  <nav class="qnav">
+    {% for q in questions %}
+      <a class="qnav-btn {% if q.id == question.id %}is-active{% endif %}
+                {% if attempted_map.get(q.id) %}is-attempted{% endif %}"
+         data-qid="{{ q.id }}"
+         href="{{ url_for('coding_test.question_page', attempt_id=attempt.id, question_id=q.id) }}">
+        {{ loop.index }}
+      </a>
+    {% endfor %}
+  </nav>
+
+  <span class="attempt-count">
+    Attempted: {{ attempted_map.values() | select | list | length }}/{{ questions | length }}
+  </span>
+
+  <div class="spacer"></div>
+
+
+  <div class="qgrid-wrap">
+    <button class="qgrid-toggle" id="qgrid-toggle" type="button"
+            title="Question Navigator">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+        <rect x="1" y="1" width="6" height="6" rx="1"></rect>
+        <rect x="9" y="1" width="6" height="6" rx="1"></rect>
+        <rect x="1" y="9" width="6" height="6" rx="1"></rect>
+        <rect x="9" y="9" width="6" height="6" rx="1"></rect>
+      </svg>
+    </button>
+    <div class="qgrid-pop" id="qgrid-pop">
+      <div class="qgrid-head">Question Navigator</div>
+      <div class="qgrid-body">
+        {% for q in questions %}
+          <a class="qgrid-item {% if attempted_map.get(q.id) %}is-answered{% endif %}
+                    {% if q.id == question.id %}is-current{% endif %}"
+             data-qid="{{ q.id }}"
+             href="{{ url_for('coding_test.question_page', attempt_id=attempt.id, question_id=q.id) }}">
+            {{ loop.index }}
+          </a>
+        {% endfor %}
+      </div>
+      <div class="qgrid-legend">
+        <span><span class="legend-dot" style="background:#c9efd6"></span>Answered</span>
+        <span><span class="legend-dot" style="background:#fdeeb3"></span>Review</span>
+        <span><span class="legend-dot"></span>Unanswered</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <span class="attempt-count">
+    Section Time:&nbsp;<strong class="js-timer" style="color:var(--fg)">--:--:--</strong>
+  </span>
+
+  {% if prev_question %}
+    <a class="btn btn-ghost btn-sm"
+       href="{{ url_for('coding_test.question_page', attempt_id=attempt.id, question_id=prev_question.id) }}">Previous</a>
+  {% elif prev_section %}
+    <a class="btn btn-ghost btn-sm"
+       href="{{ url_for('coding_test.section_page', attempt_id=attempt.id, section_id=prev_section.id) }}">Previous Section</a>
+  {% endif %}
+  {% if next_question %}
+    <a class="btn btn-primary btn-sm"
+       href="{{ url_for('coding_test.question_page', attempt_id=attempt.id, question_id=next_question.id) }}">Next</a>
+  {% elif next_section %}
+    <a class="btn btn-success btn-sm"
+       href="{{ url_for('coding_test.section_page', attempt_id=attempt.id, section_id=next_section.id) }}">Next Section</a>
+  {% endif %}
+</div>

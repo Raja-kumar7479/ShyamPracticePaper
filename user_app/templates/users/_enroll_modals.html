@@ -1,0 +1,46 @@
+<div class="popup" id="confirm-popup">
+    <div class="popup-content">
+        <span class="popup-close-btn" onclick="closePopup('confirm-popup')">&times;</span>
+        <h4>Enroll in <span id="confirm-course-code"></span>?</h4>
+        <p id="confirm-enroll-message" style="font-weight:500;margin-bottom:1.5rem;"></p>
+        <p style="color:#6b7280;font-size:0.875rem;">You will be asked to verify with a CAPTCHA before proceeding.</p>
+        <button class="btn btn-primary" id="confirm-enroll-btn" style="width:100%;">Continue</button>
+        <button class="btn btn-secondary" onclick="closePopup('confirm-popup')" style="width:100%;margin-top:0.5rem;">Cancel</button>
+    </div>
+</div>
+
+<div class="popup" id="enrollment-limit-popup">
+    <div class="popup-content">
+        <span class="popup-close-btn" onclick="closePopup('enrollment-limit-popup')">&times;</span>
+        <h4>Enrollment Limit Reached</h4>
+        <p id="enrollment-limit-message">You have reached the maximum enrollment limit.</p>
+        <button class="btn btn-secondary" onclick="closePopup('enrollment-limit-popup')" style="width:100%;">OK</button>
+    </div>
+</div>
+
+<div class="popup" id="enrollment-popup">
+    <div class="popup-content">
+        <span class="popup-close-btn" onclick="closePopup('enrollment-popup')">&times;</span>
+        <h4>Verify Enrollment</h4>
+        <div id="enroll-info-msg"></div>
+        <form id="enroll-form" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="course_code" id="final-course-code">
+            <input type="hidden" name="course_name" id="final-course-name">
+            <div class="form-group">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <label id="captcha-label" style="font-weight:600;">Loading CAPTCHA...</label>
+                    <button type="button" id="captcha-refresh" title="Get a new code"
+                            style="border:0;background:none;cursor:pointer;color:#992c25;font-size:1rem;line-height:1;">
+                        <i class="fas fa-rotate-right"></i>
+                    </button>
+                </div>
+                <input type="text" name="captcha" required autocomplete="off" placeholder="Type the code shown above" style="width:100%;margin-top:0.5rem;">
+                <span id="captcha-error" class="error-message" style="color:#dc2626;font-size:0.8rem;"></span>
+            </div>
+            <button class="btn btn-primary" type="submit" style="width:100%;margin-top:0.75rem;">Verify &amp; Enroll</button>
+        </form>
+    </div>
+</div>
+
+<div class="popup-flash-container" id="popupFlashContainer"></div>

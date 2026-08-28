@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Store | {{ course_name }}</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/brand-bootstrap.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/sidebar.css') }}">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/courses_platform/dashboard/shop.css') }}">
+</head>
+<body>
+
+{% with sb_active = 'shop', sb_context = course_code, sb_section = 'Store',
+        sb_course_code = course_code, sb_unique_code = unique_code %}
+    {% include 'users/_sidebar.html' %}
+{% endwith %}
+
+<main class="main-wrapper app-shell">
+
+    <div class="page-head">
+        <div>
+            <h1 class="page-title">Store</h1>
+            <p class="page-sub">
+                <span class="chip"><i class="fas fa-layer-group"></i> {{ course_code }}</span>
+                <span class="chip ms-1"><i class="fas fa-box"></i> {{ available_courses|length }} available</span>
+                {% if purchased_courses %}
+                <span class="chip ms-1"><i class="fas fa-circle-check"></i> {{ purchased_courses|length }} owned</span>
+                {% endif %}
+                <span class="chip ms-1"><i class="fas fa-cart-shopping"></i> {{ cart_count }}/{{ max_cart_items }} in cart</span>
+            </p>
+        </div>
+        <div class="head-search-wrap">
+            <div class="search-container head-search">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="search-input js-shop-search" placeholder="Search products..." oninput="filterGrid(this.value)">
+            </div>
+        </div>
+    </div>
+
+    <div class="products-grid" id="productsGrid">
+        {% for course in available_courses %}
+        <div class="shop-card filter-item" data-title="{{ (course.title or '')|lower }} {{ (course.subtitle or '')|lower }}">
+            <div class="card-img-container">
+                {% if course.image_url %}
+                    {% set image_path = course.image_url.replace('\\', '/').replace('static/', '', 1) %}
+                    <img src="{{ url_for('static', filename=image_path) }}" alt="{{ course.title }}" loading="lazy">
+                {% else %}
+                    <div class="card-img-fallback">
+                        <i class="fas fa-book-open fa-2x"></i>
+                    </div>
+                {% endif %}
+
+                <div class="overlay-actions">
+                    <button type="button" class="btn-quick-view"
+                            onclick="openModal({{ course.title|tojson }}, {{ (course.details or '')|tojson }})">
+                        Quick View
+                    </button>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <h3 class="card-title">{{ course.title }}</h3>
+                <p class="card-text">{{ course.subtitle or 'Premium study material' }}</p>
+
+                <div class="card-footer-row">
+                    {% set list_price = course.price|float(0) %}
+                    {% set item_off = course.discount|float(0) %}
+                    {% set payable = (list_price - (list_price * item_off / 100)) if 0 < item_off < 100 else list_price %}
+                    <div class="price-display">
+                        {% if item_off > 0 and item_off < 100 %}
+                            <span class="price-old">₹{{ "%.0f"|format(list_price) }}</span>
+                            <span class="price-currency">₹</span>{{ "%.0f"|format(payable) }}
+                            <span class="price-off">{{ "%g"|format(item_off) }}% OFF</span>
+                        {% else %}
+                            <span class="price-currency">₹</span>{{ "%.0f"|format(list_price) }}
+                        {% endif %}
+                    </div>
+
+                    {% if course.title in cart_titles %}
+                        <a href="{{ url_for('users.add_cart', course_code=course_code, unique_code=unique_code) }}" class="btn-in-cart text-decoration-none">
+                            <i class="fas fa-check"></i> In Cart
+                        </a>
+                    {% elif cart_is_full %}
+                        <a href="{{ url_for('users.add_cart', course_code=course_code, unique_code=unique_code) }}" class="btn-in-cart text-decoration-none" title="Cart limit reached">
+                            Cart full
+                        </a>
+                    {% else %}
+                        <form method="POST" action="{{ url_for('users.add_cart', course_code=course_code, unique_code=unique_code) }}" class="m-0">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="course_code" value="{{ course.code or '' }}">
+                            <input type="hidden" name="unique_code" value="{{ unique_code }}">
+                            <input type="hidden" name="title" value="{{ course.title or '' }}">
+                            <input type="hidden" name="subtitle" value="{{ course.subtitle or '' }}">
+                            <input type="hidden" name="section" value="{{ course.section or '' }}">
+                            <input type="hidden" name="section_id" value="{{ course.section_id or '' }}">
+
+                            <button type="submit" name="add_cart" value="true" class="btn-add-cart">
+                                <i class="fas fa-cart-plus"></i> Add
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="noResults" class="empty-state mt-2" style="display: none;">
+        <i class="fas fa-magnifying-glass fa-2x"></i>
+        <h4>No matching products</h4>
+        <p>Try a different keyword or clear the search.</p>
+    </div>
+
+    {% if not available_courses %}
+    <div class="empty-state">
+        <i class="fas fa-box-open fa-2x"></i>
+        <h4>All caught up</h4>
+        <p>You have purchased every available package, or the store is empty right now.</p>
+    </div>
+    {% endif %}
+
+</main>
+
+<a href="{{ url_for('users.add_cart', course_code=course_code, unique_code=unique_code) }}" class="fab-cart" title="View cart">
+    <i class="fas fa-shopping-cart"></i>
+    {% if cart_count > 0 %}
+    <span class="cart-count">{{ cart_count }}</span>
+    {% endif %}
+</a>
+
+{% with flash_scopes = ['cart', 'payment', 'purchase'] %}
+    {% include 'users/_flash.html' %}
+{% endwith %}
+
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0 pt-4 px-4">
+                <h5 class="modal-title fw-bold" id="modalTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body px-4 pt-2 pb-4 text-secondary" id="modalDetails" style="line-height: 1.6;"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/users/courses_platform/dashboard/shop.js') }}"></script>
+
+</body>
+</html>

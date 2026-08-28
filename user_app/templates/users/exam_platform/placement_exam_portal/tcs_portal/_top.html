@@ -1,0 +1,10 @@
+<header class="tcs-top">
+    <a href="{{ url_for('users.index') }}" class="tcs-top__brand">
+        <img src="{{ url_for('static', filename='images/favicon.png') }}" alt="ShyamPracticePaper">
+        <span>ShyamPracticePaper</span>
+    </a>
+    <span class="tcs-top__spacer"></span>
+    {% if dashboard_url %}
+    <a href="{{ dashboard_url }}" class="tcs-top__back"><i class="fas fa-arrow-left"></i> TCS exams</a>
+    {% endif %}
+</header>

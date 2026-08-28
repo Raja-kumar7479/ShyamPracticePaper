@@ -1,0 +1,71 @@
+{% extends 'users/practice_question_platform/base.html' %}
+
+{% block title %}
+Select Subject
+{% endblock %}
+
+{% block extra_styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users/practice_question_platform/subject_select.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="breadcrumb-nav">
+        <span class="bc-active">Practice</span>
+        <span class="bc-sep">›</span>
+        <span>Subject Wise</span>
+    </div>
+
+    <h2 class="page-title">Choose a Subject</h2>
+
+    <p class="page-subtitle">
+        Select a subject to start your focused practice session for
+        <strong>{{ course_code }}</strong>.
+    </p>
+</div>
+
+<div class="subject-grid">
+    {% for sub in subjects %}
+        <a href="{{ url_for('users.show_subject_questions',
+            unique_code=unique_code,
+            course_code=course_code,
+            subject=sub.subject) }}"
+           class="subject-card">
+
+            <div>
+                <div class="card-icon">
+                    <i class="fas fa-book-open"></i>
+                </div>
+            </div>
+
+            <div>
+                <div class="subject-name">{{ sub.subject }}</div>
+                <span class="subject-code">{{ course_code }}</span>
+            </div>
+
+            <div class="card-arrow">
+                <span>Start Practice</span>
+                <i class="fas fa-arrow-right"></i>
+            </div>
+
+        </a>
+
+    {% else %}
+
+        <div class="empty-state">
+            <i class="fas fa-folder-open"></i>
+
+            <h5 style="font-family:'Sora',sans-serif;font-weight:700;">
+                No subjects available
+            </h5>
+
+            <p style="color:var(--text-muted);font-size:0.85rem;margin-top:0.4rem;">
+                No subjects have been added for this course yet.
+            </p>
+        </div>
+
+    {% endfor %}
+</div>
+
+{% endblock %}

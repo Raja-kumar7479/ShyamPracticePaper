@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{% block title %}EduPortal{% endblock %}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/brand-bootstrap.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/practice_question_platform/base.css') }}">
+    {% block extra_styles %}
+    {% endblock %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users/practice_question_platform/base_page.css') }}">
+</head>
+<body>
+    {% with flash_scopes = ['test'] %}
+        {% include 'users/_flash.html' %}
+    {% endwith %}
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <nav id="sidebar" aria-hidden="true">
+        <div class="sidebar-brand">
+            <div class="brand-icon">
+                <a href="{{ url_for('users.index') }}" title="Go to home"><img src="{{ url_for('static', filename='images/favicon.png') }}" alt="ShyamPracticePaper" class="brand-logo-img"></a>
+            </div>
+            <span class="brand-name">ShyamPracticePaper</span>
+            <button type="button" class="sidebar-close" id="sidebarClose" aria-label="Close menu">
+                <i class="fas fa-xmark"></i>
+            </button>
+        </div>
+        {% if user_is_authenticated and username %}
+        <div class="sidebar-user">
+            <div class="user-avatar">
+                {{ username[0]|upper }}
+            </div>
+            <div class="user-info">
+                <div class="user-name">{{ username }}</div>
+            </div>
+        </div>
+        {% endif %}
+        <nav class="sidebar-nav">
+            <div class="nav-label">Navigation</div>
+            <a href="#"
+               class="nav-item-link {% if active_nav == 'dashboard' %}active{% endif %}" data-tip="Dashboard">
+                <span class="nav-icon">
+                    <i class="fas fa-table-columns"></i>
+                </span>
+                <span class="nav-text">Dashboard</span>
+            </a>
+            <a href="#"
+               class="nav-item-link {% if active_nav == 'subject' %}active{% endif %}" data-tip="Subject Wise">
+                <span class="nav-icon">
+                    <i class="fas fa-book"></i>
+                </span>
+                <span class="nav-text">Subject Wise</span>
+            </a>
+            <a href="#"
+               class="nav-item-link {% if active_nav == 'topic' %}active{% endif %}" data-tip="Topic Wise">
+                <span class="nav-icon">
+                    <i class="fas fa-layer-group"></i>
+                </span>
+                <span class="nav-text">Topic Wise</span>
+            </a>
+            <a href="#"
+               class="nav-item-link {% if active_nav == 'year' %}active{% endif %}" data-tip="Year Wise">
+                <span class="nav-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </span>
+                <span class="nav-text">Year Wise</span>
+            </a>
+            <a href="#"
+               class="nav-item-link {% if active_nav == 'purchase' %}active{% endif %}" data-tip="My Purchase">
+                <span class="nav-icon">
+                    <i class="fas fa-credit-card"></i>
+                </span>
+                <span class="nav-text">My Purchase</span>
+            </a>
+        </nav>
+        <div class="sidebar-footer">
+            <a href="/user_logout" class="logout-link">
+                <i class="fas fa-right-from-bracket"></i>
+                Logout
+            </a>
+        </div>
+    </nav>
+    <div id="main-wrapper">
+        <header class="top-nav">
+            <button class="menu-toggle" id="menuToggle" type="button" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">
+                <i class="fas fa-bars-staggered"></i>
+            </button>
+            <div class="top-nav-right">
+                <span class="course-badge">
+                    {{ course_code }}
+                </span>
+            </div>
+        </header>
+        <main class="page-content">
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
+<script src="{{ url_for('static', filename='js/users/practice_question_platform/base.js') }}"></script>
+
+
+{% block extra_scripts %}
+{% endblock %}
+
+</body>
+</html>

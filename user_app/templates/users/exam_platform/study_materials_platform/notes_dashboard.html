@@ -1,0 +1,86 @@
+{% extends 'users/exam_platform/competitive_exam_platform/test_dashboard/base.html' %}
+{% block title %}{{ section_title }} - Notes Dashboard{% endblock %}
+
+{% block content %}
+<div class="notes-page {{ 'premium-dashboard' if section_label == 'Paid' else '' }}">
+    <div class="container mt-5 mb-5">
+        <button type="button" class="notes-sb-toggle" id="notesSbToggle" aria-controls="notesSidebar" aria-expanded="false" aria-label="Open search and tools">
+            <i class="fas fa-bars"></i><span>Search &amp; Tools</span>
+        </button>
+        <div class="row">
+            <div class="col-12" style="animation-delay: 0.1s;">
+                <div class="main-content-area">
+                    {% if structured_data %}
+                        <header class="page-header">
+                            {% if section_label == 'Paid' %}
+                                <span class="premium-badge">Premium</span>
+                            {% endif %}
+                            <h1>{{ section_title }}</h1>
+                        </header>
+
+                        <div class="topics-container" id="topics-container">
+                            {% for type, headings in structured_data.items() %}
+                                {% for heading, sub_headings in headings.items() %}
+                                    {% for topic_row in sub_headings.items()|batch(2) %}
+                                    <div class="row topic-row">
+                                        {% for sub_heading, titles in topic_row %}
+                                        <div class="col-md-6 topic-list-wrapper">
+                                            <h2 class="topic-heading">{{ sub_heading }}</h2>
+                                            <ul class="topic-list">
+                                                {% for title, content in titles.items() %}
+                                                    {% if content.main_path and not content.subtitles %}
+                                                        <li><a href="{{ url_for('users.view_note_file', filepath=content.main_path) }}" target="_blank" rel="noopener noreferrer">{{ title }}</a></li>
+                                                    {% elif content.subtitles %}
+                                                        <li>{{ title }}</li>
+                                                        <ul class="topic-list">
+                                                        {% if content.main_path %}
+                                                            <li><a href="{{ url_for('users.view_note_file', filepath=content.main_path) }}" target="_blank" rel="noopener noreferrer">Introduction / Main</a></li>
+                                                        {% endif %}
+                                                        {% for subtitle in content.subtitles %}
+                                                            <li><a href="{{ url_for('users.view_note_file', filepath=subtitle.path) }}" target="_blank" rel="noopener noreferrer">{{ subtitle.name }}</a></li>
+                                                        {% endfor %}
+                                                        </ul>
+                                                    {% else %}
+                                                        <li class="disabled">{{ title }}</li>
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% endfor %}
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">No content found for this section.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="notes-sb-backdrop" id="notesSbBackdrop"></div>
+    <aside class="notes-sidebar" id="notesSidebar" aria-hidden="true">
+        <button type="button" class="notes-sb-close" id="notesSbClose" aria-label="Close menu">&times;</button>
+        <div class="sidebar">
+            <div class="sidebar-widget">
+                <form role="search" class="search-form" onsubmit="return false;">
+                    <input class="form-control" type="search" id="search-input" placeholder="Search topics..." aria-label="Search">
+                </form>
+                <div id="no-results" class="no-results-message hidden">No topics found.</div>
+            </div>
+            <div class="sidebar-widget">
+                <h3 class="topic-heading" style="font-size: 1rem; border-color: transparent; padding-bottom: 0;">Quick Links</h3>
+            </div>
+            <div class="sidebar-widget">
+                <h3 class="topic-heading" style="font-size: 1rem; border-color: transparent; padding-bottom: 0;">Announcements</h3>
+            </div>
+        </div>
+    </aside>
+</div>
+{% endblock %}
+
+{% block body_extras %}
+<script src="{{ url_for('static', filename='js/users/exam_platform/study_materials_platform/notes_dashboard.js') }}"></script>
+{% endblock %}

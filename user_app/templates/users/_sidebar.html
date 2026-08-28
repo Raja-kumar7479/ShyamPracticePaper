@@ -1,0 +1,115 @@
+{% set sb_course = sb_course_code | default(course_code, true) %}
+{% set sb_unique = sb_unique_code | default(unique_code, true) %}
+{% set sb_can_link = sb_course and sb_unique %}
+
+<div class="app-topbar">
+    <button class="app-topbar__btn" type="button" onclick="appSidebarOpen()" aria-label="Open menu">
+        <i class="fas fa-bars"></i>
+    </button>
+    <a href="{{ url_for('users.index') }}" class="app-topbar__brand" title="Go to home">
+        <img src="{{ url_for('static', filename='images/favicon.png') }}" alt="ShyamPracticePaper" class="app-topbar__logo">
+        <span class="app-topbar__name">ShyamPracticePaper</span>
+    </a>
+</div>
+
+<div class="app-sb__backdrop" id="appSbBackdrop" onclick="appSidebarClose()"></div>
+
+<aside class="app-sb" id="appSb">
+    <div class="app-sb__head">
+        <a href="{{ url_for('users.index') }}" class="app-sb__logo-link" title="Go to home">
+            <img src="{{ url_for('static', filename='images/favicon.png') }}" alt="ShyamPracticePaper" class="app-sb__logo">
+        </a>
+        <a href="{{ url_for('users.index') }}" class="app-sb__brand">
+            <span class="app-sb__brand-name">ShyamPracticePaper</span>
+            <span class="app-sb__brand-sub">{{ sb_context | default('Learning', true) }}</span>
+        </a>
+        <button class="app-sb__collapse" type="button" onclick="appSidebarMini()" aria-label="Collapse sidebar" title="Collapse sidebar">
+            <i class="fas fa-angles-left"></i>
+        </button>
+    </div>
+
+    <div class="app-sb__body">
+        <div class="app-sb__label">{{ sb_section | default('Menu', true) }}</div>
+
+        <a href="{{ url_for('users.index') }}" class="app-sb__link{% if sb_active == 'home' %} is-active{% endif %}" data-tip="Home">
+            <i class="fas fa-house"></i><span>Home</span>
+        </a>
+
+        {% if sb_can_link %}
+        <a href="{{ url_for('users.view_course_dashboard', course_code=sb_course, unique_code=sb_unique) }}"
+           class="app-sb__link{% if sb_active == 'dashboard' %} is-active{% endif %}" data-tip="Course Dashboard">
+            <i class="fas fa-table-columns"></i><span>Course Dashboard</span>
+        </a>
+
+        <div class="app-sb__label">Library</div>
+
+        <a href="{{ url_for('users.course_shop', course_code=sb_course, unique_code=sb_unique) }}"
+           class="app-sb__link is-premium{% if sb_active == 'shop' %} is-active{% endif %}" data-tip="Premium Store">
+            <i class="fas fa-crown"></i><span>Premium Store</span>
+            <span class="app-sb__tag app-sb__tag--premium">Paid</span>
+        </a>
+
+        <a href="{{ url_for('users.purchase_dashboard', course_code=sb_course, unique_code=sb_unique) }}"
+           class="app-sb__link{% if sb_active == 'purchases' %} is-active{% endif %}" data-tip="My Purchases">
+            <i class="fas fa-receipt"></i><span>My Purchases</span>
+        </a>
+
+        <a href="{{ url_for('users.add_cart', course_code=sb_course, unique_code=sb_unique) }}"
+           class="app-sb__link{% if sb_active == 'cart' %} is-active{% endif %}" data-tip="My Cart">
+            <i class="fas fa-cart-shopping"></i><span>My Cart</span>
+            {% if cart_count and cart_count > 0 %}
+            <span class="app-sb__tag app-sb__tag--count">{{ cart_count }}</span>
+            {% endif %}
+        </a>
+
+        {% if sb_free_sections %}
+        <div class="app-sb__label">Free Material</div>
+            {% for label, link in sb_free_sections.items() %}
+            <a href="{{ link }}" class="app-sb__link is-free" data-tip="{{ label }}">
+                <i class="fas fa-book-open"></i><span>{{ label }}</span>
+                <span class="app-sb__tag app-sb__tag--free">Free</span>
+            </a>
+            {% endfor %}
+        {% endif %}
+        {% endif %}
+
+        {% if sb_extra_links %}
+        <div class="app-sb__label">{{ sb_extra_label | default('More', true) }}</div>
+            {% for item in sb_extra_links %}
+            <a href="{{ item.url }}" class="app-sb__link{% if item.tone %} is-{{ item.tone }}{% endif %}{% if sb_active == item.key %} is-active{% endif %}" data-tip="{{ item.label }}">
+                <i class="fas {{ item.icon | default('fa-circle-dot', true) }}"></i><span>{{ item.label }}</span>
+                {% if item.tag %}<span class="app-sb__tag app-sb__tag--{{ item.tone | default('count', true) }}">{{ item.tag }}</span>{% endif %}
+            </a>
+            {% endfor %}
+        {% endif %}
+
+        <div class="app-sb__label">Account</div>
+        <a href="{{ url_for('users.profile_view') }}"
+           class="app-sb__link{% if sb_active == 'profile' %} is-active{% endif %}" data-tip="My Profile">
+            <i class="fas fa-user"></i><span>My Profile</span>
+        </a>
+        <a href="{{ url_for('users.browse_courses') }}"
+           class="app-sb__link{% if sb_active == 'browse' %} is-active{% endif %}" data-tip="All Courses">
+            <i class="fas fa-graduation-cap"></i><span>All Courses</span>
+        </a>
+    </div>
+
+    <div class="app-sb__foot">
+        <div class="app-sb__user">
+            <div class="app-sb__avatar">
+                {% if username %}{{ username[0]|upper }}{% else %}<i class="fas fa-user"></i>{% endif %}
+            </div>
+            <div class="app-sb__uinfo">
+                <div class="app-sb__uname">{{ username | default('Student', true) }}</div>
+                <div class="app-sb__urole">{{ sb_course | default('Student', true) }}</div>
+            </div>
+            {% if username %}
+            <a href="{{ url_for('users.user_logout') }}" class="app-sb__logout" title="Logout"><i class="fas fa-right-from-bracket"></i></a>
+            {% else %}
+            <a href="{{ url_for('users.user_login') }}" class="app-sb__logout" title="Login"><i class="fas fa-right-to-bracket"></i></a>
+            {% endif %}
+        </div>
+    </div>
+</aside>
+
+<script src="{{ url_for('static', filename='js/users/_sidebar.js') }}"></script>

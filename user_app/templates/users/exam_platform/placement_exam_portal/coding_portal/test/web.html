@@ -1,0 +1,91 @@
+{% extends "users/exam_platform/placement_exam_portal/coding_portal/test/exam_base.html" %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/coding_portal/editor.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/coding_portal/web.css') }}">
+{% endblock %}
+
+{% block question_extra %}
+  {% if question.assertions %}
+    <p class="muted" style="margin-top:16px"><strong>Your page must satisfy:</strong></p>
+    <ul class="muted" style="padding-left:20px;line-height:1.8">
+      {% for a in question.assertions if not a.is_hidden %}
+        <li>{{ a.message or (a.kind ~ ' on ' ~ a.selector) }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endblock %}
+
+{% block response %}
+<div class="pane-main">
+  <div class="web-split">
+    <div class="web-editors">
+      <div class="web-editor-tabs" id="web-editor-tabs">
+        <button class="tab is-active" data-tab="html"><span class="lang-dot html"></span>HTML</button>
+        <button class="tab" data-tab="css"><span class="lang-dot css"></span>CSS</button>
+        <button class="tab" data-tab="js"><span class="lang-dot js"></span>JS</button>
+      </div>
+      <div class="web-editor-panels" id="web-editor-panels">
+        <div class="web-editor-panel is-active" data-panel="html">
+          <div class="editor-wrap" id="editor-html" style="flex:1">
+            <div class="editor-gutter">1</div>
+            <textarea class="editor-input" spellcheck="false" autocomplete="off"></textarea>
+          </div>
+        </div>
+        <div class="web-editor-panel" data-panel="css">
+          <div class="editor-wrap" id="editor-css" style="flex:1">
+            <div class="editor-gutter">1</div>
+            <textarea class="editor-input" spellcheck="false" autocomplete="off"></textarea>
+          </div>
+        </div>
+        <div class="web-editor-panel" data-panel="js">
+          <div class="editor-wrap" id="editor-js" style="flex:1">
+            <div class="editor-gutter">1</div>
+            <textarea class="editor-input" spellcheck="false" autocomplete="off"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="vsplitter web-vsplitter" id="web-pane-splitter"
+         title="Drag to resize · double-click to reset"></div>
+
+    <div class="web-preview">
+      <div class="preview-head">
+        Live Preview
+        <span class="auto-note">updates as you type</span>
+      </div>
+
+      <iframe id="preview-frame" class="preview-frame"
+              sandbox="allow-scripts" title="Live preview"></iframe>
+    </div>
+  </div>
+
+  <div class="splitter" id="web-splitter" title="Drag to resize"></div>
+
+  <div class="bottom-pane" id="web-bottom" style="height:160px">
+    <div class="tabbar" id="response-tabs" style="border-top:0">
+      <button class="tab is-active" data-tab="cases">Checks</button>
+      <button class="tab" data-tab="output">Console</button>
+      <div class="actions">
+        <button class="btn btn-ghost" id="btn-preview">Run Checks</button>
+        <button class="btn btn-primary" id="btn-submit-web">Submit Code</button>
+      </div>
+    </div>
+
+    <div class="tabpanels" id="response-panels">
+      <div class="tabpanel is-active" data-panel="cases" id="panel-cases">
+        <div class="console console-empty">Run the checks to see your results here.</div>
+      </div>
+      <div class="tabpanel" data-panel="output" id="panel-output">
+        <div class="console console-empty">JavaScript errors appear inside the preview.</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block section_lib %}
+<script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/web.js') }}"></script>
+{% endblock %}

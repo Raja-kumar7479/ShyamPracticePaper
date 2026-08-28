@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Certificate | {{ cert.username }} | ShyamPracticePaper</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Great+Vibes&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Montserrat', sans-serif; background: #eae4d8; min-height: 100vh;
+               display: flex; flex-direction: column; align-items: center; padding: 30px 12px; }
+
+        .frame { width: 100%; max-width: 900px; background: #fffefb; position: relative;
+                 padding: 10px; border-radius: 4px;
+                 background-image: linear-gradient(135deg, #caa64b 0%, #f3e2ae 22%, #b98d2f 48%, #f3e2ae 76%, #caa64b 100%);
+                 box-shadow: 0 24px 60px rgba(52, 38, 12, .28); }
+        .inner { background: #fffefb; border: 1px solid #d8c290; padding: clamp(26px, 5vw, 52px) clamp(18px, 5.5vw, 62px);
+                 position: relative; overflow: hidden; }
+
+        .inner::before { content: ""; position: absolute; inset: 9px; border: 2px solid #c9ab5e;
+                         pointer-events: none; }
+        .inner::after { content: ""; position: absolute; inset: 14px; border: 1px solid #e4d5ac;
+                        pointer-events: none; }
+
+        .corner { position: absolute; width: 46px; height: 46px; border: 3px solid #b98d2f; z-index: 2; }
+        .corner--tl { top: 20px; left: 20px; border-right: none; border-bottom: none; }
+        .corner--tr { top: 20px; right: 20px; border-left: none; border-bottom: none; }
+        .corner--bl { bottom: 20px; left: 20px; border-right: none; border-top: none; }
+        .corner--br { bottom: 20px; right: 20px; border-left: none; border-top: none; }
+
+        .wm { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+              pointer-events: none; z-index: 0; }
+        .wm img { width: 340px; max-width: 70%; opacity: .05; filter: grayscale(35%); }
+
+        .content { position: relative; z-index: 1; text-align: center; }
+
+        .brandrow { display: flex; align-items: center; justify-content: center; gap: 12px; }
+        .brandrow img { height: 46px; }
+        .brandrow .b-name { text-align: left; }
+        .brandrow .b-name strong { display: block; font-size: 1.05rem; color: #7a1f18; letter-spacing: .02em; }
+        .brandrow .b-name span { font-size: .62rem; text-transform: uppercase; letter-spacing: .22em; color: #a08137; }
+
+        .rule { display: flex; align-items: center; gap: 14px; margin: 20px auto 16px; max-width: 420px; }
+        .rule::before, .rule::after { content: ""; flex: 1; height: 1px;
+                                      background: linear-gradient(90deg, transparent, #c9ab5e); }
+        .rule::after { background: linear-gradient(90deg, #c9ab5e, transparent); }
+        .rule i { width: 8px; height: 8px; background: #b98d2f; transform: rotate(45deg); }
+
+        .kind { font-size: clamp(1.15rem, 3.4vw, 1.75rem); font-family: 'Cormorant Garamond', serif;
+                font-weight: 700; letter-spacing: .3em; color: #37270e; text-transform: uppercase; }
+        .kind-sub { font-size: .66rem; letter-spacing: .42em; text-transform: uppercase; color: #a08137; margin-top: 5px; }
+
+        .presented { margin-top: 26px; font-size: .74rem; letter-spacing: .18em; text-transform: uppercase; color: #6d6152; }
+        .name { font-family: 'Great Vibes', cursive; font-size: clamp(2.2rem, 7vw, 3.6rem); color: #7a1f18;
+                line-height: 1.15; margin: 6px 0 2px; }
+        .name-rule { width: min(360px, 70%); height: 1px; margin: 2px auto 0;
+                     background: linear-gradient(90deg, transparent, #b98d2f, transparent); }
+
+        .body-text { max-width: 560px; margin: 20px auto 0; font-size: .84rem; line-height: 1.8; color: #4d4437; }
+        .body-text .test { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 1.16rem; color: #37270e; }
+        .grade { color: #7a1f18; font-weight: 600; }
+
+        .scores { display: inline-flex; gap: 0; margin: 22px auto 0; border: 1px solid #e0d2ae; border-radius: 6px; overflow: hidden; }
+        .scores div { padding: 10px 26px; background: #fbf6ea; }
+        .scores div + div { border-left: 1px solid #e0d2ae; }
+        .scores strong { display: block; font-size: 1.18rem; color: #37270e; font-family: 'Cormorant Garamond', serif; font-weight: 700; }
+        .scores span { font-size: .58rem; text-transform: uppercase; letter-spacing: .14em; color: #a08137; }
+
+        .foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 18px;
+                margin-top: 40px; flex-wrap: wrap; }
+        .sig, .datebox { flex: 1 1 170px; max-width: 230px; }
+        .sig-script { font-family: 'Great Vibes', cursive; font-size: 1.55rem; color: #4d4437; line-height: 1; }
+        .sig-line, .date-line { border-top: 1px solid #9c8d72; margin-top: 6px; padding-top: 6px;
+                                font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: #6d6152; }
+        .datebox { text-align: right; }
+        .date-val { font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 1.05rem; color: #37270e; }
+
+        .seal { flex: 0 0 auto; width: 96px; height: 96px; border-radius: 50%; position: relative;
+                background: radial-gradient(circle at 34% 30%, #f6dd8f, #caa64b 58%, #9c7a22);
+                display: flex; align-items: center; justify-content: center;
+                box-shadow: 0 6px 16px rgba(156, 122, 34, .45); }
+        .seal::before { content: ""; position: absolute; inset: 7px; border-radius: 50%;
+                        border: 1px dashed rgba(255, 252, 240, .8); }
+        .seal-in { text-align: center; color: #5d4310; }
+        .seal-in .s-top { font-size: .5rem; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; }
+        .seal-in .s-mid { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 1.25rem; line-height: 1.1; }
+        .seal-in .s-bot { font-size: .44rem; letter-spacing: .14em; text-transform: uppercase; font-weight: 600; }
+
+        .verify { margin-top: 26px; padding-top: 12px; border-top: 1px solid #eee3c8;
+                  display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+                  font-size: .62rem; color: #8d8168; letter-spacing: .04em; }
+        .verify code { color: #7a1f18; font-weight: 700; font-family: 'Montserrat', sans-serif; letter-spacing: .1em; }
+
+        .actions { margin-top: 24px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+        .btn { border: none; border-radius: 8px; padding: 11px 24px; font-size: .84rem; font-weight: 600;
+               cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+               font-family: 'Montserrat', sans-serif; }
+        .btn--print { background: #7a1f18; color: #fff; }
+        .btn--print:hover { background: #5e150f; }
+        .btn--home { background: #fff; color: #7a1f18; border: 1px solid #d8c290; }
+
+        @media (max-width: 560px) {
+            .foot { justify-content: center; text-align: center; }
+            .datebox, .sig { text-align: center; max-width: none; }
+            .corner { width: 30px; height: 30px; }
+        }
+        @media print {
+            body { background: #fff; padding: 0; }
+            .actions { display: none; }
+            .frame { box-shadow: none; max-width: none; }
+            @page { size: landscape; margin: 8mm; }
+        }
+    </style>
+</head>
+<body>
+    {% set cert_no = 'SPP-' ~ (cert.submitted_at.strftime('%Y') if cert.submitted_at else '0000') ~ '-' ~ (cert.share_code[:8] | upper) %}
+    <div class="frame">
+        <div class="inner">
+            <span class="corner corner--tl"></span><span class="corner corner--tr"></span>
+            <span class="corner corner--bl"></span><span class="corner corner--br"></span>
+            <div class="wm"><img src="{{ url_for('static', filename='images/logo.png') }}" alt=""></div>
+
+            <div class="content">
+                <div class="brandrow">
+                    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="ShyamPracticePaper">
+                    <div class="b-name">
+                        <strong>ShyamPracticePaper</strong>
+                        <span>Assessment Platform</span>
+                    </div>
+                </div>
+
+                <div class="rule"><i></i></div>
+                <div class="kind">Certificate</div>
+                <div class="kind-sub">of Achievement</div>
+
+                <p class="presented">This is proudly presented to</p>
+                <div class="name">{{ cert.username }}</div>
+                <div class="name-rule"></div>
+
+                <p class="body-text">
+                    for successfully completing the proctored coding assessment<br>
+                    <span class="test">{{ cert.test_title }}</span><br>
+                    conducted on the ShyamPracticePaper Assessment Platform{% if pct >= 90 %},
+                    achieving this result <span class="grade">with Distinction</span>{% elif pct >= 75 %},
+                    achieving this result <span class="grade">with Merit</span>{% endif %}.
+                </p>
+
+                <div class="scores">
+                    <div><strong>{{ score }} / {{ max_score }}</strong><span>Score</span></div>
+                    <div><strong>{{ pct }}%</strong><span>Percentage</span></div>
+                    {% if cert.total_duration_min %}<div><strong>{{ cert.total_duration_min }} min</strong><span>Duration</span></div>{% endif %}
+                </div>
+
+                <div class="foot">
+                    <div class="sig">
+                        <div class="sig-script">ShyamPracticePaper</div>
+                        <div class="sig-line">Authorised Signatory</div>
+                    </div>
+                    <div class="seal">
+                        <div class="seal-in">
+                            <div class="s-top">Verified</div>
+                            <div class="s-mid">SPP</div>
+                            <div class="s-bot">Authentic</div>
+                        </div>
+                    </div>
+                    <div class="datebox">
+                        <div class="date-val">{{ cert.submitted_at.strftime('%d %B %Y') if cert.submitted_at else '' }}</div>
+                        <div class="date-line">Date of Completion</div>
+                    </div>
+                </div>
+
+                <div class="verify">
+                    <span>Certificate No. <code>{{ cert_no }}</code></span>
+                    <span>Verify authenticity at the link of this page</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="actions">
+        <button class="btn btn--print" onclick="window.print()">&#128424; Print / Save as PDF</button>
+        <a class="btn btn--home" href="{{ url_for('users.index') }}">Visit ShyamPracticePaper</a>
+    </div>
+</body>
+</html>
