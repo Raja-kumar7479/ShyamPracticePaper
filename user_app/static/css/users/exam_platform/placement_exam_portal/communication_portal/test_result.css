@@ -926,7 +926,6 @@ body.tr-sb-open { overflow: hidden; }
     .tr-hero__stats { grid-template-columns: 1fr; }
 }
 
-/* ---------- share / certificate ---------- */
 .tr-share {
   display: flex; align-items: center; justify-content: space-between;
   gap: 16px; flex-wrap: wrap;

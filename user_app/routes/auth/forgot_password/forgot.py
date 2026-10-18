@@ -2,6 +2,7 @@ import hmac
 import logging
 import time
 import bcrypt
+from routes.auth.utils.utils_login import hash_password, verify_password
 from flask import render_template, request, redirect, url_for, session, flash, current_app
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from routes.auth.database.auth_db import AuthOperation
@@ -47,8 +48,14 @@ def _read_token(token):
     return _serializer().loads(token, max_age=RESET_MAX_AGE)
 
 
+def _reset_target_key():
+    email = (request.form.get('email') or '').strip().lower()
+    return f"reset-account:{email}" if email else f"reset-ip:{request.remote_addr}"
+
+
 @users_bp.route("/user_forgot_password", methods=['GET', 'POST'])
-@limiter.limit("5 per hour", exempt_when=lambda: request.method != 'POST')
+@limiter.limit("300 per hour", exempt_when=lambda: request.method != 'POST', key_func=lambda: f"reset-ip:{request.remote_addr}")
+@limiter.limit("5 per hour", exempt_when=lambda: request.method != 'POST', key_func=_reset_target_key)
 def user_forgot_password():
     if 'user_username' in session:
         return redirect(url_for('users.index'))
@@ -127,21 +134,17 @@ def user_reset_password(token):
     if request.method == 'POST':
         new_pw = request.form.get('new_password') or ''
         confirm_pw = request.form.get('confirm_password') or ''
-        # Redirect back to the same reset link rather than rendering, so a
-        # failed attempt does not leave the browser on the POST where Back or
-        # Refresh prompts to resubmit the password. The token is in the URL,
-        # so the reload lands on exactly the same form.
         if new_pw != confirm_pw:
             flash("Passwords do not match.", 'forgot_error')
             return redirect(url_for('users.user_reset_password', token=token))
         if not is_password_secure(new_pw):
             flash("Password is too weak. Use 8+ characters with a mix of letters, numbers and a symbol.", 'forgot_error')
             return redirect(url_for('users.user_reset_password', token=token))
-        if current_hash and bcrypt.checkpw(new_pw.encode(), current_hash.encode()):
+        if current_hash and verify_password(new_pw, current_hash):
             flash("Your new password must be different from your current password.", 'forgot_error')
             return redirect(url_for('users.user_reset_password', token=token))
 
-        hashed = bcrypt.hashpw(new_pw.encode(), bcrypt.gensalt()).decode()
+        hashed = hash_password(new_pw)
         auth_db.update_user_password(email, hashed)
         session.pop('user_reset_last_sent', None)
         session.pop('user_reset_sent_to', None)

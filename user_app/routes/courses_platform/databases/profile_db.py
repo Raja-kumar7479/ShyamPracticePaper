@@ -1,5 +1,6 @@
 import os
 import mysql.connector
+from routes.db_pool import get_connection
 from mysql.connector import Error
 from config import Config
 import logging
@@ -28,12 +29,7 @@ MEDIA_TARGETS = [
 class ProfileOperation:
     def connection(self):
         try:
-            conn = mysql.connector.connect(
-                host=Config.DATABASE_HOST,
-                user=Config.DATABASE_USER,
-                password=Config.DATABASE_PASSWORD,
-                database=Config.DATABASE_NAME
-            )
+            conn = get_connection()
             return conn
         except Error as e:
             logger.critical(f"DATABASE CONNECTION ERROR: {e}")
@@ -115,6 +111,9 @@ class ProfileOperation:
         return self.update_user_password(email, hashed_password)
 
     def update_last_active(self, email):
+        from routes.activity import should_touch
+        if not should_touch(email):
+            return
         db = None
         cursor = None
         try:
@@ -240,7 +239,7 @@ class ProfileOperation:
             db = self.connection()
             cursor = db.cursor(dictionary=True)
             query = """
-                SELECT p.*, cc.validity_expires_at FROM purchase AS p
+                SELECT p.*, cc.status AS content_status FROM purchase AS p
                 LEFT JOIN course_content AS cc ON p.section_id = cc.section_id
                 WHERE p.email = %s
                 ORDER BY p.payment_date DESC, p.section_id ASC

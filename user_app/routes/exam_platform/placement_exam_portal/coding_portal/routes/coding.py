@@ -1,4 +1,3 @@
-"""Coding section: compile & test, submit."""
 import logging
 
 from flask import Blueprint, request, jsonify, abort
@@ -21,7 +20,6 @@ VERDICT_LABEL = {
 
 
 def _guard(attempt_id, payload):
-    """Shared validation: ownership, open attempt, question type, code size."""
     user = current_user()
     attempt = models.get_attempt(attempt_id, user["id"])
     if not attempt:
@@ -72,7 +70,6 @@ def run(attempt_id):
     code = payload.get("code") or ""
     custom_input = payload.get("custom_input")
 
-    # Custom input is a single ad-hoc run, not a graded attempt.
     if custom_input is not None:
         result = code_executor.run_custom_input(
             code, language, custom_input,
@@ -81,7 +78,6 @@ def run(attempt_id):
         )
         return jsonify(result)
 
-    # Visible testcases only -- running must never leak hidden cases.
     testcases = models.get_testcases(question["id"], include_hidden=False)
     if not testcases:
         return jsonify({"error": "No sample testcases for this question"}), 400
@@ -93,6 +89,8 @@ def run(attempt_id):
         compare_mode=question.get("compare_mode") or "exact",
         float_tolerance=question.get("float_tolerance"),
     )
+    if result.compiled and result.error and not result.cases:
+        return jsonify({"error": result.error, "busy": True}), 503
     return jsonify(_serialise(result, testcases, reveal=True))
 
 
@@ -120,6 +118,8 @@ def submit(attempt_id):
         compare_mode=question.get("compare_mode") or "exact",
         float_tolerance=question.get("float_tolerance"),
     )
+    if result.compiled and result.error and not result.cases:
+        return jsonify({"error": result.error, "busy": True}), 503
 
     verdict = result.verdict()
     score = (question["marks"] if verdict == "AC"
@@ -147,12 +147,6 @@ def submit(attempt_id):
 
 
 def _serialise(result, testcases, reveal):
-    """
-    Shape a RunResult for the client.
-
-    reveal=False (submit) hides the input/expected of hidden testcases so a
-    candidate cannot recover them from the response.
-    """
     if not result.compiled:
         return {"compiled": False, "error": result.error, "verdict": "CE",
                 "verdict_label": VERDICT_LABEL["CE"],

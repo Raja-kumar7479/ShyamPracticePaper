@@ -56,23 +56,11 @@ CREATE TABLE IF NOT EXISTS course_group_sections (
   FOREIGN KEY (section_key) REFERENCES content_sections(section_key) ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- ------------------------------------------------------------------- seed
-INSERT INTO course_groups (group_name, label, position) VALUES
-  ('GATE',               'GATE',               1),
-  ('PLACEMENT',          'Placement',          2),
-  ('JEE MAIN + ADVANCE', 'JEE Main + Advance', 3)
-ON DUPLICATE KEY UPDATE label = VALUES(label), position = VALUES(position);
-
-INSERT INTO course_group_codes (group_name, code, label, position) VALUES
-  ('GATE', 'CS', 'Computer Science',   1),
-  ('GATE', 'DS', 'Data Science',       2),
-  ('GATE', 'EC', 'Electronics',        3),
-  ('GATE', 'EE', 'Electrical',         4),
-  ('GATE', 'ME', 'Mechanical',         5),
-  ('PLACEMENT', 'PLA', 'Placement',    1),
-  ('PLACEMENT', 'PLM', 'Placement MNC',2),
-  ('JEE MAIN + ADVANCE', 'JEE', 'JEE', 1)
-ON DUPLICATE KEY UPDATE label = VALUES(label), position = VALUES(position);
+-- ------------------------------------------------ section vocabulary
+-- The section keys are what both apps route and validate on, so they are
+-- part of the schema. Groups, codes and their pairings are admin content:
+-- the admin creates them on the Courses & Groups screen. The old sample set
+-- lives in user_app/database/seed_sample_data.sql for a demo install.
 
 INSERT INTO content_sections (section_key, label, help_text, portal, editor, is_available, position) VALUES
   ('mock_test','Mock Test','Full-length objective test. Opens the competitive exam portal.','competitive','competitive',1,1),
@@ -88,18 +76,6 @@ INSERT INTO content_sections (section_key, label, help_text, portal, editor, is_
 ON DUPLICATE KEY UPDATE
   label = VALUES(label), help_text = VALUES(help_text), portal = VALUES(portal),
   editor = VALUES(editor), is_available = VALUES(is_available), position = VALUES(position);
-
-INSERT INTO course_group_sections (group_name, section_key, position) VALUES
-  ('GATE','mock_test',1), ('GATE','notes',2), ('GATE','lecture',3),
-  ('GATE','community',4), ('GATE','blog',5),
-  ('JEE MAIN + ADVANCE','mock_test',1), ('JEE MAIN + ADVANCE','notes',2),
-  ('JEE MAIN + ADVANCE','lecture',3), ('JEE MAIN + ADVANCE','community',4),
-  ('JEE MAIN + ADVANCE','blog',5),
-  ('PLACEMENT','coding_test',1), ('PLACEMENT','communication_test',2),
-  ('PLACEMENT','aptitude_test',3), ('PLACEMENT','coding_practice',4),
-  ('PLACEMENT','question_practice',5), ('PLACEMENT','notes',6),
-  ('PLACEMENT','lecture',7), ('PLACEMENT','community',8), ('PLACEMENT','blog',9)
-ON DUPLICATE KEY UPDATE position = VALUES(position);
 
 -- ------------------------------------------- point the live columns at it
 -- course_content.section: enum -> VARCHAR + FK, so a new exam type needs no

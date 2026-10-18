@@ -764,3 +764,40 @@
     .purchase-section-card {
       animation-delay: 0.3s;
     }
+
+.prem-card { border-left: 4px solid #f0ae06; }
+.prem-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1rem; padding: 1.25rem 1.5rem 0.75rem; }
+.prem { display: flex; flex-direction: column; gap: 0.9rem; padding: 1.1rem 1.15rem; border: 1px solid #f0e0c2; border-left: 4px solid #f0ae06; border-radius: 14px;
+        background: linear-gradient(180deg, #fffdf8, #fff8ec); }
+.prem--soon { border-color: #f2bcbc; border-left-color: #d64545; background: linear-gradient(180deg, #fffaf9, #fdf1f0); }
+.prem__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
+.prem__id { display: flex; align-items: center; gap: 0.7rem; min-width: 0; }
+.prem__code { display: inline-flex; align-items: center; justify-content: center; min-width: 46px; height: 46px; padding: 0 10px; border-radius: 12px;
+              background: linear-gradient(135deg, #b8862b, #7a2a24); color: #fff; font-weight: 800; font-size: 0.82rem; letter-spacing: .03em; flex: 0 0 auto; }
+.prem__plan { font-size: 1rem; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
+.prem__scope { font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px; }
+.prem__state { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px; background: #e8f7ee; color: #17703f; font-size: 0.72rem; font-weight: 700; white-space: nowrap; }
+.prem__state--soon { background: #fdecec; color: #a4302a; }
+.prem__facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem 0.9rem; padding: 0.8rem 0; border-top: 1px dashed #ead9bb; border-bottom: 1px dashed #ead9bb; }
+.prem__fact { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.prem__fact--wide { grid-column: 1 / -1; }
+.prem__fact-label { font-size: 0.68rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--text-secondary); }
+.prem__fact-value { font-size: 0.86rem; font-weight: 600; color: var(--text-primary); word-break: break-word; }
+.prem__fact-value--id { font-size: 0.76rem; font-weight: 500; color: var(--text-secondary); word-break: break-all; }
+.prem__note { display: flex; gap: 7px; margin: 0; font-size: 0.78rem; line-height: 1.45; color: #a4302a; }
+.prem__actions { display: flex; gap: 0.55rem; flex-wrap: wrap; }
+.prem__btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex: 1 1 auto; min-height: 40px; padding: 0 16px; border-radius: 10px;
+             font-size: 0.85rem; font-weight: 700; text-decoration: none; white-space: nowrap; transition: filter .15s ease; }
+.prem__btn:hover { filter: brightness(.96); }
+.prem__btn--ghost { background: #fff; color: #6b6259; border: 1px solid #e2dcd3; }
+.prem__btn--go { background: #f0ae06; color: #3b2300; }
+.prem__btn--renew { background: #d64545; color: #fff; }
+.prem-foot { display: flex; gap: 7px; margin: 0; padding: 0 1.5rem 1.25rem; font-size: 0.78rem; color: var(--text-secondary); }
+
+@media (max-width: 600px) {
+  .prem-list { grid-template-columns: 1fr; padding: 1rem 0.9rem 0.5rem; }
+  .prem { padding: 0.95rem; }
+  .prem__facts { grid-template-columns: 1fr; }
+  .prem__btn { flex: 1 1 100%; }
+  .prem-foot { padding: 0 0.9rem 1rem; }
+}

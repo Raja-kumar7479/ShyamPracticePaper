@@ -4,26 +4,59 @@
     <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Premium - Coding Practice</title>
+    <title>{{ 'Premium' if course_mode else 'Premium - Coding Practice' }}</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/practice_coding/premium.css') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 <body>
 
+{% if course_mode %}
+<div class="pm-bg" aria-hidden="true">
+    <span class="pm-bg__blob pm-bg__blob--a"></span>
+    <span class="pm-bg__blob pm-bg__blob--b"></span>
+    <span class="pm-bg__blob pm-bg__blob--c"></span>
+    <span class="pm-bg__grid"></span>
+    <span class="pm-bg__spark" style="--x:12%;--y:28%;--d:0s"></span>
+    <span class="pm-bg__spark" style="--x:82%;--y:18%;--d:1.4s"></span>
+    <span class="pm-bg__spark" style="--x:64%;--y:72%;--d:2.6s"></span>
+    <span class="pm-bg__spark" style="--x:28%;--y:80%;--d:3.5s"></span>
+    <span class="pm-bg__spark" style="--x:90%;--y:60%;--d:4.3s"></span>
+</div>
+{% endif %}
+
 <header class="pc-topbar">
-    <a class="pc-back" href="{{ url_for('practice_coding.home') }}">
-        <i class="fas fa-arrow-left"></i> Problems
+    <a class="pc-back" href="{{ back_url or url_for('practice_coding.home') }}">
+        <i class="fas fa-arrow-left"></i> {{ back_label or 'Problems' }}
     </a>
     <span class="pc-title-mini">Premium</span>
     <span></span>
 </header>
 
-<main class="pm-wrap">
-    <h1 class="pm-title">Premium</h1>
+<main class="pm-wrap pm-anim" id="top">
+    {% if course_mode and not plans and not subscription %}
+    <section class="pm-soon">
+        <span class="pm-soon__icon"><i class="fas fa-crown"></i></span>
+        <h1 class="pm-title pm-title--glow">Premium</h1>
+        <p class="pm-soon__lead">Stay tuned - Premium for {{ course_name or 'this course' }} is coming soon.</p>
+        <p class="pm-soon__sub">There is nothing to buy here yet. Everything free in the course stays open to you.</p>
+        <a class="pm-soon__back" href="{{ back_url }}"><i class="fas fa-arrow-left"></i> {{ back_label or 'Back to your course' }}</a>
+    </section>
+    {% else %}
+    <h1 class="pm-title{{ ' pm-title--glow' if course_mode else '' }}">{% if course_mode %}<i class="fas fa-crown pm-title__crown"></i> {% endif %}Premium</h1>
+    {% if course_mode %}
+    <p class="pm-sub">{{ premium_headline or ('Unlock everything premium in ' ~ (course_name or 'your course') ~ ' with one subscription.') }}</p>
+    {% set ending = [] %}
+    {% for plan in plans if plan.offer_ends_at %}{% set _ = ending.append(plan) %}{% endfor %}
+    {% if ending and not subscription %}
+    <p class="pm-offer-ends"><i class="fas fa-hourglass-half"></i>
+        {% for pl in ending %}{{ pl.label }} discount until {{ pl.offer_ends_at.strftime('%d %b %Y, %I:%M %p') }}{{ ' &middot; '|safe if not loop.last }}{% endfor %}</p>
+    {% endif %}
+    {% else %}
     <p class="pm-sub">Get started with a Coding Practice subscription that works for you.</p>
+    {% endif %}
 
-    {% if quiz_count %}
+    {% if quiz_count and not course_mode %}
     <p style="text-align:center;margin:-24px 0 34px">
         <span style="display:inline-block;background:rgba(255,161,22,.12);border:1px solid rgba(255,161,22,.4);border-radius:20px;padding:8px 20px;color:#ffb64d;font-weight:600">
             <i class="fas fa-gift"></i>
@@ -32,122 +65,179 @@
     </p>
     {% endif %}
 
-    {% if subscription %}
+    {% if subscription and course_mode %}
+    <section class="pm-member" id="pmMember">
+        <span class="pm-member__icon"><i class="fas fa-crown"></i></span>
+        <h2 class="pm-member__title">You are a Premium member</h2>
+        <p class="pm-member__plan"><span class="pm-member__chip">{{ subscription.plan_label or subscription.plan }}</span>
+            valid until <strong>{{ subscription.expires_at.strftime('%d %b %Y, %I:%M %p') }}</strong>{% if days_left is not none %}
+            <span class="pm-days">{{ 'ends today' if days_left == 0 else (days_left ~ ' day' ~ ('' if days_left == 1 else 's') ~ ' left') }}</span>{% endif %}</p>
+        <p class="pm-member__lead">Every premium test, note and practice set in {{ course_name or 'this course' }} is open to you. Nothing to pay here.</p>
+        <p class="pm-member__next"><i class="fas fa-lock"></i> Already purchased. You can buy premium for this course again only after it ends on {{ subscription.expires_at.strftime('%d %b %Y') }}.</p>
+        <a class="pm-member__back" href="{{ back_url }}"><i class="fas fa-arrow-left"></i> {{ back_label or 'Back to your course' }}</a>
+    </section>
+    {% elif subscription %}
     <div class="pm-active">
         <i class="fas fa-crown"></i>
-        You are a <strong>Premium</strong> member ({{ subscription.plan }}) until
-        <strong>{{ subscription.expires_at.strftime('%d %b %Y') }}</strong>.
+        You are a <strong>Premium</strong> member ({{ subscription.plan_label or subscription.plan }}) until
+        <strong>{{ subscription.expires_at.strftime('%d %b %Y, %I:%M %p') }}</strong>{% if days_left is not none %}
+        <span class="pm-days">{{ 'ends today' if days_left == 0 else (days_left ~ ' day' ~ ('' if days_left == 1 else 's') ~ ' left') }}</span>{% endif %}.
+        {% if from_course %}
+        <a href="{{ back_url }}">Back to your course &rarr;</a>
+        {% else %}
         <a href="{{ url_for('practice_coding.home', tier='paid') }}">Open premium problems &rarr;</a>
+        {% endif %}
     </div>
-    {% else %}
+    {% endif %}
+    {% if not subscription %}
 
-    <div class="pm-plans">
-        <div class="pm-plan">
+    <div class="pm-plans pm-plans--{{ plans|length }}">
+        {% for plan in plans %}
+        {% set is_active_plan = subscription and subscription.plan == plan.key %}
+        <div class="pm-plan{{ ' pm-plan--featured' if plan.featured else '' }}{{ ' pm-plan--active' if is_active_plan else '' }}" data-plan-card="{{ plan.key }}">
+            {% if is_active_plan %}
+            <div class="pm-plan__active"><i class="fas fa-circle-check"></i> Active</div>
+            {% elif plan.discount > 0 %}
+            <div class="pm-plan__sale"><i class="fas fa-fire"></i> {{ '%g' % plan.discount }}% off{% if plan.offer_ends_at %} &middot; ends {{ plan.offer_ends_at.strftime('%d %b') }}{% endif %}</div>
+            {% elif plan.featured %}<div class="pm-plan__badge">&#127881; Best value</div>{% endif %}
             <div class="pm-plan__head">
-                <h2>Monthly</h2><span>billed monthly</span>
+                <h2>{{ plan.label }}</h2>
+                <span>access until {{ plan.ends_at.strftime('%d %b %Y') }} &middot; {{ plan.days }} days left</span>
             </div>
-            <p class="pm-plan__desc">Access all premium questions. Best for short-term preparation.</p>
+            <p class="pm-plan__desc">Every premium item in {{ course_name or 'this course' }} until {{ plan.ends_at.strftime('%d %b %Y, %I:%M %p') }}.</p>
             <div class="pm-price">
-                <span class="pm-price__amount">&#8377;{{ '%.0f' % (plans.monthly.amount / 100) }}</span>
-                <span class="pm-price__per">/mo</span>
+                {% if plan.discount > 0 %}
+                <span class="pm-price__was">&#8377;{{ '%.0f' % plan.price }}</span>
+                {% endif %}
+                <span class="pm-price__amount" data-count="{{ '%.0f' % plan.payable }}">&#8377;{{ '%.0f' % plan.payable }}</span>
+                {% if plan.discount > 0 %}
+                <div class="pm-price__off"><i class="fas fa-tag"></i> {{ '%g' % plan.discount }}% off &middot; you save &#8377;{{ '%.0f' % plan.saved }}</div>
+                {% endif %}
             </div>
-            <button type="button" class="pm-subscribe" data-plan="monthly">Subscribe</button>
+            <button type="button" class="pm-subscribe" data-plan="{{ plan.key }}" data-label="{{ plan.label }}" data-days="{{ plan.days }}"
+                    data-until="{{ plan.ends_at.strftime('%d %b %Y') }}"
+                    data-price="{{ '%.0f' % plan.price }}" data-payable="{{ '%.0f' % plan.payable }}" data-discount="{{ '%g' % plan.discount }}">
+                Subscribe
+            </button>
         </div>
-
-        <div class="pm-plan pm-plan--featured">
-            <div class="pm-plan__badge">&#127881; Most popular</div>
-            <div class="pm-plan__head">
-                <h2>Yearly</h2><span>billed yearly (&#8377;{{ '%.0f' % (plans.yearly.amount / 100) }})</span>
-            </div>
-            <p class="pm-plan__desc">
-                Only &#8377;{{ '%.2f' % (plans.yearly.amount / 1200) }}/month - save over 40% vs the monthly plan.
-            </p>
-            <div class="pm-price">
-                <span class="pm-price__amount">&#8377;{{ '%.2f' % (plans.yearly.amount / 1200) }}</span>
-                <span class="pm-price__per">/mo</span>
-            </div>
-            <button type="button" class="pm-subscribe" data-plan="yearly">Subscribe</button>
-        </div>
+        {% endfor %}
     </div>
     {% endif %}
 
     <div class="pm-error is-hidden" id="pmError"></div>
 
-    {% if not subscription %}
-    <div class="pm-modal is-hidden" id="pmModal" role="dialog" aria-modal="true"
-         aria-labelledby="pmModalTitle">
-        <div class="pm-modal__box">
-            <div class="pm-modal__head">
-                <h2 id="pmModalTitle">Checkout</h2>
-                <button type="button" class="pm-modal__x" id="pmClose" aria-label="Close">
-                    <i class="fas fa-xmark"></i>
-                </button>
+    {% if course_mode %}
+    <section class="pm-what" id="pmWhat">
+        <header class="pm-what__head">
+            <span class="pm-what__icon"><i class="fas fa-crown"></i></span>
+            <div>
+                <h2 class="pm-what__title">What you get</h2>
+                <p class="pm-what__sub">Included with your Premium subscription for {{ course_name or 'this course' }}</p>
             </div>
+        </header>
+        {% if premium_copy and premium_copy|trim %}
+        <div class="pm-rich">{{ premium_copy|safe }}</div>
+        {% else %}
+        <div class="pm-rich pm-rich--default">
+            <ul>
+                <li>Every test marked <strong>Premium</strong> in {{ course_name or 'this course' }} opens the moment your payment is verified</li>
+                <li>The same subscription works in every other course you are enrolled in</li>
+                <li>Full results and analysis on every attempt, for as long as the plan runs</li>
+            </ul>
+        </div>
+        {% endif %}
+        {% if not subscription %}
+        <a class="pm-what__cta" href="#top">
+            <i class="fas fa-arrow-up"></i> Choose a plan above and unlock everything
+        </a>
+        {% endif %}
+    </section>
+    {% endif %}
 
-            <p class="pm-modal__plan" id="pmPlanLine"></p>
+    {% if not subscription %}
+    <div class="pm-modal is-hidden" id="pmModal" role="dialog" aria-modal="true" aria-labelledby="pmModalTitle">
+        <div class="pm-modal__box pm-ticket">
+            <aside class="pm-ticket__side">
+                <div class="pm-ticket__badge"><i class="fas fa-crown"></i> Premium pass</div>
+                <h3 class="pm-ticket__plan" id="pmTkPlan">Monthly</h3>
+                <p class="pm-ticket__course" id="pmTkCourse">{{ course_name or 'Coding Practice' }}</p>
+                <div class="pm-ticket__price">
+                    <span class="pm-ticket__was is-hidden" id="pmTkWas"></span>
+                    <span class="pm-ticket__now" id="pmTkNow"></span>
+                    <span class="pm-ticket__off is-hidden" id="pmTkOff"></span>
+                </div>
+                <ul class="pm-ticket__list">
+                    <li id="pmTkDays"><i class="fas fa-calendar-check"></i> <span>Valid for 30 days from today</span></li>
+                    <li><i class="fas fa-lock-open"></i> <span>Every premium test, note and practice set</span></li>
+                    <li><i class="fas fa-bolt"></i> <span>Unlocks the moment your payment is verified</span></li>
+                </ul>
+                <div class="pm-ticket__secure"><i class="fas fa-shield-halved"></i> Secured by Razorpay</div>
+                <div class="pm-ticket__notch pm-ticket__notch--top"></div>
+                <div class="pm-ticket__notch pm-ticket__notch--bottom"></div>
+            </aside>
 
-            <ol class="pm-steps">
-                <li class="pm-steps__i is-active" data-step-dot="1"><span>1</span> Phone</li>
-                <li class="pm-steps__i" data-step-dot="2"><span>2</span> Billing details</li>
-                <li class="pm-steps__i" data-step-dot="3"><span>3</span> Pay</li>
-            </ol>
-
-            <div class="pm-modal__err is-hidden" id="pmModalErr"></div>
-
-            <form id="pmForm" novalidate>
-                <div class="pm-step" data-step="1">
-                    <label class="pm-field">
-                        <span>Phone number</span>
-                        <div class="pm-phone">
-                            <span class="pm-phone__cc">+91</span>
-                            <input type="tel" id="pmPhone" name="phone" inputmode="numeric"
-                                   autocomplete="tel-national" maxlength="10"
-                                   placeholder="10-digit mobile number" required>
-                        </div>
-                        <small>Used for the payment receipt and any order updates.</small>
-                    </label>
+            <div class="pm-ticket__main">
+                <div class="pm-modal__head">
+                    <div>
+                        <p class="pm-modal__plan" id="pmPlanLine"></p>
+                        <h2 id="pmModalTitle"><span id="pmStepTitle">Your phone number</span></h2>
+                    </div>
+                    <button type="button" class="pm-modal__x" id="pmClose" aria-label="Close"><i class="fas fa-xmark"></i></button>
                 </div>
 
-                <div class="pm-step is-hidden" data-step="2">
-                    <div class="pm-summary">
-                        <div class="pm-summary__row">
-                            <span>Plan</span><strong id="pmSumPlan"></strong>
-                        </div>
-                        <div class="pm-summary__row">
-                            <span>Account</span><strong>{{ user.email }}</strong>
-                        </div>
-                        <div class="pm-summary__row">
-                            <span>Phone</span><strong id="pmSumPhone"></strong>
-                        </div>
-                        <div class="pm-summary__row">
-                            <span>Price</span><strong id="pmSumPrice"></strong>
-                        </div>
-                        <div class="pm-summary__row is-hidden" id="pmSumDiscountRow">
-                            <span>Discount</span>
-                            <strong class="pm-summary__discount" id="pmSumDiscount"></strong>
-                        </div>
-                        <div class="pm-summary__row pm-summary__row--total">
-                            <span>Total payable</span><strong id="pmSumTotal"></strong>
+                <div class="pm-rail" aria-hidden="true"><div class="pm-rail__fill" id="pmRail"></div></div>
+                <ol class="pm-steps">
+                    <li class="pm-steps__i is-active" data-step-dot="1"><span>1</span> Phone</li>
+                    <li class="pm-steps__i" data-step-dot="2"><span>2</span> Billing</li>
+                    <li class="pm-steps__i" data-step-dot="3"><span>3</span> Pay</li>
+                </ol>
+
+                <div class="pm-modal__err is-hidden" id="pmModalErr"></div>
+
+                <form id="pmForm" novalidate>
+                    <div class="pm-step" data-step="1">
+                        <label class="pm-field pm-field--float">
+                            <div class="pm-phone">
+                                <span class="pm-phone__cc">+91</span>
+                                <input type="text" id="pmPhone" name="pm_contact_digits" inputmode="numeric" pattern="[0-9]*"
+                                       autocomplete="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other"
+                                       maxlength="10" placeholder=" " required>
+                                <span class="pm-field__label">10-digit mobile number</span>
+                            </div>
+                            <small><i class="fas fa-receipt"></i> Used for your receipt and order updates only.</small>
+                        </label>
+                    </div>
+
+                    <div class="pm-step is-hidden" data-step="2">
+                        <div class="pm-receipt">
+                            <div class="pm-receipt__head"><i class="fas fa-file-invoice"></i> Order summary</div>
+                            <div class="pm-summary">
+                                <div class="pm-summary__row"><span>Plan</span><strong id="pmSumPlan"></strong></div>
+                                <div class="pm-summary__row"><span>Account</span><strong>{{ user.email }}</strong></div>
+                                <div class="pm-summary__row"><span>Phone</span><strong id="pmSumPhone"></strong></div>
+                                <div class="pm-summary__row"><span>Price</span><strong id="pmSumPrice"></strong></div>
+                                <div class="pm-summary__row is-hidden" id="pmSumDiscountRow">
+                                    <span>Discount</span><strong class="pm-summary__discount" id="pmSumDiscount"></strong>
+                                </div>
+                                <div class="pm-summary__row pm-summary__row--total"><span>Total payable</span><strong id="pmSumTotal"></strong></div>
+                            </div>
+                            <p class="pm-receipt__foot">Prices in INR. The receipt is emailed to you after payment.</p>
                         </div>
                     </div>
-                </div>
 
-                <div class="pm-modal__foot">
-                    <button type="button" class="pm-btn pm-btn--ghost is-hidden" id="pmBack">
-                        <i class="fas fa-arrow-left"></i> Back
-                    </button>
-                    <button type="submit" class="pm-btn" id="pmNext">Next</button>
-                </div>
-            </form>
+                    <div class="pm-modal__foot">
+                        <button type="button" class="pm-btn pm-btn--ghost is-hidden" id="pmBack"><i class="fas fa-arrow-left"></i> Back</button>
+                        <button type="submit" class="pm-btn pm-btn--go" id="pmNext">Next</button>
+                    </div>
+                </form>
 
-            <p class="pm-modal__note">
-                <i class="fas fa-lock"></i>
-                Payment is processed securely by Razorpay. We never see your card details.
-            </p>
+                <p class="pm-modal__note"><i class="fas fa-lock"></i> Payment is processed securely by Razorpay. We never see your card details.</p>
+            </div>
         </div>
     </div>
     {% endif %}
 
+    {% if not course_mode %}
     <h2 class="pm-section">What you get</h2>
     <div class="pm-features">
         <div class="pm-feature"><i class="fas fa-lock-open"></i>
@@ -172,13 +262,17 @@
             <div><h3>Premium Quizzes Included</h3>
             <p>Every paid MCQ quiz question - Java, SQL, Algorithms and more - unlocks with the same subscription. No extra payment.</p></div></div>
     </div>
+    {% endif %}
 
     <h2 class="pm-section">Frequently asked questions</h2>
     <div class="pm-faq">
         {% for q, a in [
+            ('Does Premium include Paid courses?',
+             'No - Paid and Premium are two different things: Premium is a subscription for ' ~ (course_name or 'this course') ~ ' alone, and while it is active it opens every item marked Premium inside it, mock tests, notes, coding and practice sets, including ones added after you subscribe, whereas anything marked Paid is a separate product with its own price that you buy once and keep for its own validity, so subscribing to Premium never opens a Paid item and buying a Paid item never gives you Premium, and you can hold both at the same time with each listed separately in your purchases.'),
             ('Where is this plan available?',
              'Everywhere. Prices are shown in INR and payment is processed securely by Razorpay.'),
             ('What do I get with a premium subscription?',
+             'Every test marked Premium in ' ~ (course_name or 'this course') ~ ' unlocks immediately, for as long as the subscription is active. Other courses need their own subscription, and items marked Paid are bought separately.' if course_mode else
              'Every paid question unlocks immediately, on the practice page and from your purchases dashboard, for as long as the subscription is active.'),
             ('When does my subscription start?',
              'The moment your payment is verified. Monthly runs 30 days, yearly runs 365 days.'),
@@ -193,22 +287,27 @@
         </details>
         {% endfor %}
     </div>
+    {% endif %}
 </main>
 
+{% if not subscription %}
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 <script>
 window.PCP_BILLING = {
-    orderUrl: {{ url_for('practice_coding.subscribe_order') | tojson }},
-    verifyUrl: {{ url_for('practice_coding.subscribe_verify') | tojson }},
+    orderUrl: {{ (order_url or url_for('practice_coding.subscribe_order')) | tojson }},
+    verifyUrl: {{ (verify_url or url_for('practice_coding.subscribe_verify')) | tojson }},
+    nextUrl: {{ (next_url or '') | tojson }},
     email: {{ user.email | tojson }},
     username: {{ user.username | tojson }},
+    courseCode: {{ (course_code or '') | tojson }},
     plans: {
-        monthly: { label: 'Monthly', paise: {{ plans.monthly.amount | tojson }} },
-        yearly: { label: 'Yearly', paise: {{ plans.yearly.amount | tojson }} }
+        {% for plan in plans %}{{ plan.key | tojson }}: { label: {{ plan.label | tojson }}, paise: {{ plan.amount | tojson }} }{{ ',' if not loop.last }}
+        {% endfor %}
     }
 };
 </script>
 <script src="{{ url_for('static', filename='js/users/shared/spp_checkout.js') }}"></script>
+{% endif %}
 <script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/practice_coding/premium.js') }}"></script>
 </body>
 </html>

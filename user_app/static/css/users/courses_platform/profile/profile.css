@@ -766,3 +766,22 @@ body.pf-mini .menu-link:hover::after { opacity: 1; visibility: visible; }
     body.pf-mini .menu-item::after,
     body.pf-mini .menu-link::after { display: none; }
 }
+
+.dashboard-course-card .card-body { display: flex; flex-direction: column; }
+.dashboard-course-card h4 { min-height: 2.7rem; }
+.dashboard-course-card p { margin-bottom: 1rem; }
+.dashboard-course-card .dc-action {
+    margin-top: auto;
+    width: 100%;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    border-radius: 999px;
+}
+.course-grid { align-items: stretch; }
+.purchase-card--premium { border-left-color: #992c25; }
+.purchase-card--premium .pc-title i { color: #f0ae06; margin-right: 4px; }
+.pc-status--ended { background: #f1f5f9 !important; color: #64748b !important; }
+.purchase-section-title { display: flex; align-items: center; gap: 0.5rem; }

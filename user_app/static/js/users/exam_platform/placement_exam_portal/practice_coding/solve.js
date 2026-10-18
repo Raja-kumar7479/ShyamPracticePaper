@@ -11,7 +11,6 @@
 
     var DRAFT_KEY = 'pcp-draft-' + CFG.questionId + '-';
 
-    // ---------------- editor basics ----------------
     function syncGutter() {
         var lines = code.value.split('\n').length || 1;
         var html = '';
@@ -60,7 +59,6 @@
     langSel.addEventListener('change', loadLanguage);
     loadLanguage();
 
-    // ---------------- io tabs ----------------
     document.querySelectorAll('.pc-io__tab').forEach(function (tab) {
         tab.addEventListener('click', function () {
             document.querySelectorAll('.pc-io__tab').forEach(function (t) {
@@ -72,7 +70,6 @@
         });
     });
 
-    // ---------------- splitter ----------------
     var splitter = document.getElementById('pcSplitter');
     if (splitter) {
         var dragging = false;
@@ -85,7 +82,6 @@
         });
     }
 
-    // ---------------- run / submit ----------------
     var resultBox = document.getElementById('pcResult');
     var busy = false;
 

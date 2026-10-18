@@ -27,10 +27,13 @@ def purchase_dashboard(course_code, unique_code):
         return redirect(url_for('users.user_login'))
 
     purchases = user_op.get_all_purchases(user_email)
+    pending_orders = []
+    try:
+        from routes.courses_platform.payment.purchased_payment.payment_orders import pending_orders_for
+        pending_orders = pending_orders_for(user_email)
+    except Exception:
+        logger.exception(f"PURCHASES: could not read pending orders for {user_email}")
 
-    # A premium subscription is a purchase too. Redirecting on "no course
-    # purchases" sent anyone who had only subscribed straight to the shop, so
-    # they could never see the plan they paid for or download its receipt.
     subs = []
     try:
         from routes.exam_platform.placement_exam_portal.practice_coding import models as pcp_models
@@ -38,7 +41,7 @@ def purchase_dashboard(course_code, unique_code):
     except Exception:
         logger.exception("PURCHASES: could not read practice subscriptions")
 
-    if not purchases and not subs:
+    if not purchases and not subs and not pending_orders:
         flash("No purchases found.", "cart_info")
         logger.info(f"No purchases found for user {user_email}.")
         return redirect(url_for('users.course_shop', course_code=course_code, unique_code=unique_code))
@@ -83,8 +86,6 @@ def purchase_dashboard(course_code, unique_code):
             logger.info(f"User {user_email} no longer enrolled in {item_course}; access link hidden.")
             return None
 
-        # purchase.section is a snapshot taken at checkout, so it can still hold
-        # a pre-enum spelling; taxonomy.normalize handles those.
         url = taxonomy.open_url(section, section_id, item_course, item_unique,
                                 purchase.get('title'))
         if url:
@@ -107,34 +108,34 @@ def purchase_dashboard(course_code, unique_code):
 
         total_spent += float(purchase.get('final_price') or 0)
 
-        expiry_date = purchase.get('validity_expires_at')
-        purchase['is_expired'] = False
-        purchase['is_expiring_soon'] = False
+        purchase['kept'] = (purchase.get('content_status') or 'active').lower() != 'active'
 
-        if expiry_date:
-            if expiry_date < now:
-                purchase['is_expired'] = True
-            elif now <= expiry_date <= threshold:
-                purchase['is_expiring_soon'] = True
-                expiring_soon_count += 1
+    for sub in subs:
+        total_purchases += 1
+        total_spent += float(sub.get('amount_paise') or 0) / 100.0
+        sub_expiry = sub.get('expires_at')
+        if sub_expiry and now <= sub_expiry <= threshold:
+            expiring_soon_count += 1
 
-    # Grouped under the catalog's display label, so the dashboard says
-    # "Coding Test" instead of the raw section key stored at checkout.
     grouped_purchases = defaultdict(list)
     for p in purchases:
         grouped_purchases[taxonomy.label_for(p.get('section'))].append(p)
     
     initials = "".join([name[0] for name in user_username.split()]).upper()
 
-    # A practice-coding subscription is a purchase too, so it appears here as
-    # its own card linking straight to the unlocked premium problems.
     practice_premium = None
-    # Read once above; every subscription ever paid for stays listed so a
-    # lapsed plan and its receipt remain in the student's own record.
+    active_premiums = []
     subscription_history = subs
     try:
         from routes.exam_platform.placement_exam_portal.practice_coding import models as pcp_models
-        practice_premium = pcp_models.active_subscription(user_email)
+        from routes.exam_platform.premium_catalog import renewal_state
+        from routes.courses_platform.databases.enrollment_db import UserOperation as _EnrollOps
+        enroll_ops = _EnrollOps()
+        for sub in pcp_models.active_subscriptions(user_email):
+            sub = dict(sub)
+            sub.update(renewal_state(sub))
+            active_premiums.append(sub)
+        practice_premium = active_premiums[0] if active_premiums else None
     except Exception:
         logger.exception("PURCHASES: could not read practice subscription")
 
@@ -142,7 +143,10 @@ def purchase_dashboard(course_code, unique_code):
 
     return render_template(
         'users/courses_platform/payment/purchase.html',
+        pending_orders=pending_orders,
         practice_premium=practice_premium,
+        active_premiums=active_premiums,
+        now=datetime.now(),
         subscription_history=subscription_history,
         grouped_purchases=grouped_purchases,
         course_code=course_code,

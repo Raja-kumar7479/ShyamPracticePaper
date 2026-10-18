@@ -12,6 +12,13 @@ document.addEventListener("DOMContentLoaded", function () {
     testManager.init(testKey, courseCode, uniqueCode);
 
     const proctor = new ProctoringSystem(sectionId, testKey, userEmail, courseCode, uniqueCode);
+
+    window.addEventListener('message', function (event) {
+        const data = event.data;
+        if (event.origin !== window.location.origin || !data || data.type !== 'tcs-coding-violation') return;
+        if (typeof data.violationType !== 'string' || !/^(context_menu|clipboard_(copy|paste|cut))$/.test(data.violationType)) return;
+        proctor.sendViolation(data.violationType, String(data.details || '').slice(0, 200));
+    });
 });
 
 (function () {
@@ -21,6 +28,28 @@ document.addEventListener("DOMContentLoaded", function () {
     var hbUrl = '/test-heartbeat/' + encodeURIComponent(key);
     var byeUrl = '/release-test-window/' + encodeURIComponent(key);
     var finished = false;
+    var lastKey = { chord: 'none', at: 0 };
+    window.addEventListener('keydown', function (e) {
+        var parts = [];
+        if (e.metaKey) parts.push('cmd');
+        if (e.ctrlKey) parts.push('ctrl');
+        if (e.altKey) parts.push('alt');
+        if (e.shiftKey) parts.push('shift');
+        parts.push((e.key || '').toLowerCase());
+        lastKey = { chord: parts.join('+'), at: Date.now() };
+    }, true);
+
+    function exitInfo() {
+        return JSON.stringify({
+            reason: 'window_closed',
+            last_key: lastKey.chord,
+            key_age_ms: lastKey.at ? Date.now() - lastKey.at : -1,
+            fullscreen: !!document.fullscreenElement,
+            opener: !!(window.opener && !window.opener.closed),
+            visibility: document.visibilityState,
+            agent: navigator.userAgent
+        });
+    }
 
     function beat() {
         if (finished) return;
@@ -31,7 +60,7 @@ document.addEventListener("DOMContentLoaded", function () {
             .catch(function () {});
     }
     beat();
-    setInterval(beat, 10000);
+    setInterval(beat, 15000);
 
     window.markTestFinished = function () { finished = true; };
 
@@ -39,19 +68,18 @@ document.addEventListener("DOMContentLoaded", function () {
         if (finished) return;
         finished = true;
         try {
-            if (!navigator.sendBeacon(byeUrl, new Blob([], { type: 'text/plain' }))) {
+            if (!navigator.sendBeacon(byeUrl, new Blob([exitInfo()], { type: 'text/plain' }))) {
                 throw new Error('beacon refused');
             }
         } catch (e) {
             try {
                 var xhr = new XMLHttpRequest();
                 xhr.open('POST', byeUrl, false);
-                xhr.send();
+                xhr.send(exitInfo());
             } catch (err) {}
         }
     }
 
-    window.addEventListener('pagehide', release);
-    window.addEventListener('beforeunload', release);
+    window.addEventListener('pagehide', function (e) { if (!e.persisted) release(); });
     window.addEventListener('unload', release);
 })();

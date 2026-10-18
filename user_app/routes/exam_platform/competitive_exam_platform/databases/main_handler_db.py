@@ -77,7 +77,8 @@ class UserOperation:
 
     def get_test_status_for_user(self, email, test_key):
         try:
-            query = "SELECT status, start_time, attempt_number, last_heartbeat FROM user_test_log WHERE email = %s AND test_key = %s ORDER BY attempt_number DESC LIMIT 1"
+            query = ("SELECT status, start_time, attempt_number, last_heartbeat FROM user_test_log "
+                     "WHERE email = %s AND test_key = %s ORDER BY (status = 'completed') DESC, attempt_number DESC LIMIT 1")
             result = self.fetch_one(query, (email, test_key))
             return result if result else {'status': 'not_started', 'start_time': None, 'attempt_number': 0, 'last_heartbeat': None}
         except Exception as e:
@@ -98,7 +99,15 @@ class UserOperation:
             test_info = self.get_test_details(test_key)
             if not test_info:
                 raise Exception("Test details not found for storing log.")
-            
+
+            finished = self.fetch_one(
+                "SELECT id FROM user_test_log WHERE email = %s AND test_key = %s AND status = 'completed' LIMIT 1",
+                (email, test_key)
+            )
+            if finished:
+                logger.warning(f"Start refused for {email} on {test_key}: the test is already submitted.")
+                return None
+
             existing_unperformed_test = self.fetch_one(
                 "SELECT id, attempt_number FROM user_test_log WHERE email = %s AND test_key = %s AND status = 'unperformed' ORDER BY attempt_number DESC LIMIT 1",
                 (email, test_key)
@@ -119,7 +128,16 @@ class UserOperation:
                     INSERT INTO user_test_log (email, test_id, test_key, username, start_time, status, attempt_number, is_checkbox_checked, ready_to_begin, accepted_at)
                     VALUES (%s, %s, %s, %s, NOW(), 'unperformed', %s, %s, %s, NOW())
                 """
-                self.execute_query(query, (email, test_info['test_id'], test_key, username, new_attempt_number, int(is_checkbox_checked), int(ready_to_begin)))
+                try:
+                    self.execute_query(query, (email, test_info['test_id'], test_key, username, new_attempt_number, int(is_checkbox_checked), int(ready_to_begin)))
+                except mysql.connector.Error as err:
+                    if getattr(err, 'errno', None) != 1062:
+                        raise
+                    twin = self.fetch_one(
+                        "SELECT attempt_number FROM user_test_log WHERE email = %s AND test_key = %s "
+                        "AND attempt_number = %s", (email, test_key, new_attempt_number))
+                    logger.info(f"Concurrent start for {email} on {test_key}: reusing attempt {new_attempt_number}")
+                    return twin['attempt_number'] if twin else new_attempt_number
                 return new_attempt_number
         except Exception as e:
             logger.exception(f"Error storing/updating test log for user {email}, test_key {test_key}")

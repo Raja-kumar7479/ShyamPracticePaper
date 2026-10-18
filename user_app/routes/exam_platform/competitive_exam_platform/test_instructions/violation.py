@@ -56,7 +56,7 @@ def terminate_violation(test_key, course_code, unique_code):
         return jsonify({'status': 'error', 'message': 'Authentication required'}), 401
 
     data = request.get_json(silent=True) or {}
-    violation_type = data.get('violationType', 'away_too_long')
+    violation_type = data.get('violationType') or data.get('reason') or 'away_too_long'
     details = data.get('details', '')
 
     attempt_number = session.get('current_test_attempt_number')
@@ -72,7 +72,10 @@ def terminate_violation(test_key, course_code, unique_code):
     session.modified = True
 
     logger.warning(f"TEST TERMINATED: [{email}] test={test_key} reason={violation_type} details={details!r}")
-    return jsonify({'status': 'terminated'}), 200
+    from flask import url_for
+    return jsonify({'status': 'terminated',
+                    'redirect': url_for('users.test_terminated', test_key=test_key, course_code=course_code,
+                                        unique_code=unique_code, violation_type=violation_type)}), 200
 
 
 @users_bp.route('/test-terminated/<test_key>/<course_code>/<unique_code>/<violation_type>')

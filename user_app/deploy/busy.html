@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Please wait - ShyamPracticePaper</title>
+<style>
+body { margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #fdf8f3; color: #5c1a15; font: 16px/1.6 "Segoe UI", system-ui, sans-serif; }
+.box { max-width: 440px; padding: 28px 24px; text-align: center; }
+.spin { width: 48px; height: 48px; margin: 0 auto 18px; border: 4px solid #ead9d2; border-top-color: #992c25; border-radius: 50%; animation: turn .8s linear infinite; }
+@keyframes turn { to { transform: rotate(360deg); } }
+h1 { margin: 0 0 8px; font-size: 20px; }
+p { margin: 0 0 6px; color: #7a5a52; }
+button { margin-top: 16px; padding: 10px 20px; border: 0; border-radius: 8px; background: #992c25; color: #fff; font: inherit; font-weight: 600; cursor: pointer; }
+button:hover { background: #7a231d; }
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="spin" id="spin"></div>
+  <h1 id="title">Many students are joining right now</h1>
+  <p id="note">Please wait. This page tries again by itself.</p>
+  <p id="count"></p>
+  <button type="button" id="again" hidden>Try again</button>
+</div>
+<script>
+(function () {
+    var KEY = 'sppBusy:' + location.pathname;
+    var WAITS = [3, 5, 8, 12, 15, 20];
+    var tries = 0;
+    try { tries = parseInt(sessionStorage.getItem(KEY) || '0', 10) || 0; } catch (e) {}
+    var again = document.getElementById('again');
+    again.addEventListener('click', function () {
+        try { sessionStorage.removeItem(KEY); } catch (e) {}
+        location.reload();
+    });
+    if (tries >= WAITS.length) {
+        document.getElementById('spin').style.display = 'none';
+        document.getElementById('title').textContent = 'The server is still busy';
+        document.getElementById('note').textContent = 'Your place is not lost. Please press Try again in a minute.';
+        again.hidden = false;
+        try { sessionStorage.removeItem(KEY); } catch (e) {}
+        return;
+    }
+    var left = WAITS[tries] + Math.floor(Math.random() * 3);
+    var count = document.getElementById('count');
+    try { sessionStorage.setItem(KEY, String(tries + 1)); } catch (e) {}
+    function tick() {
+        count.textContent = 'Trying again in ' + left + ' second' + (left === 1 ? '' : 's');
+        if (left <= 0) { location.reload(); return; }
+        left -= 1;
+        setTimeout(tick, 1000);
+    }
+    tick();
+}());
+</script>
+</body>
+</html>

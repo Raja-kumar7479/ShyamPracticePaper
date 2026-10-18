@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Bank</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/brand-bootstrap.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-utils.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-shell.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/manage_mock_test/coding_question.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/manage_practice_coding/practice_coding.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token is defined else '' }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-csrf.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-toast.css') }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-toast.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-confirm.css') }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-confirm.js') }}"></script>
+</head>
+<body>
+
+{% with page_key = 'practice_quiz' %}
+    {% include 'admin/_sidebar.html' %}
+{% endwith %}
+
+<div class="as-main">
+    <header class="as-topbar">
+        <button class="as-toggle" type="button" onclick="asToggle()" aria-label="Toggle menu"><i class="fas fa-bars"></i></button>
+        <h1 class="as-title">Quiz Bank (MCQ)</h1>
+        <span class="as-chip">{{ stats.total or 0 }} questions &middot; {{ stats.free or 0 }} free &middot; {{ stats.paid or 0 }} paid</span>
+    </header>
+
+    <div class="as-page">
+        <div style="display:flex;gap:14px;align-items:flex-start;padding:16px 20px;margin-bottom:22px;border:1px solid #e6d7c9;border-left:4px solid #6b1d2b;border-radius:10px;background:#fdf8f3">
+            <i class="fas fa-info-circle" style="margin-top:3px;color:#6b1d2b;font-size:18px"></i>
+            <div>
+                <strong>MCQ quizzes, grouped by subject</strong>
+                <p style="margin:4px 0 0;color:#5c5148;font-size:13.5px;line-height:1.6">
+                    Students pick a subject (Java, SQL, Algorithms...) and take it as a
+                    <em>Quiz</em> (result at the end) or an <em>Assessment</em> (answer revealed and locked
+                    after every question). <strong>Paid</strong> questions unlock with the Coding Practice
+                    Premium subscription - the same one that unlocks paid coding problems - which is the
+                    bundle that attracts subscribers. The explanation you write is shown on the result page.
+                </p>
+            </div>
+        </div>
+
+        <section style="padding:20px 26px;margin-bottom:26px;border:1px solid #e8e2db;border-radius:12px;background:#fff">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <h2 style="display:flex;align-items:center;gap:10px;margin:0 0 6px;font-size:17px;font-weight:700">
+                        <i class="fas fa-file-arrow-up" style="color:#6b1d2b"></i> Bulk upload (Excel / CSV)
+                    </h2>
+                    <small class="cdp-help">One MCQ per row: subject, question, four options, correct letter,
+                        explanation, access (free/paid). The whole file is checked first: any bad row stops the import, and questions already in the bank are skipped - so the same sheet can be uploaded again safely.</small>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a class="btn btn-outline-primary btn-sm" href="/api/practice-quiz/bulk/template?fmt=xlsx">
+                        <i class="fas fa-file-excel me-1"></i> Excel template
+                    </a>
+                    <a class="btn btn-outline-primary btn-sm" href="/api/practice-quiz/bulk/template">
+                        <i class="fas fa-download me-1"></i> CSV template
+                    </a>
+                    <label class="btn btn-primary btn-sm mb-0">
+                        <i class="fas fa-upload me-1"></i> Upload Excel / CSV
+                        <input type="file" id="qzBulkFile" accept=".csv,.xlsx" hidden>
+                    </label>
+                </div>
+            </div>
+            <div id="qzBulkResult" class="mt-2"></div>
+        </section>
+
+        <section style="padding:24px 26px;margin-bottom:26px;border:1px solid #e8e2db;border-radius:12px;background:#fff">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h2 style="display:flex;align-items:center;gap:10px;margin:0;font-size:18px;font-weight:700" id="qzEditorTitle">
+                    <i class="fas fa-plus-circle" style="color:#6b1d2b"></i> Add a question
+                </h2>
+                <button type="button" class="btn btn-sm btn-outline-secondary is-hidden" id="qzCancelEdit">
+                    <i class="fas fa-times me-1"></i> Cancel edit
+                </button>
+            </div>
+
+            <input type="hidden" id="qzId">
+
+            <div class="row g-2">
+                <div class="col-lg-4"><label class="form-label">Subject <span class="cdp-req">*</span></label>
+                    <input type="text" class="form-control" id="qzSubject" list="qzSubjects" placeholder="Java">
+                    <datalist id="qzSubjects">
+                        {% for s in subjects %}<option value="{{ s }}">{% endfor %}
+                    </datalist></div>
+                <div class="col-lg-3"><label class="form-label">Access</label>
+                    <div class="pcq-tier" id="qzTier">
+                        <label class="pcq-tier__opt is-active" data-tier="free">
+                            <input type="radio" name="qzTier" value="free" checked>
+                            <i class="fas fa-unlock"></i> Free
+                        </label>
+                        <label class="pcq-tier__opt" data-tier="paid">
+                            <input type="radio" name="qzTier" value="paid">
+                            <i class="fas fa-crown"></i> Paid
+                        </label>
+                    </div></div>
+                <div class="col-lg-2"><label class="form-label">Order</label>
+                    <input type="number" class="form-control" id="qzPosition" value="0" min="0" max="100000"></div>
+                <div class="col-lg-3 d-flex align-items-end">
+                    <small class="cdp-help">Paid questions unlock with the Coding Practice Premium bundle.</small></div>
+            </div>
+
+            <div class="cdp-part" data-part="question">
+                <div class="cdp-part__head">
+                    <h6>Question <span class="cdp-req">*</span></h6>
+                    <div class="cdp-modes">
+                        <button type="button" class="cdp-mode is-active" data-mode="text"><i class="fas fa-keyboard"></i> Type</button>
+                        <button type="button" class="cdp-mode" data-mode="image"><i class="fas fa-image"></i> Image</button>
+                    </div>
+                </div>
+                <div class="cdp-body" data-mode="text">
+                    <textarea class="form-control cdp-mono" id="qzQuestion" rows="4"
+                              placeholder="e.g. Which keyword makes a variable constant in Java?"></textarea>
+                </div>
+                <div class="cdp-body is-hidden" data-mode="image">
+                    <input type="file" class="form-control" id="qzImagePick" accept="image/*">
+                    <div class="cdp-preview" id="qzImagePreview"></div>
+                </div>
+            </div>
+
+            <div class="cdp-part">
+                <div class="cdp-part__head"><h6>Options &amp; correct answer <span class="cdp-req">*</span></h6></div>
+                <small class="cdp-help">Fill all four options, then tick the radio next to the correct one.</small>
+                <div class="row g-2 mt-1">
+                    {% for letter in ['A','B','C','D'] %}
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <input class="form-check-input mt-0 me-2" type="radio"
+                                       name="qzCorrect" value="{{ letter }}"
+                                       title="Mark {{ letter }} as correct"> {{ letter }}
+                            </span>
+                            <input type="text" class="form-control" id="qzOpt{{ letter }}"
+                                   placeholder="Option {{ letter }}">
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="cdp-part">
+                <div class="cdp-part__head"><h6>Explanation <small class="cdp-help">shown on the result page</small></h6></div>
+                <textarea class="form-control" id="qzExplanation" rows="2"
+                          placeholder="Why is that the correct answer? Students read this after submitting."></textarea>
+            </div>
+
+            <div class="d-flex gap-2 justify-content-end mt-3">
+                <button type="button" class="btn btn-primary btn-lg" id="qzSaveBtn">
+                    <i class="fas fa-save me-1"></i><span id="qzSaveLabel">Save question</span>
+                </button>
+            </div>
+        </section>
+
+        <section style="padding:24px 26px;border:1px solid #e8e2db;border-radius:12px;background:#fff">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h2 style="display:flex;align-items:center;gap:10px;margin:0;font-size:18px;font-weight:700">
+                    <i class="fas fa-list-ol" style="color:#6b1d2b"></i> Quiz bank
+                </h2>
+                <div class="d-flex gap-2">
+                    <select class="form-select form-select-sm" id="qzFilterSubject" style="width:auto">
+                        <option value="">All subjects</option>
+                    </select>
+                    <select class="form-select form-select-sm" id="qzFilterTier" style="width:auto">
+                        <option value="">Free + Paid</option>
+                        <option value="free">Free only</option>
+                        <option value="paid">Paid only</option>
+                    </select>
+                    <select class="form-select form-select-sm" id="qzFilterStatus" style="width:auto">
+                        <option value="">Active</option>
+                        <option value="removed">Removed</option>
+                    </select>
+                </div>
+            </div>
+            <div id="qzList" class="cd-qlist"></div>
+        </section>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/admin/admin-shell.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/manage_practice_coding/practice_quiz.js') }}"></script>
+</body>
+</html>

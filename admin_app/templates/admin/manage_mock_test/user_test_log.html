@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Test Logs</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/brand-bootstrap.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/manage_mock_test/user_test_log.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-utils.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-shell.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token is defined else '' }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-csrf.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-toast.css') }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-toast.js') }}"></script>
+</head>
+<body>
+
+{% with page_key = 'test_logs' %}
+    {% include 'admin/_sidebar.html' %}
+{% endwith %}
+
+<div class="as-main">
+    <header class="as-topbar">
+        <button class="as-toggle" type="button" onclick="asToggle()" aria-label="Toggle menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="as-title">Student Test Logs</h1>
+    </header>
+    <div class="as-page">
+
+<div class="container mt-5">
+    <h2>Manage User Test Logs</h2>
+    <hr>
+    <div id="flash-messages"></div>
+    <div class="alert alert-info d-flex align-items-center" role="alert">
+        Total Unique Students Attempted Test: <span id="liveTestAttemptCount" class="highlighted-count ml-2">{{ unique_attempts_count }}</span>
+    </div>
+
+    <div id="viewDataContainer">
+        <button id="viewLogsBtn" class="btn btn-primary btn-lg">View Test Logs</button>
+    </div>
+
+    <div class="table-responsive" id="logDataContainer">
+        <table class="table table-bordered table-striped" id="testLogTable">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Username</th>
+                    <th>Test ID</th>
+                    <th>Test Key</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center" id="pagination">
+            </ul>
+        </nav>
+    </div>
+</div>
+<script src="{{ url_for('static', filename='js/admin/manage_mock_test/user_test_log.js') }}"></script>
+    </div>
+</div>
+</body>
+</html>

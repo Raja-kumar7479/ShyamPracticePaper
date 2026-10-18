@@ -1,0 +1,15 @@
+[Unit]
+Description=ShyamPracticePaper admin app
+After=network.target
+
+[Service]
+User=spp
+WorkingDirectory=/srv/admin_app
+EnvironmentFile=/srv/admin_app/.env
+Environment=APP_ENV=production
+ExecStart=/srv/admin_app/.venv/bin/gunicorn -w 2 --timeout 300 -b 127.0.0.1:5001 wsgi:app
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

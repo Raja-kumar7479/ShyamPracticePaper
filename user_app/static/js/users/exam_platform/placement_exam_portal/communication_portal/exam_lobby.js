@@ -1,4 +1,5 @@
-const socket = io();
+(function () {
+const socket = io({ transports: ['websocket', 'polling'] });
   const statusDot = document.getElementById('socketStatus');
   const statusMsg = document.getElementById('socketMsg');
 
@@ -30,36 +31,27 @@ const socket = io();
       btnStart.innerText = "Start Test";
     }
   }, 1000);
-
-  // Full screen is entered on the Start click itself (a real user gesture),
-  // and navigation waits until it is active so the test window opens in full
-  // screen; the window guard on that page silently re-enters if the browser
-  // dropped it across the navigation. No popup is involved at entry.
   const startLink = document.getElementById('startLink');
   if (startLink) {
     let launching = false;
     startLink.addEventListener('click', function (e) {
       e.preventDefault();
       if (btnStart.disabled || launching) return;
+      var consent = document.getElementById('consentCheck');
+      if (consent && !consent.checked) {
+        consent.focus();
+        document.getElementById('consentWrap').classList.add('is-missing');
+        return;
+      }
       launching = true;
       btnStart.disabled = true;
       btnStart.innerText = 'Starting...';
       const href = startLink.getAttribute('href');
-      let done = false;
-      function go() {
-        if (done) return;
-        done = true;
+      if (typeof window.sppLaunchExam === 'function') {
+        window.sppLaunchExam({ url: href, expect: '/start_test_window/' });
+      } else {
         window.location.href = href;
       }
-      const el = document.documentElement;
-      const fn = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
-      if (fn) {
-        try {
-          const r = fn.call(el);
-          if (r && typeof r.then === 'function') { r.then(go).catch(go); }
-          else { go(); }
-        } catch (err) { go(); }
-      } else { go(); }
-      setTimeout(go, 600);
     });
   }
+}());

@@ -903,3 +903,51 @@
 }
 
 .test-card[data-locked="1"] .card-body { opacity: .85; }
+
+.content-container .stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 22px; }
+.content-container .stat-card { padding: 18px 20px; gap: 14px; transition: none; }
+.content-container .stat-card:hover { transform: none; box-shadow: var(--shadow-sm); }
+.content-container .stat-icon { width: 48px; height: 48px; border-radius: 12px; }
+.content-container .stat-info .value { font-size: 1.35rem; }
+.content-container .custom-tabs { gap: 8px; margin-bottom: 18px; }
+.content-container .tab-btn { padding: 9px 18px; font-size: .86rem; transition: none; }
+
+.content-container .test-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 18px; align-items: start; }
+.test-grid .test-card { height: auto; border-radius: 14px; border: 1px solid var(--border-color); box-shadow: 0 2px 10px rgba(30, 20, 10, .05); transition: none; }
+.test-grid .test-card:hover { transform: none; box-shadow: 0 2px 10px rgba(30, 20, 10, .05); border-color: var(--primary-color); }
+.test-grid .test-card .card-status { position: absolute; top: 14px; right: 14px; font-size: .68rem; padding: 4px 10px; letter-spacing: .4px; }
+.test-grid .test-card .card-body { padding: 18px 18px 0; flex-grow: 0; }
+.test-grid .test-card .card-title { font-size: 1.05rem; font-weight: 700; line-height: 1.3; padding-right: 96px; margin-bottom: 4px; word-break: break-word; }
+.test-grid .test-card .card-subtitle { font-size: .86rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4; }
+.test-grid .test-card .tags-container { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 0; }
+.test-grid .test-card .tag { font-size: .74rem; padding: 4px 10px; border-radius: 999px; font-weight: 600; }
+.test-grid .test-card .meta-info { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 14px 0 0; padding: 0; border: 0; }
+.test-grid .test-card .meta-item { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 9px 6px; border-radius: 10px; background: rgba(153, 44, 37, .05); font-size: .82rem; font-weight: 600; color: var(--text-primary); text-align: center; line-height: 1.2; }
+.test-grid .test-card .meta-item i { font-size: .9rem; color: var(--primary-color); }
+.test-grid .test-card .card-footer { padding: 14px 18px 18px; margin: 0; background: transparent; border: 0; }
+.test-grid .test-card .btn-action { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 46px; padding: 0 12px; border-radius: 10px; font-size: .86rem; font-weight: 700; text-align: center; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: none; }
+.test-grid .test-card .btn-action i { flex: 0 0 auto; }
+.test-grid .test-card .btn-action:hover { transform: none; }
+.test-grid .test-card[data-locked="1"] .card-body { opacity: 1; }
+
+@media (max-width: 991px) {
+    .content-container .stats-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .content-container .stat-card { padding: 14px; gap: 10px; flex-direction: column; align-items: flex-start; }
+    .content-container .test-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+}
+@media (max-width: 575px) {
+    .content-container { padding: 12px !important; }
+    .content-container .stats-grid { grid-template-columns: 1fr; gap: 10px; }
+    .content-container .stat-card { flex-direction: row; align-items: center; padding: 12px 14px; }
+    .content-container .stat-icon { width: 42px; height: 42px; }
+    .content-container .custom-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .content-container .tab-btn { padding: 9px 6px; font-size: .78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .content-container .test-grid { grid-template-columns: 1fr; gap: 12px; }
+    .test-grid .test-card .card-body { padding: 16px 14px 0; }
+    .test-grid .test-card .card-title { font-size: 1rem; padding-right: 88px; }
+    .test-grid .test-card .card-footer { padding: 12px 14px 14px; }
+    .test-grid .test-card .meta-item { font-size: .78rem; padding: 8px 4px; }
+}
+
+.test-grid .test-card .tag-paid { background: #eaf1fb; color: #1b4d8f; border: 1px solid #c9dcf5; }
+.test-grid .test-card .tag-paid i { color: #1b4d8f; }

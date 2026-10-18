@@ -36,7 +36,6 @@
         </div>
     </div>
 
-    <!-- ============ score hero ============ -->
     <section class="cr-hero">
         <div class="cr-ring" style="--pct: {{ summary.score_pct }}"
              role="img" aria-label="Scored {{ summary.score }} out of {{ summary.max_score }}">
@@ -125,7 +124,6 @@
     </section>
     {% endif %}
 
-    <!-- ============ comparison ============ -->
     {% if cohort.participants %}
     <section class="cr-panel">
         <div class="cr-panel__head">
@@ -171,7 +169,6 @@
     </section>
     {% endif %}
 
-    <!-- ============ per section ============ -->
     {% if sections | length > 1 %}
     <section class="cr-panel">
         <div class="cr-panel__head"><h3><i class="fas fa-layer-group"></i> By section</h3></div>
@@ -192,7 +189,6 @@
     </section>
     {% endif %}
 
-    <!-- ============ per question ============ -->
     <section class="cr-panel">
         <div class="cr-panel__head">
             <h3><i class="fas fa-list-check"></i> Question by question</h3>

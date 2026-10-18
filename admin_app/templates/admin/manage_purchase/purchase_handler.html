@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchases</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/brand-bootstrap.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/manage_purchase/purchase_handler.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-utils.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-shell.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token is defined else '' }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-csrf.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-toast.css') }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-toast.js') }}"></script>
+</head>
+<body>
+
+{% with page_key = 'purchases' %}
+    {% include 'admin/_sidebar.html' %}
+{% endwith %}
+
+<div class="as-main">
+    <header class="as-topbar">
+        <button class="as-toggle" type="button" onclick="asToggle()" aria-label="Toggle menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="as-title">Purchases</h1>
+    </header>
+    <div class="as-page">
+
+    <div class="container-fluid pu-wrap">
+
+        <section class="pu-view is-active" id="puView-lookup">
+            <div class="pu-card">
+                <h3 class="pu-h"><i class="fas fa-magnifying-glass"></i> Search Customers</h3>
+                <div class="pu-body">
+                    <div id="puStepSearch">
+                        <div class="pu-searchbar">
+                            <i class="fas fa-magnifying-glass pu-searchbar__icon"></i>
+                            <input type="search" id="puSearch" class="form-control form-control-lg" autocomplete="off"
+                                   placeholder="Email, name, phone, payment ID (pay_...), order ID (order_...) - any part of it">
+                        </div>
+                        <div class="pu-search-hint form-text">
+                            One box for everything: <span class="pu-chip pu-chip--premium"><i class="fas fa-crown"></i> Premium</span>
+                            <span class="pu-chip pu-chip--paid"><i class="fas fa-bag-shopping"></i> Paid content</span>
+                            <span class="pu-chip pu-chip--pending"><i class="fas fa-hourglass-half"></i> Unconfirmed orders</span>
+                            and registered accounts, across every course. Matches any part - <code>raj</code>, <code>7087</code>, <code>TaFS</code>.
+                        </div>
+                        <div id="puSearchResults" class="pu-buyers"></div>
+                    </div>
+
+                    <div id="puResults" class="is-hidden">
+                        <div class="pu-crumb">
+                            <button id="puBackToSearchBtn" type="button" class="btn btn-outline-secondary btn-sm"><i class="fas fa-arrow-left me-1"></i> Back to search</button>
+                            <span id="puCustomerLabel"></span>
+                            <button id="puRefreshLiveBtn" type="button" class="btn btn-outline-primary btn-sm ms-auto"><i class="fas fa-tower-broadcast me-1"></i> Re-check at Razorpay</button>
+                        </div>
+                        <div class="pu-summary" id="puSummary"></div>
+                        <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+                            <a id="puExportBtn" class="btn btn-outline-success btn-sm" href="#"><i class="fas fa-file-csv me-1"></i> Export CSV</a>
+                            <button id="puCopySummaryBtn" type="button" class="btn btn-outline-secondary btn-sm"><i class="fas fa-copy me-1"></i> Copy Support Summary</button>
+                            <span class="pu-legend ms-auto">
+                                <span><b>Gateway</b> = what Razorpay says right now</span>
+                                <span><b>Access</b> = what this platform has opened</span>
+                            </span>
+                        </div>
+                        <div id="puTables"></div>
+                    </div>
+
+                    <div id="puMessage" class="alert is-hidden mt-3"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="pu-view" id="puView-attention">
+            <div class="pu-card">
+                <h3 class="pu-h"><i class="fas fa-triangle-exclamation"></i> Needs Attention</h3>
+                <div class="pu-body">
+                    <p class="pu-hint"><i class="fas fa-lightbulb"></i>
+                        Every order from the last 30 days is compared with Razorpay: students who <strong>paid but got no access</strong>,
+                        refunds that <strong>still have access</strong>, and money <strong>on hold</strong>. Fix each one with one click.
+                    </p>
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <button id="puAttentionScanBtn" type="button" class="btn btn-primary"><i class="fas fa-tower-broadcast me-1"></i> Scan now</button>
+                        <span id="puAttentionMeta" class="text-muted small"></span>
+                    </div>
+                    <div id="puAttentionList"></div>
+                    <div id="puAttentionMessage" class="alert is-hidden mt-3"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="pu-view" id="puView-payment">
+            <div class="pu-card">
+                <h3 class="pu-h"><i class="fas fa-magnifying-glass-dollar"></i> Find by Payment ID</h3>
+                <div class="pu-body">
+                    <p class="pu-hint"><i class="fas fa-lightbulb"></i>
+                        A customer complains and only gives you a transaction ID? Paste it here - this searches every
+                        purchase and enrollment payment, then checks the <strong>live status at Razorpay</strong>.
+                    </p>
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-7">
+                            <label for="puPaymentId" class="form-label">Payment / Transaction ID</label>
+                            <input type="text" id="puPaymentId" class="form-control" placeholder="e.g. pay_TJ0SCMV0LONul2">
+                        </div>
+                        <div class="col-md-3">
+                            <button id="puFindPaymentBtn" class="btn btn-primary w-100"><i class="fas fa-search me-1"></i> Find</button>
+                        </div>
+                    </div>
+                    <div id="puPaymentResults" class="mt-3"></div>
+                    <div id="puPaymentMessage" class="alert is-hidden mt-3"></div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <div class="modal fade" id="puVerifyModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title"><i class="fas fa-tower-broadcast me-1"></i> Live Gateway Status</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body" id="puVerifyBody"></div>
+    </div></div></div>
+
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/admin/manage_purchase/purchase_manager.js') }}"></script>
+</body>
+</html>

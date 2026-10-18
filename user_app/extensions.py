@@ -24,18 +24,34 @@ except Exception as e:
     logger.warning("Redis check failed unexpectedly: %s. Falling back.", e)
     is_redis_available = False
 
+redis_pool = None
+storage_options = {}
 if is_redis_available:
+    redis_pool = redis.BlockingConnectionPool.from_url(
+        redis_url, max_connections=max(8, int(os.environ.get('REDIS_POOL_SIZE', '64'))), timeout=15)
     socketio = SocketIO(message_queue=redis_url)
     storage_uri = redis_url
+    storage_options = {'connection_pool': redis_pool}
 else:
     socketio = SocketIO()
     storage_uri = "memory://"
 
+def rate_limit_key():
+    try:
+        email = session.get('user_email')
+        if email and not str(email).startswith('guest_'):
+            return f"user:{email}"
+    except Exception:
+        pass
+    return get_remote_address()
+
+
 limiter = Limiter(
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
+    key_func=rate_limit_key,
+    default_limits=["3000 per hour", "30000 per day"],
     headers_enabled=True,
-    storage_uri=storage_uri
+    storage_uri=storage_uri,
+    storage_options=storage_options
 )
 
 

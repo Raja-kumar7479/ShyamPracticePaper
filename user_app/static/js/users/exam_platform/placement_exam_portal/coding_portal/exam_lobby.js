@@ -106,8 +106,6 @@
         }, Promise.resolve());
     }
 
-    // Turns the lobby document into the exam document without a top-level
-    // navigation, so the full screen entered on the Start click is never lost.
     function buildExamDocument(cfg, payload) {
         if (!document.querySelector('meta[name="csrf-token"]')) {
             var m = document.createElement('meta');
@@ -134,14 +132,30 @@
             });
     }
 
-    function startExamInPlace(href) {
-        var cfgEl = document.getElementById('examLaunchConfig');
-        if (!cfgEl) return Promise.reject(new Error('no launch config'));
-        var cfg = JSON.parse(cfgEl.textContent);
+    var RETRY_WAITS = [1500, 3000, 6000];
+
+    function fetchStart(href, attempt) {
         return fetch(href, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             credentials: 'same-origin'
         }).then(function (res) {
+            var busy = res.status >= 500 || res.status === 429 || res.status === 408;
+            if (!busy || attempt >= RETRY_WAITS.length) return res;
+            throw new Error('busy');
+        }).catch(function (err) {
+            if (attempt >= RETRY_WAITS.length) throw err;
+            button.innerHTML = '<span class="lobby-spin" aria-hidden="true"></span>Server is busy, trying again...';
+            return new Promise(function (resolve) {
+                setTimeout(resolve, RETRY_WAITS[attempt] + Math.floor(Math.random() * 800));
+            }).then(function () { return fetchStart(href, attempt + 1); });
+        });
+    }
+
+    function startExamInPlace(href) {
+        var cfgEl = document.getElementById('examLaunchConfig');
+        if (!cfgEl) return Promise.reject(new Error('no launch config'));
+        var cfg = JSON.parse(cfgEl.textContent);
+        return fetchStart(href, 0).then(function (res) {
             if (!res.ok) throw new Error('start failed (' + res.status + ')');
             var ct = res.headers.get('content-type') || '';
             if (ct.indexOf('application/json') === -1) throw new Error('not a fragment');
@@ -155,13 +169,10 @@
         });
     }
 
-    // Full screen is entered ON the Start click (a real user gesture), then
-    // the exam replaces the lobby inside the same document - there is no page
-    // navigation, so the browser has nothing to drop full screen for.
     function launch(href) {
         clearInterval(tick);
         button.disabled = true;
-        button.textContent = 'Starting...';
+        button.innerHTML = '<span class="lobby-spin" aria-hidden="true"></span>Starting...';
         enterFullscreen().catch(function () {}).then(function () {
             startExamInPlace(href).catch(function () {
                 window.location.href = href;

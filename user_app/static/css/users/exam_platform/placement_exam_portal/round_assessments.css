@@ -67,7 +67,8 @@ p, li { text-wrap: pretty; }
 .ra-toasts {
     position: fixed;
     top: 18px;
-    right: 18px;
+    left: 18px;
+    right: auto;
     z-index: 4000;
     display: flex;
     flex-direction: column;

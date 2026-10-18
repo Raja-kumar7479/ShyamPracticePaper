@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 AVAILABLE_ROUND_PORTALS = {'Communication'}
 
-# A round is now a section value, not a guess at what the title says.
 ROUND_SECTIONS = {
     'Communication': 'communication_test',
     'Aptitude': 'aptitude_test',
@@ -23,11 +22,6 @@ def section_for_round(round_name):
 
 
 def classify_round(title):
-    """Legacy title heuristic.
-
-    Kept only for rows created before the section enum existed; new code should
-    read course_content.section instead.
-    """
     t = (title or '').lower()
     if 'communication' in t or 'verbal' in t:
         return 'Communication'
@@ -50,7 +44,6 @@ class RoundsDB:
     def get_assessments_by_round(self, course_code, round_name, email):
         conn = self.get_conn(); cursor = conn.cursor(dictionary=True)
         try:
-            # The section names the round, so no title guessing is needed.
             cursor.execute("""
                 SELECT section_id, title FROM course_content
                 WHERE code = %s AND section = %s AND status = 'active'
@@ -122,17 +115,46 @@ def round_assessments(round_name, course_code, unique_code):
     session['unique_code'] = unique_code
     email, username, _ = get_user_session()
     tests = db_ops.get_assessments_by_round(course_code, round_name, email)
-    from routes.exam_platform.subscription_access import annotate_tests, PREMIUM_ENDPOINT
-    from flask import url_for as _uf
-    subscribed = annotate_tests(tests, email)
-    premium_url = _uf(PREMIUM_ENDPOINT)
+    from routes.exam_platform.subscription_access import annotate_tests, premium_url as _premium_url
+    subscribed = annotate_tests(tests, email, course_code=course_code, unique_code=unique_code)
+    premium_url = _premium_url(course_code, unique_code)
     locked_paid = db_ops.get_locked_paid_rounds(course_code, round_name, email)
     logger.info(f"ROUNDS: [{email}] opened {round_name!r} assessments for {course_code!r} "
                 f"({len(tests)} test(s), {len(locked_paid)} locked)")
-    return render_template('users/exam_platform/placement_exam_portal/round_assessments.html',
-                           tests=tests, round_name=round_name, course_code=course_code,
-                           unique_code=unique_code, username=username, email=email,
-                           locked_paid=locked_paid, subscribed=subscribed, premium_url=premium_url)
+    from flask import url_for
+    items, completed = [], []
+    for t in tests:
+        status = t.get('user_test_status') or 'not_started'
+        if status == 'completed':
+            completed.append({
+                'title': t.get('assessment_title'), 'subtitle': t.get('assessment_subtitle'), 'submitted_at': None,
+                'score': None, 'percentage': None, 'result_label': 'View Result',
+                'result_url': url_for('users.get_test_result', test_key=t['test_key'], round_name=round_name,
+                                      course_code=course_code, unique_code=unique_code)})
+            continue
+        items.append({
+            'title': t.get('assessment_title'), 'subtitle': t.get('assessment_subtitle'),
+            'status': 'unperformed' if status in ('started', 'pending', 'terminated') else 'pending',
+            'access': 'premium' if (t.get('access_label') == 'paid' or t.get('is_locked')) else 'free',
+            'locked': bool(t.get('is_locked')), 'unlock_url': t.get('premium_url') or premium_url,
+            'unlock_label': 'Unlock Premium', 'is_new': False,
+            'tags': [t.get('difficulty_level')] if t.get('difficulty_level') else [],
+            'meta': [{'icon': 'far fa-question-circle', 'text': f"{t.get('total_questions')} Qs"},
+                     {'icon': 'far fa-check-square', 'text': f"{t.get('total_marks')} Marks"},
+                     {'icon': 'far fa-clock', 'text': f"{t.get('duration_minutes')} Min"}],
+            'action_url': url_for('users.assessment_system_info', test_key=t['test_key'], round_name=round_name,
+                                  course_code=course_code, unique_code=unique_code),
+            'action_label': 'Start Test', 'resume_label': 'Resume Test', 'launch': 'same',
+        })
+    return render_template('users/exam_platform/test_list.html',
+                           portal_label=f'{round_name} Tests', portal_icon='fa-comments',
+                           intro='Speaking, listening and writing rounds. Each test opens in a proctored full-screen window.',
+                           tests=items, completed=completed, paid_blocks=locked_paid,
+                           round_name=round_name, course_code=course_code, unique_code=unique_code,
+                           username=username, email=email, dashboard_type='free',
+                           subscribed=subscribed, premium_url=premium_url,
+                           back_url=url_for('users.view_course_dashboard', course_code=course_code, unique_code=unique_code),
+                           shop_url=url_for('users.course_shop', course_code=course_code, unique_code=unique_code))
 
 
 @users_bp.route('/<round_name>/coming_soon/<course_code>/<unique_code>')

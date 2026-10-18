@@ -56,28 +56,16 @@
       if (out && typeof out.catch === "function") out.catch(function () { paint(); });
     }, { signal: signal });
 
-    // Esc and F11 leave fullscreen without touching the button, so the icon
-    // follows the event rather than the click.
     document.addEventListener("fullscreenchange", paint, { signal: signal });
     document.addEventListener("webkitfullscreenchange", paint, { signal: signal });
     paint();
   }
 
   function wireLeaveGuard(cfg, signal) {
-    // The browser "Leave site? Changes may not be saved" prompt was removed:
-    // it fired whenever the candidate exited full screen or moved away, sitting
-    // on top of the proctoring guard's own "Return to full screen" countdown
-    // and letting a candidate cancel and freeze it. The attempt is autosaved
-    // and stays resumable, and leaving full screen / the window is already
-    // handled by the proctoring guard, so no browser prompt is needed here.
     return;
   }
 
   function wireClock(cfg, signal) {
-    // Server-side active-time clock. The timer must count only time the exam
-    // is actually on screen: pause when the tab hides or unloads (beacon -
-    // survives tab close), resume when it is visible again. The question page
-    // itself also resumes on load, so this only has to cover the gaps.
     if (!cfg.pauseUrl || !cfg.resumeUrl) return;
 
     function pause() {
@@ -100,6 +88,18 @@
       else resume();
     }, { signal: signal });
     window.addEventListener("focus", resume, { signal: signal });
+
+    if (cfg.pingUrl) {
+      const pingTimer = setInterval(function () {
+        if (document.visibilityState !== "visible") return;
+        fetch(cfg.pingUrl, {
+          method: "POST",
+          headers: { "X-CSRFToken": CJ.csrfToken(), "X-Requested-With": "XMLHttpRequest" },
+          credentials: "same-origin",
+        }).catch(function () {});
+      }, 30000);
+      signal.addEventListener("abort", function () { clearInterval(pingTimer); });
+    }
   }
 
   function wireNetwork(signal) {
@@ -150,6 +150,9 @@
     const btn = CJ.$("#btn-revisit");
     if (!btn) return;
     let marks = {};
+    if (cfg.freshSitting) {
+      try { localStorage.removeItem(key); } catch (e) {}
+    }
     try { marks = JSON.parse(localStorage.getItem(key) || "{}"); } catch (e) {}
 
     function paint(qid, on) {
@@ -169,6 +172,17 @@
       CJ.toast(on ? "Marked for review" : "Review mark removed", on ? "warn" : "ok");
     }, { signal: signal });
   }
+
+  CJ.markSubmitted = function (questionId) {
+    const nav = CJ.$('.qnav-btn[data-qid="' + questionId + '"]');
+    const fresh = !!nav && !nav.classList.contains("is-attempted");
+    if (nav) nav.classList.add("is-attempted");
+    CJ.$$('.qgrid-item[data-qid="' + questionId + '"]')
+      .forEach(function (el) { el.classList.add("is-answered"); });
+    const count = CJ.$("#submitted-count");
+    if (count && fresh) count.textContent = String((parseInt(count.textContent, 10) || 0) + 1);
+    window.dispatchEvent(new CustomEvent("cj:submitted", { detail: { questionId: questionId } }));
+  };
 
   function fmtClock(secs) {
     secs = Math.max(0, parseInt(secs, 10) || 0);
@@ -201,9 +215,9 @@
               '<div class="cfin-total" id="cfin-total">0</div>' +
               '<div class="cfin-total-label">Total Questions</div>' +
               '<ul class="cfin-legend">' +
-                '<li><span class="cfin-dot cfin-dot--blue"></span> Attempted: <strong id="cfin-att">0</strong></li>' +
+                '<li><span class="cfin-dot cfin-dot--blue"></span> Submitted: <strong id="cfin-att">0</strong></li>' +
                 '<li><span class="cfin-dot cfin-dot--orange"></span> Marked for Revisit: <strong id="cfin-rev">0</strong></li>' +
-                '<li><span class="cfin-dot cfin-dot--grey"></span> Unattempted: <strong id="cfin-una">0</strong></li>' +
+                '<li><span class="cfin-dot cfin-dot--grey"></span> Not submitted: <strong id="cfin-una">0</strong></li>' +
               '</ul>' +
             '</div>' +
           '</div>' +

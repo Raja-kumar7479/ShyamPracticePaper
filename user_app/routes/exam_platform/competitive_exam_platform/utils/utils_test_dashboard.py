@@ -19,6 +19,8 @@ def establish_user_session(actual_email, actual_username):
     session["user_username"] = actual_username
     session.permanent = True
     session.modified = True
+    from routes.session_guard import register_login
+    register_login(actual_email)
     logger.info(f"USER_SESSION: Session established for {actual_email}")
 
 

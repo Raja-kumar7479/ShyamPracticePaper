@@ -7,7 +7,6 @@
 
     document.addEventListener('DOMContentLoaded', function () {
 
-        // ---- submitted code: expand / collapse ----
         document.querySelectorAll('.cr-code__toggle').forEach(function (btn) {
             var body = btn.parentElement.querySelector('.cr-code__body');
             if (!body) return;
@@ -21,7 +20,6 @@
             });
         });
 
-        // ---- copy code ----
         document.querySelectorAll('[data-copy]').forEach(function (btn) {
             btn.addEventListener('click', function () {
                 var pre = btn.parentElement.querySelector('code');
@@ -57,7 +55,6 @@
             });
         });
 
-        // ---- filter questions by outcome ----
         var buttons = document.querySelectorAll('[data-qfilter]');
         var cards = document.querySelectorAll('.cr-q[data-qstate]');
         var empty = document.getElementById('crFilterEmpty');

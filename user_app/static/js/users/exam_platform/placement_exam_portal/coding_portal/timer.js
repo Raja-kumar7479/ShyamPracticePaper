@@ -8,11 +8,6 @@
     this.onExpire = opts.onExpire;
     this.expired = false;
 
-    // A missing / non-numeric remaining must NEVER be treated as "0 seconds
-    // left", or the very first tick would fire onExpire and auto-submit the
-    // exam without the candidate doing anything. In that case we show the
-    // clock but arm no auto-expiry: only a real countdown that genuinely
-    // reaches zero is allowed to end the test.
     var secs = Number(opts.remainingSeconds);
     this.valid = isFinite(secs) && secs > 0;
     this.remaining = this.valid ? Math.floor(secs) : 0;
@@ -28,7 +23,6 @@
     this.remaining = left;
     this._render(left);
 
-    // Auto-expiry only fires when a valid countdown actually reaches zero.
     if (this.valid && left <= 0 && !this.expired) {
       this.expired = true;
       clearInterval(this._id);

@@ -160,7 +160,7 @@ def generate_pdf_receipt(username, email, phone, payment_id, purchases, discount
     discount_amount = round(original_price * discount / 100, 2)
     summary = [
         [Paragraph("Subtotal", styles['Muted']), Paragraph(f"<para align=right>{_money(original_price)}</para>", styles['Cell'])],
-        [Paragraph(f"Discount ({discount}%)", styles['Muted']), Paragraph(f"<para align=right>- {_money(discount_amount)}</para>", styles['Cell'])],
+        [Paragraph(f"Discount {discount:g}% ({_money(discount_amount)})", styles['Muted']), Paragraph(f"<para align=right>- {_money(discount_amount)}</para>", styles['Cell'])],
         [Paragraph('<font color="#ffffff"><b>Total Paid</b></font>', styles['Cell']),
          Paragraph(f'<para align=right><font color="#ffffff"><b>{_money(final_amount)}</b></font></para>', styles['Cell'])],
     ]

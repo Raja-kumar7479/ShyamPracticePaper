@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Content</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/brand-bootstrap.css') }}">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/manage_modules/course_content.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-utils.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-shell.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token is defined else '' }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-csrf.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-toast.css') }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-toast.js') }}"></script>
+</head>
+<body data-admin-role="{{ admin_role|e }}" data-can-manage="{{ 1 if can_manage else 0 }}">
+
+{% with page_key = 'course_content' %}
+    {% include 'admin/_sidebar.html' %}
+{% endwith %}
+
+<div class="as-main">
+    <header class="as-topbar">
+        <button class="as-toggle" type="button" onclick="asToggle()" aria-label="Toggle menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="as-title">Course Content</h1>
+        <span class="as-chip"><i class="fas fa-user-shield"></i> {{ admin_role|title }}</span>
+    </header>
+    <div class="as-page">
+
+
+<div class="cc-content">
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="cc-flash-wrap">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if 'success' in category else 'danger' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <section class="cc-view is-active" id="view-add">
+            <header class="cc-view__head">
+                <div>
+                    <h1>Add New Content</h1>
+                    <p>Create a new item inside a course - notes, mock tests, lectures and more.</p>
+                </div>
+            </header>
+
+            <form id="addContentForm" method="POST"
+                  action="{{ url_for('admin.manage_course_content') }}"
+                  enctype="multipart/form-data" class="cc-card cc-form">
+
+                <div class="cc-step">
+                    <span class="cc-step__num">1</span>
+                    <h2>Choose the course</h2>
+                </div>
+
+                <div class="cc-grid cc-grid--2">
+                    <div class="cc-field">
+                        <label for="addCourseCode">Select Course <span class="req">*</span></label>
+                        <select class="form-select" id="addCourseCode" name="code" required>
+                            <option value="" disabled selected>-- Select a Course --</option>
+                            {% for course in all_courses %}
+                                <option value="{{ course.code }}" data-name="{{ course.name }}">{{ course.name }} ({{ course.code }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="cc-field">
+                        <label for="name">Course Name</label>
+                        <input type="text" class="form-control" id="name" name="name" readonly required placeholder="Fills automatically">
+                    </div>
+                </div>
+
+                <div id="remainingFields" class="cc-hidden">
+                    <div class="cc-step">
+                        <span class="cc-step__num">2</span>
+                        <h2>Content details</h2>
+                    </div>
+
+                    <div class="cc-grid cc-grid--2">
+                        <div class="cc-field">
+                            <label for="stream">Stream <span class="req">*</span></label>
+                            <input type="text" class="form-control" id="stream" name="stream" required placeholder="e.g. Computer Science">
+                        </div>
+                        <div class="cc-field">
+                            <label for="section">Section <span class="req">*</span></label>
+                            <select class="form-select" id="section" name="section" required>
+                                <option value="" disabled selected>-- Select a course first --</option>
+                            </select>
+                            <small class="cc-hint" id="sectionHelp">
+                                The section decides which portal this content opens for the student.
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class="cc-grid cc-grid--2">
+                        <div class="cc-field">
+                            <label for="title">Title <span class="req">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" required placeholder="e.g. Full Syllabus Mock Test 1">
+                        </div>
+                        <div class="cc-field">
+                            <label for="subtitle">Subtitle <small>(optional)</small></label>
+                            <input type="text" class="form-control" id="subtitle" name="subtitle" placeholder="Short supporting line">
+                        </div>
+                    </div>
+
+                    <div class="cc-grid cc-grid--4">
+                        <div class="cc-field">
+                            <label for="label">Label <span class="req">*</span></label>
+                            <select class="form-select" id="label" name="label" required>
+                                <option value="Free">Free</option>
+                                <option value="Paid">Paid</option>
+                            </select>
+                        </div>
+                        <div class="cc-field">
+                            <label for="price">Price (&#8377;)</label>
+                            <input type="number" step="0.01" min="0" class="form-control" id="price" name="price" value="0.00" disabled>
+                        </div>
+                        <div class="cc-field">
+                            <label for="discount">Discount (%)</label>
+                            <input type="number" step="0.01" min="0" max="99.99" class="form-control" id="discount" name="discount" value="0" disabled>
+                        </div>
+                        <div class="cc-field">
+                            <label for="status">Status <span class="req">*</span></label>
+                            <select class="form-select" id="status" name="status" required>
+                                <option value="active">Active</option>
+                                <option value="inactive">Hidden (existing buyers keep access)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="cc-price-preview cc-hidden" id="ccPricePreview">
+                        <span class="cc-price-preview__label">Student pays</span>
+                        <span class="cc-price-old" id="ccPreviewOld"></span>
+                        <span class="cc-price-new" id="ccPreviewNew"></span>
+                        <span class="cc-price-save" id="ccPreviewSave"></span>
+                    </div>
+
+                    <div class="cc-field" id="testLimitField">
+                        <label for="max_test_descriptions">Total test descriptions allowed <small>(optional)</small></label>
+                        <input type="number" min="1" step="1" class="form-control" id="max_test_descriptions" name="max_test_descriptions" placeholder="No limit">
+                        <small class="cc-hint">Cap on how many test descriptions Manage Tests may add under this content. Once reached, adding another is refused with "limit reached". Leave blank for no limit.</small>
+                    </div>
+
+                    <div class="cc-field">
+                        <label for="ccEditor">Details</label>
+                        <div class="cc-editor-wrap">
+                            <div id="ccEditorToolbar">
+                                <span class="ql-formats">
+                                    <select class="ql-header">
+                                        <option value="1"></option>
+                                        <option value="2"></option>
+                                        <option value="3"></option>
+                                        <option selected></option>
+                                    </select>
+                                </span>
+                                <span class="ql-formats">
+                                    <button class="ql-bold"></button>
+                                    <button class="ql-italic"></button>
+                                    <button class="ql-underline"></button>
+                                    <button class="ql-strike"></button>
+                                </span>
+                                <span class="ql-formats">
+                                    <button class="ql-list" value="ordered"></button>
+                                    <button class="ql-list" value="bullet"></button>
+                                    <button class="ql-blockquote"></button>
+                                </span>
+                                <span class="ql-formats">
+                                    <select class="ql-color"></select>
+                                    <select class="ql-background"></select>
+                                </span>
+                                <span class="ql-formats">
+                                    <select class="ql-align"></select>
+                                    <button class="ql-indent" value="-1"></button>
+                                    <button class="ql-indent" value="+1"></button>
+                                </span>
+                                <span class="ql-formats">
+                                    <button class="ql-link"></button>
+                                    <button class="ql-image"></button>
+                                    <button class="ql-cc-table" type="button" title="Insert a table">
+                                        <i class="fas fa-table"></i>
+                                    </button>
+                                    <button class="ql-cc-premium" type="button" title="Insert a link to the premium page">
+                                        <i class="fas fa-crown"></i>
+                                    </button>
+                                    <button class="ql-clean"></button>
+                                </span>
+                            </div>
+                            <div id="ccEditor"></div>
+                        </div>
+                        <textarea class="cc-hidden" id="details" name="details"></textarea>
+                        <small class="cc-hint">Formatting is preserved and shown to students on the course page.
+                            Use the <i class="fas fa-crown"></i> button to drop a <code>[[PREMIUM]]</code> marker where you want a
+                            "Why premium?" link to the premium page. It works on <strong>Free</strong> content only - Paid content
+                            is bought, not unlocked by premium, so the button switches off when you pick Paid.</small>
+                    </div>
+
+                    
+                    <div class="cc-field">
+                        <label for="syllabus_file">Syllabus PDF <small>(optional)</small></label>
+                        <input type="file" class="form-control" id="syllabus_file" name="syllabus_file" accept="application/pdf,.pdf">
+                        <small class="cc-hint">Students get a link to open it on the content page. PDF only.</small>
+                    </div>
+
+                    <div class="cc-grid cc-grid--2">
+                        <div class="cc-field">
+                            <label for="syllabus_label">Syllabus link text <small>(optional)</small></label>
+                            <input type="text" class="form-control" id="syllabus_label" name="syllabus_label"
+                                   maxlength="120" placeholder="Syllabus">
+                        </div>
+                        <div class="cc-field">
+                            <label for="syllabus_position">Where to show it</label>
+                            <select class="form-select" id="syllabus_position" name="syllabus_position">
+                                <option value="below" selected>Below the description</option>
+                                <option value="above">Above the description</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="cc-field">
+                        <label for="image_file">Cover Image <small>(optional)</small></label>
+                        <input type="file" class="form-control" id="image_file" name="image_file" accept="image/*">
+                        <small class="cc-hint">Shown on the student's course card. Without one the card keeps its default banner.</small>
+                    </div>
+
+                    <div class="cc-form__actions">
+                        <button type="reset" class="btn btn-outline-secondary">Clear</button>
+                        <button type="submit" class="btn btn-brand">
+                            <i class="fas fa-circle-plus"></i> Add Content
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <section class="cc-view" id="view-all">
+
+            <div id="ccStepPick">
+                <header class="cc-view__head">
+                    <div>
+                        <h1>All Content</h1>
+                        <p>Pick a course, then a label, to see what is stored inside it.</p>
+                    </div>
+                </header>
+
+                <h2 class="cc-pick__title"><span class="cc-step__num">1</span> Choose a course</h2>
+
+                <div class="cc-combo" id="ccCourseCombo">
+                    <button type="button" class="cc-combo__toggle" id="ccComboToggle"
+                            aria-haspopup="listbox" aria-expanded="false">
+                        <span class="cc-combo__value" id="ccComboValue">Search or select a course</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="cc-combo__panel" id="ccComboPanel" role="listbox">
+                        <div class="cc-combo__search">
+                            <i class="fas fa-search"></i>
+                            <input type="search" id="ccComboSearch" placeholder="Type to filter courses..."
+                                   autocomplete="off">
+                        </div>
+                        <ul class="cc-combo__list" id="ccComboList">
+                            {% for course in all_courses %}
+                            <li>
+                                <button type="button" class="cc-combo__opt" data-course="{{ course.code }}"
+                                        data-name="{{ course.name }}" role="option">
+                                    <span class="cc-combo__code">{{ course.code }}</span>
+                                    <span class="cc-combo__name">{{ course.name }}</span>
+                                    <span class="cc-combo__count" data-count-for="{{ course.code }}">-</span>
+                                </button>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        <p class="cc-combo__empty is-hidden" id="ccComboEmpty">No course matches that search.</p>
+                    </div>
+                </div>
+
+                <div class="cc-pick-grid" id="ccCourseGrid">
+                    {% for course in all_courses %}
+                    <button type="button" class="cc-pick" data-course="{{ course.code }}">
+                        <span class="cc-pick__code">{{ course.code }}</span>
+                        <span class="cc-pick__name">{{ course.name }}</span>
+                        <span class="cc-pick__count" data-count-for="{{ course.code }}">-</span>
+                    </button>
+                    {% endfor %}
+                    {% if not all_courses %}
+                    <div class="cc-empty"><i class="fas fa-folder-open"></i><p>No courses exist yet.</p></div>
+                    {% endif %}
+                </div>
+
+                <h2 class="cc-pick__title cc-pick__title--muted" id="ccLabelHeading">
+                    <span class="cc-step__num">2</span> Choose a label
+                </h2>
+                <div class="cc-pick-grid cc-pick-grid--labels" id="ccLabelGrid">
+                    <button type="button" class="cc-pick cc-pick--label" data-label="" disabled>
+                        <span class="cc-pick__code">ALL</span>
+                        <span class="cc-pick__name">Free &amp; Paid</span>
+                        <span class="cc-pick__count" data-count-label="">-</span>
+                    </button>
+                    <button type="button" class="cc-pick cc-pick--label" data-label="Free" disabled>
+                        <span class="cc-pick__code cc-pick__code--free">FREE</span>
+                        <span class="cc-pick__name">Free items</span>
+                        <span class="cc-pick__count" data-count-label="Free">-</span>
+                    </button>
+                    <button type="button" class="cc-pick cc-pick--label" data-label="Paid" disabled>
+                        <span class="cc-pick__code cc-pick__code--paid">PAID</span>
+                        <span class="cc-pick__name">Paid items</span>
+                        <span class="cc-pick__count" data-count-label="Paid">-</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="ccStepList" class="cc-hidden">
+                <header class="cc-view__head cc-view__head--row">
+                    <button type="button" class="cc-back" id="ccBack">
+                        <i class="fas fa-arrow-left"></i> Change course
+                    </button>
+                    <div>
+                        <h1 id="ccListTitle">Content</h1>
+                        <p id="ccListSub">&nbsp;</p>
+                    </div>
+                </header>
+
+                <div class="cc-toolbar cc-card">
+                    <div class="cc-search">
+                        <i class="fas fa-magnifying-glass"></i>
+                        <input type="search" id="ccSearch" class="form-control" placeholder="Search title, section...">
+                    </div>
+                    <select class="form-select" id="ccLabelFilter">
+                        <option value="">All labels</option>
+                        <option value="Free">Free</option>
+                        <option value="Paid">Paid</option>
+                    </select>
+                    <button type="button" class="btn btn-outline-secondary" id="ccRefresh" title="Reload">
+                        <i class="fas fa-rotate"></i>
+                    </button>
+                </div>
+
+                <div id="ccSpinner" class="cc-spinner">
+                    <div class="spinner-border" role="status"></div>
+                    <p>Loading content...</p>
+                </div>
+
+                <div id="ccEmpty" class="cc-empty cc-hidden">
+                    <i class="fas fa-box-open"></i>
+                    <p>No content matches your filters.</p>
+                </div>
+
+                <div class="cc-cards" id="ccCards"></div>
+            </div>
+        </section>
+</div>
+
+<div id="imageModal" class="cc-modal">
+    <div class="cc-modal__box">
+        <span class="cc-modal__close" id="closeImageModal">&times;</span>
+        <h4 id="imageModalTitle">Image Preview</h4>
+        <img id="modalImage" src="" alt="Content image" class="cc-modal__img">
+        <div class="cc-modal__actions">
+            <input type="file" id="newImageFile" class="cc-hidden" accept="image/*">
+            {% if can_manage %}
+                <button id="updateImageBtn" class="btn btn-sm btn-brand">Replace</button>
+                <button id="deleteImageBtn" class="btn btn-sm btn-outline-danger">Delete</button>
+            {% else %}
+                <small class="text-muted">Image changes are restricted to owners.</small>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div id="editModal" class="cc-modal">
+    <div class="cc-modal__box cc-modal__box--wide">
+        <span class="cc-modal__close" id="closeEditModal">&times;</span>
+        <h4>Edit content</h4>
+        <p class="cc-edit__ref" id="editRef"></p>
+
+        <div class="cc-grid cc-grid--2">
+            <div class="cc-field">
+                <label for="editTitle">Title <span class="req">*</span></label>
+                <input type="text" class="form-control" id="editTitle" maxlength="255">
+            </div>
+            <div class="cc-field">
+                <label for="editSubtitle">Subtitle</label>
+                <input type="text" class="form-control" id="editSubtitle" maxlength="255">
+            </div>
+        </div>
+
+        <div class="cc-grid cc-grid--2">
+            <div class="cc-field">
+                <label for="editStream">Stream</label>
+                <input type="text" class="form-control" id="editStream" maxlength="255">
+            </div>
+            <div class="cc-field">
+                <label for="editMaxTests">Total test descriptions allowed</label>
+                <input type="number" min="1" step="1" class="form-control" id="editMaxTests" placeholder="No limit">
+                <small class="cc-hint" id="editMaxTestsHint"></small>
+            </div>
+        </div>
+
+        <div class="cc-grid cc-grid--4">
+            <div class="cc-field">
+                <label for="editLabel">Label <span class="req">*</span></label>
+                <select class="form-select" id="editLabel">
+                    <option value="Free">Free</option>
+                    <option value="Paid">Paid</option>
+                </select>
+            </div>
+            <div class="cc-field">
+                <label for="editPrice">Price (&#8377;)</label>
+                <input type="number" step="0.01" min="0" class="form-control" id="editPrice">
+            </div>
+            <div class="cc-field">
+                <label for="editDiscount">Discount (%)</label>
+                <input type="number" step="0.01" min="0" max="99.99" class="form-control" id="editDiscount">
+            </div>
+            <div class="cc-field">
+                <label for="editStatus">Status <span class="req">*</span></label>
+                <select class="form-select" id="editStatus">
+                    <option value="active">Active</option>
+                    <option value="inactive">Hidden (existing buyers keep access)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="cc-field">
+            <label>Details</label>
+            <div class="cc-editor-wrap">
+                <div id="ccEditToolbar">
+                    <span class="ql-formats">
+                        <select class="ql-header">
+                            <option value="1"></option>
+                            <option value="2"></option>
+                            <option value="3"></option>
+                            <option selected></option>
+                        </select>
+                    </span>
+                    <span class="ql-formats">
+                        <button class="ql-bold"></button>
+                        <button class="ql-italic"></button>
+                        <button class="ql-underline"></button>
+                        <button class="ql-strike"></button>
+                    </span>
+                    <span class="ql-formats">
+                        <button class="ql-list" value="ordered"></button>
+                        <button class="ql-list" value="bullet"></button>
+                        <button class="ql-blockquote"></button>
+                    </span>
+                    <span class="ql-formats">
+                        <select class="ql-color"></select>
+                        <select class="ql-background"></select>
+                    </span>
+                    <span class="ql-formats">
+                        <select class="ql-align"></select>
+                        <button class="ql-indent" value="-1"></button>
+                        <button class="ql-indent" value="+1"></button>
+                    </span>
+                    <span class="ql-formats">
+                        <button class="ql-link"></button>
+                        <button class="ql-image"></button>
+                        <button class="ql-cc-table" type="button" title="Insert a table">
+                            <i class="fas fa-table"></i>
+                        </button>
+                        <button class="ql-cc-premium" type="button" title="Insert a link to the premium page">
+                            <i class="fas fa-crown"></i>
+                        </button>
+                        <button class="ql-clean"></button>
+                    </span>
+                </div>
+                <div id="ccEditEditor"></div>
+            </div>
+            <small class="cc-hint">The <i class="fas fa-crown"></i> premium link works on <strong>Free</strong> content only;
+                switching this item to Paid drops the marker.</small>
+        </div>
+
+        
+        <div class="cc-field">
+            <label>Syllabus PDF <small>(optional)</small></label>
+            <div class="cc-syllabus" id="editSyllabusRow">
+                <a class="cc-syllabus__link" id="editSyllabusLink" href="#" target="_blank" rel="noopener">
+                    <i class="fas fa-file-pdf"></i> <span>Open current syllabus</span>
+                </a>
+                <span class="cc-syllabus__none" id="editSyllabusNone">No syllabus uploaded</span>
+                <input type="file" class="form-control" id="editSyllabusFile" accept="application/pdf,.pdf">
+                <button type="button" class="btn btn-outline-danger btn-sm" id="editSyllabusRemove">Remove</button>
+            </div>
+            <small class="cc-hint">Choosing a file replaces the current one when you save. PDF only.</small>
+        </div>
+
+        <div class="cc-grid cc-grid--2">
+            <div class="cc-field">
+                <label for="editSyllabusLabel">Syllabus link text</label>
+                <input type="text" class="form-control" id="editSyllabusLabel" maxlength="120" placeholder="Syllabus">
+            </div>
+            <div class="cc-field">
+                <label for="editSyllabusPosition">Where to show it</label>
+                <select class="form-select" id="editSyllabusPosition">
+                    <option value="below">Below the description</option>
+                    <option value="above">Above the description</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="cc-modal__actions cc-modal__actions--end">
+            <button type="button" class="btn btn-outline-secondary" id="editCancel">Cancel</button>
+            <button type="button" class="btn btn-brand" id="editSave">
+                <i class="fas fa-floppy-disk"></i> Save changes
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="detailsModal" class="cc-modal">
+    <div class="cc-modal__box cc-modal__box--wide">
+        <span class="cc-modal__close" id="closeDetailsModal">&times;</span>
+        <h4 id="detailsModalTitle">Details</h4>
+        <div id="detailsModalBody" class="cc-rich"></div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+<script>window.CC_GROUP_SECTIONS = {{ group_sections | tojson }};</script>
+<script src="{{ url_for('static', filename='js/admin/manage_modules/course_content_manager.js') }}"></script>
+    </div>
+</div>
+</body>
+</html>

@@ -1,5 +1,5 @@
 (function () {
-    var HIDE_AFTER_MS = 5000;
+    var HIDE_AFTER_MS = 3000;
     var stack = document.getElementById('appFlashStack');
     if (!stack) return;
     var items = stack.querySelectorAll('.app-flash');

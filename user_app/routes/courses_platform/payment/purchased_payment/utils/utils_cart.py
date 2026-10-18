@@ -58,6 +58,38 @@ def get_discount_percent():
         return 0.0
     return discount
 
+def refresh_cart_prices(user_cart_key, course_code):
+    cart_courses = session.get(user_cart_key, [])
+    if not cart_courses:
+        return cart_courses
+    changed = False
+    kept = []
+    for item in cart_courses:
+        data = user_op.get_content_by_code_title_subtitle(course_code, item.get('title'), item.get('subtitle', ''))
+        if not data or data.get('price') is None:
+            logger.info(f"CART REFRESH: '{item.get('title')}' is no longer for sale; removed from the cart")
+            flash(f"'{item.get('title')}' is no longer available and was removed from your cart.", "cart_warning")
+            changed = True
+            continue
+        kept.append(item)
+        payable, saved = effective_price(data['price'], data.get('discount'))
+        fresh = {
+            'price': payable,
+            'list_price': float(data['price'] or 0),
+            'item_discount': float(data.get('discount') or 0),
+            'saved': saved,
+        }
+        if any(item.get(k) != v for k, v in fresh.items()):
+            logger.info(f"CART REFRESH: '{item.get('title')}' {item.get('price')} -> {payable} "
+                        f"(list {fresh['list_price']}, {fresh['item_discount']}% off)")
+            item.update(fresh)
+            changed = True
+    if changed:
+        session[user_cart_key] = kept
+        session.modified = True
+    return kept
+
+
 def add_to_cart(user_cart_key, form, course_code):
     cart_courses = session.get(user_cart_key, [])
 

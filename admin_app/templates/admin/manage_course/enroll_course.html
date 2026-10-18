@@ -1,0 +1,292 @@
+{% extends 'admin/manage_course/base.html' %}
+
+{% block title %}Courses &amp; Groups{% endblock %}
+
+{% block styles %}
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script>window.MC_GROUP_CODES = {{ group_codes | tojson }};</script>
+{% endblock %}
+
+{% block content %}
+{% with page_key = 'courses', nav_counts = {'nav-count': courses|length} %}
+    {% include 'admin/_sidebar.html' %}
+{% endwith %}
+
+<div class="as-main">
+    <header class="as-topbar">
+        <button class="as-toggle" type="button" onclick="asToggle()" aria-label="Toggle menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="as-title">Courses &amp; Groups</h1>
+    </header>
+
+    <div class="as-page">
+        <main class="mc-main">
+            {% if can_manage %}
+            <section class="mc-card mc-panel" id="panel-add" hidden>
+                <h3 class="mc-card-title"><i class="fas fa-plus-circle"></i> Add New Course</h3>
+                <form id="add-course-form" data-add-url="{{ url_for('admin.add_course') }}">
+                    <div class="mc-grid-3">
+                        <div class="mc-field">
+                            <label for="add-name">Group Name <span class="mc-req">*</span></label>
+                            <select id="add-name" name="name" required>
+                                <option value="" disabled selected>-- Select a group --</option>
+                                {% for g in groups %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
+                            </select>
+                            <small>Step 1. Top level shown on the homepage.</small>
+                        </div>
+                        <div class="mc-field">
+                            <label for="add-code">Course Code <span class="mc-req">*</span></label>
+                            <select id="add-code" name="code" required>
+                                <option value="" disabled selected>-- Select a group first --</option>
+                            </select>
+                            <small>Step 2. Only codes valid for the chosen group are listed.</small>
+                        </div>
+                        <div class="mc-field">
+                            <label for="add-subgroup">Subgroup <span class="mc-opt">optional</span></label>
+                            <input type="text" id="add-subgroup" name="subgroup" placeholder="e.g. Computer Science">
+                            <small>Blank = course shows directly under the group.</small>
+                        </div>
+                    </div>
+
+                    <div class="mc-field">
+                        <label>Description <span class="mc-req">*</span></label>
+                        <div id="addDescEditor" class="mc-editor"></div>
+                        <small>Shown to students in the course popup.</small>
+                    </div>
+
+                    <div class="mc-actions">
+                        <button type="submit" class="mc-btn mc-btn-primary" id="add-submit">
+                            <i class="fas fa-plus"></i> Add Course
+                        </button>
+                        <button type="button" class="mc-btn mc-btn-ghost" id="add-clear">Clear</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="mc-card mc-panel" id="panel-groups"
+                     data-delete-group-url="{{ url_for('admin.api_delete_group', name='NAME_PLACEHOLDER') }}"
+                     data-delete-code-url="{{ url_for('admin.api_delete_code', group_name='GROUP_PLACEHOLDER', code='CODE_PLACEHOLDER') }}">
+                <h3 class="mc-card-title"><i class="fas fa-layer-group"></i> Add Group &amp; Code</h3>
+                <p class="mc-hint">
+                    A <strong>group</strong> is the top level shown on the homepage (GATE, PLACEMENT). Each group owns one or more
+                    <strong>codes</strong> (CS, DS, PLA). The Group and Course Code dropdowns on <em>Add New Course</em> are built from these two tables.
+                </p>
+
+                <div class="mc-cat-grid">
+                    <div class="mc-cat-col">
+                        <h4 class="mc-cat-title"><i class="fas fa-folder"></i> Groups</h4>
+                        <form id="group-form" class="mc-cat-form" data-url="{{ url_for('admin.api_add_group') }}">
+                            <div class="mc-field">
+                                <label for="group-name">Group Name <span class="mc-req">*</span></label>
+                                <input type="text" id="group-name" name="group_name" maxlength="40" placeholder="e.g. GATE" required>
+                                <small>Uppercase. Stored as the group name everywhere.</small>
+                            </div>
+                            <div class="mc-field">
+                                <label for="group-platform">Platform <span class="mc-req">*</span></label>
+                                <select id="group-platform" name="platform" required>
+                                    <option value="competitive">Competitive Exam Platform (GATE, JEE, NEET - mock tests only)</option>
+                                    <option value="placement">Placement Exam Portal (coding, communication, TCS)</option>
+                                </select>
+                                <small>Coding, communication and TCS content can only be added under a Placement group.</small>
+                            </div>
+                            <div class="mc-actions">
+                                <button type="submit" class="mc-btn mc-btn-primary"><i class="fas fa-plus"></i> Add Group</button>
+                            </div>
+                        </form>
+                        <div class="mc-table-wrap">
+                            <table id="groups-table">
+                                <thead>
+                                    <tr><th>Group</th><th>Platform</th><th>Codes</th><th>Courses</th><th class="mc-th-actions">Actions</th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for g in catalog_groups %}
+                                    <tr data-group="{{ g.group_name }}">
+                                        <td data-label="Group"><span class="mc-code">{{ g.group_name }}</span></td>
+                                        <td data-label="Platform">
+                                            <select class="mc-select mc-group-platform" data-group="{{ g.group_name }}" data-url="{{ url_for('admin.api_update_group', name=g.group_name) }}" data-label="{{ g.label }}" data-position="{{ g.position }}" title="Which student platform this group belongs to">
+                                                <option value="competitive" {% if g.platform != 'placement' %}selected{% endif %}>Competitive</option>
+                                                <option value="placement" {% if g.platform == 'placement' %}selected{% endif %}>Placement</option>
+                                            </select>
+                                        </td>
+                                        <td data-label="Codes" data-field="codes">{{ g.code_count }}</td>
+                                        <td data-label="Courses" data-field="courses">{{ g.course_count }}</td>
+                                        <td data-label="Actions" class="mc-row-actions">
+                                            <button type="button" class="mc-btn mc-btn-sm mc-btn-danger mc-del-group"
+                                                    data-name="{{ g.group_name }}" data-used="{{ g.course_count }}" data-codes="{{ g.code_count }}">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr class="mc-cat-empty"><td colspan="5">No groups yet. Add one above.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="mc-cat-col">
+                        <h4 class="mc-cat-title"><i class="fas fa-hashtag"></i> Course Codes</h4>
+                        <form id="code-form" class="mc-cat-form" data-url="{{ url_for('admin.api_add_code') }}">
+                            <div class="mc-grid-2">
+                                <div class="mc-field">
+                                    <label for="code-group">Group <span class="mc-req">*</span></label>
+                                    <select id="code-group" name="group_name" required>
+                                        <option value="" disabled selected>-- Select a group --</option>
+                                        {% for g in catalog_groups %}<option value="{{ g.group_name }}">{{ g.group_name }}</option>{% endfor %}
+                                    </select>
+                                    <small>Add the group first if it is missing.</small>
+                                </div>
+                                <div class="mc-field">
+                                    <label for="code-value">Code <span class="mc-req">*</span></label>
+                                    <input type="text" id="code-value" name="code" maxlength="20" placeholder="e.g. CS" required>
+                                    <small>Uppercase letters/digits. Unique across all groups.</small>
+                                </div>
+                            </div>
+                            <div class="mc-actions">
+                                <button type="submit" class="mc-btn mc-btn-primary"><i class="fas fa-plus"></i> Add Code</button>
+                            </div>
+                        </form>
+                        <div class="mc-table-wrap">
+                            <table id="codes-table">
+                                <thead>
+                                    <tr><th>Code</th><th>Group</th><th>Courses</th><th class="mc-th-actions">Actions</th></tr>
+                                </thead>
+                                <tbody>
+                                    {% for c in catalog_codes %}
+                                    <tr data-code="{{ c.code }}" data-group="{{ c.group_name }}">
+                                        <td data-label="Code"><span class="mc-code">{{ c.code }}</span></td>
+                                        <td data-label="Group">{{ c.group_name }}</td>
+                                        <td data-label="Courses" data-field="courses">{{ c.course_count }}</td>
+                                        <td data-label="Actions" class="mc-row-actions">
+                                            <button type="button" class="mc-btn mc-btn-sm mc-btn-danger mc-del-code"
+                                                    data-group="{{ c.group_name }}" data-code="{{ c.code }}" data-used="{{ c.course_count }}">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    {% else %}
+                                    <tr class="mc-cat-empty"><td colspan="4">No codes yet. Add one above.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            {% endif %}
+
+            <section class="mc-card mc-panel" id="panel-list" {% if can_manage %}hidden{% endif %}>
+                <div class="mc-card-head">
+                    <h3 class="mc-card-title"><i class="fas fa-list"></i> All Courses
+                        <span class="mc-count" id="course-count">{{ courses|length }}</span>
+                    </h3>
+                </div>
+
+                <div id="courses-wrapper">
+                    <div class="mc-stats">
+                        <div class="mc-stat"><strong id="stat-courses">0</strong><small>Courses</small></div>
+                        <div class="mc-stat"><strong id="stat-groups">0</strong><small>Groups</small></div>
+                        <div class="mc-stat"><strong id="stat-subgroups">0</strong><small>Subgroups</small></div>
+                        <div class="mc-stat"><strong id="stat-visible">0</strong><small>Showing</small></div>
+                    </div>
+
+                    <div class="mc-tools">
+                        <select id="group-filter" class="mc-select" title="Filter by group">
+                            <option value="">All groups</option>
+                        </select>
+                        <input type="search" id="course-search" class="mc-search" placeholder="Search code, group or subgroup...">
+                    </div>
+
+                    <div class="mc-table-wrap">
+                        <table id="courses-table"
+                               data-update-url-template="{{ url_for('admin.update_course', code='CODE_PLACEHOLDER') }}"
+                               data-delete-url-template="{{ url_for('admin.delete_course', code='CODE_PLACEHOLDER') }}"
+                               data-usage-url-template="{{ url_for('admin.course_usage_api', code='CODE_PLACEHOLDER') }}">
+                            <thead>
+                                <tr>
+                                    <th class="mc-sortable" data-sort="code">Code <i class="fas fa-sort"></i></th>
+                                    <th class="mc-sortable" data-sort="name">Group <i class="fas fa-sort"></i></th>
+                                    <th class="mc-sortable" data-sort="subgroup">Subgroup <i class="fas fa-sort"></i></th>
+                                    <th>Description</th>
+                                    {% if can_manage %}<th class="mc-th-actions">Actions</th>{% endif %}
+                                </tr>
+                            </thead>
+                            <tbody id="courses-tbody">
+                                {% for course in courses %}
+                                <tr data-code="{{ course.code }}"
+                                    data-name="{{ course.name }}"
+                                    data-subgroup="{{ course.subgroup or '' }}"
+                                    data-description="{{ course.description or '' }}">
+                                    <td data-label="Code"><span class="mc-code">{{ course.code }}</span></td>
+                                    <td data-label="Group" data-field="name">{{ course.name }}</td>
+                                    <td data-label="Subgroup" data-field="subgroup">
+                                        {% if course.subgroup %}<span class="mc-tag">{{ course.subgroup }}</span>
+                                        {% else %}<span class="mc-dash">-</span>{% endif %}
+                                    </td>
+                                    <td data-label="Description" data-field="description" class="mc-desc">{{ course.description | striptags }}</td>
+                                    {% if can_manage %}
+                                    <td data-label="Actions" class="mc-row-actions">
+                                        <button class="mc-btn mc-btn-sm mc-btn-edit" type="button"><i class="fas fa-pen"></i> Edit</button>
+                                        <button class="mc-btn mc-btn-sm mc-btn-danger" type="button"><i class="fas fa-trash"></i> Delete</button>
+                                    </td>
+                                    {% endif %}
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        <div id="mc-empty" class="mc-empty is-hidden">
+                            <i class="fas fa-box-open"></i>
+                            <p>No courses match your search or filter.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+
+<div class="mc-modal" id="editModal">
+    <div class="mc-modal-box">
+        <div class="mc-modal-head">
+            <h3><i class="fas fa-pen"></i> Edit Course</h3>
+            <span class="mc-modal-close" id="editClose">&times;</span>
+        </div>
+        <div class="mc-modal-body">
+            <input type="hidden" id="editCode">
+            <div class="mc-grid-2">
+                <div class="mc-field">
+                    <label>Course Code</label>
+                    <input type="text" id="editCodeView" disabled>
+                    <small>Code cannot be changed.</small>
+                </div>
+                <div class="mc-field">
+                    <label for="editName">Group Name</label>
+                    <input type="text" id="editName" disabled>
+                    <small>A code belongs to one group, so the group is fixed.</small>
+                </div>
+            </div>
+            <div class="mc-field">
+                <label for="editSubgroup">Subgroup <span class="mc-opt">optional</span></label>
+                <input type="text" id="editSubgroup" placeholder="e.g. Computer Science">
+                <small>Clear this to move the course directly under the group.</small>
+            </div>
+            <div class="mc-field">
+                <label>Description <span class="mc-req">*</span></label>
+                <div id="editDescEditor" class="mc-editor"></div>
+            </div>
+        </div>
+        <div class="mc-modal-foot">
+            <button class="mc-btn mc-btn-ghost" id="editCancel" type="button">Cancel</button>
+            <button class="mc-btn mc-btn-primary" id="editSave" type="button"><i class="fas fa-save"></i> Save changes</button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

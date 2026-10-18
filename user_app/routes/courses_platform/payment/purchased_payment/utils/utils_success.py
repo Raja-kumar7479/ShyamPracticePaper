@@ -46,8 +46,25 @@ def validate_unique_code(user_op, email, course_code, unique_code):
         return False
     return hmac.compare_digest(str(stored_code), str(unique_code))
 
+def _section_id_if_still_there(user_op, section_id):
+    if not section_id or user_op is None:
+        return section_id
+    try:
+        if user_op.content_exists(section_id):
+            return section_id
+    except Exception:
+        logger.exception("PURCHASE: could not confirm content %s; keeping the id", section_id)
+        return section_id
+    logger.critical(
+        "PURCHASE WITHOUT CONTENT: section_id=%s was deleted while the payment was in flight. "
+        "The purchase is being recorded without it - restore the content or refund the student.",
+        section_id)
+    return None
+
+
 def process_cart_purchases(cart_courses, email, username, phone, payment_id,
-                           amount_paid, discount_percent, original_price, course_code, payment_mode, status):
+                           amount_paid, discount_percent, original_price, course_code, payment_mode, status,
+                           user_op=None):
     purchases_data = []
     for course in cart_courses:
         price = course['price']
@@ -56,7 +73,8 @@ def process_cart_purchases(cart_courses, email, username, phone, payment_id,
         purchase_code = ''.join(secrets.choice(string.ascii_uppercase + string.digits) for _ in range(10))
         
         section = course.get('section')
-        section_id = course.get('section_id')
+        section_id = _section_id_if_still_there(user_op, course.get('section_id')) if user_op \
+            else course.get('section_id')
         
         purchase_entry = {
             'email': email,

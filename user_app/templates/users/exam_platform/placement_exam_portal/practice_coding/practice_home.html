@@ -67,7 +67,6 @@
 
 <div class="pc-layout">
 
-    <!-- ---------- left sidebar ---------- -->
     <aside class="pc-side" id="pcSide">
         <button class="pc-side__close" id="pcSideClose" type="button" aria-label="Close menu">
             <i class="fas fa-xmark"></i>
@@ -105,7 +104,6 @@
         {% endfor %}
     </aside>
 
-    <!-- ---------- centre: the problem list ---------- -->
     <main class="pc-main">
 
         <div class="pc-subjects">
@@ -240,7 +238,6 @@
         {% endif %}
     </main>
 
-    <!-- ---------- right rail: calendar + companies ---------- -->
     <aside class="pc-rail">
         {% if daily %}
         <a class="pc-daily" href="{{ url_for('practice_coding.daily') }}">

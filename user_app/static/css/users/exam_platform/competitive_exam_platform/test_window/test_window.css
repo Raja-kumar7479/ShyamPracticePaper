@@ -244,3 +244,16 @@ html, body {
     padding: 10px;
     font-size: 14px;
 }
+
+/* TCS: sections of the coding part, shown only while the CODING tab is active */
+.coding-subtabs {
+    display: flex;
+    flex-wrap: wrap;
+    padding-top: 4px;
+    padding-bottom: 0;
+    background: #eef4fa;
+}
+.coding-subtabs .tab {
+    padding-top: 5px;
+    padding-bottom: 5px;
+}

@@ -15,7 +15,8 @@
 .tl-toasts {
     position: fixed;
     top: 18px;
-    right: 18px;
+    left: 18px;
+    right: auto;
     z-index: 4000;
     display: flex;
     flex-direction: column;
@@ -87,3 +88,6 @@
         width: auto;
     }
 }
+.tl-login-spin { display: inline-block; width: 15px; height: 15px; margin-right: 8px; border: 2px solid rgba(255, 255, 255, .45); border-top-color: #ffffff; border-radius: 50%; animation: tl-login-spin .7s linear infinite; vertical-align: -2px; }
+@keyframes tl-login-spin { to { transform: rotate(360deg); } }
+.sign-in-box.is-loading { cursor: progress; opacity: .92; }

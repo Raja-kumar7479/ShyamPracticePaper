@@ -1,8 +1,3 @@
-"""Data access for the practice coding platform (pcp_* tables only).
-
-Kept apart from the exam portal's models on purpose: practice content,
-solve history and subscriptions must never mix with proctored exam data.
-"""
 from datetime import datetime
 
 from routes.db_pool import get_connection
@@ -42,20 +37,12 @@ def _write(sql, params=None):
         conn.close()
 
 
-# ------------------------------------------------------------------ questions
 PAGE_SIZE = 100
 
-# How many free problems a not-logged-in visitor may open and run as a preview.
 PREVIEW_FREE_LIMIT = 20
 
 
 def preview_question_ids(subject=None, limit=PREVIEW_FREE_LIMIT):
-    """The free problems a signed-out visitor is allowed to open and run.
-
-    The first N free, active, non-company questions in list order. Narrowed to
-    a subject when the visitor arrived in a subject context, so different course
-    landings preview a different slice.
-    """
     tail, params = "", []
     if subject:
         tail = " AND subject = %s"
@@ -70,7 +57,6 @@ def preview_question_ids(subject=None, limit=PREVIEW_FREE_LIMIT):
 
 
 def _question_filters(subject, difficulty, paid, search):
-    """The WHERE tail shared by the list and its count, so they cannot drift."""
     sql, params = "", []
     if subject:
         sql += " AND q.subject = %s"
@@ -88,11 +74,6 @@ def _question_filters(subject, difficulty, paid, search):
 
 
 def _status_clause(status, user_id):
-    """Solved / attempted / todo, judged against this student's submissions.
-
-    Shared by the list and its count so the "showing X of Y" line can never
-    disagree with what is actually on screen.
-    """
     if status not in ("solved", "attempted", "todo") or not user_id:
         return "", []
 
@@ -136,14 +117,6 @@ SORTS = {
 def list_questions(subject=None, difficulty=None, paid=None, search=None,
                    limit=PAGE_SIZE, offset=0, status=None, user_id=None,
                    sort="default"):
-    """One page of the practice list.
-
-    The acceptance rate used to be a correlated subquery, so it ran once per
-    row returned. It is a single grouped join now, and the page is limited, so
-    the query cost no longer grows with the size of the question bank.
-    """
-    # Company-tagged questions are a separate pool shown only on company pages,
-    # so they are excluded from the general practice list - the two never mix.
     tail, params = _question_filters(subject, difficulty, paid, search)
     sql = """
         SELECT q.id, q.title, q.slug, q.difficulty, q.subject, q.is_paid, q.position,
@@ -164,7 +137,6 @@ def list_questions(subject=None, difficulty=None, paid=None, search=None,
     sql += status_sql
     params.extend(status_params)
 
-    # Whitelisted, so the sort key can never reach the SQL as free text.
     sql += " ORDER BY " + SORTS.get(sort or "default", SORTS["default"])
     sql += " LIMIT %s OFFSET %s"
     params.extend([int(limit), int(offset)])
@@ -172,7 +144,6 @@ def list_questions(subject=None, difficulty=None, paid=None, search=None,
 
 
 def subject_counts():
-    # Practice chips only - company questions are counted on their own pages.
     return _all("""
         SELECT subject, COUNT(*) AS n
         FROM pcp_questions
@@ -211,7 +182,6 @@ def get_testcases(question_id, include_hidden=True):
     return _all(sql + " ORDER BY position, id", (question_id,))
 
 
-# ---------------------------------------------------------------- submissions
 def record_submission(user_id, question_id, language, code, result):
     return _write("""
         INSERT INTO pcp_submissions
@@ -230,19 +200,12 @@ def solved_question_ids(user_id):
 
 
 def attempted_question_ids(user_id):
-    """Questions the student has submitted to but never got accepted.
-
-    Solved is not the whole story: the list should be able to show what was
-    tried and left unfinished, which is what a student usually wants to
-    return to.
-    """
     return {r["question_id"] for r in _all(
         "SELECT question_id FROM pcp_submissions WHERE user_id = %s "
         "GROUP BY question_id HAVING SUM(verdict = 'AC') = 0", (user_id,))}
 
 
 def practice_stats(user_id):
-    """Headline counters for the list: solved and attempted, by difficulty."""
     rows = _all("""
         SELECT q.difficulty,
                COUNT(DISTINCT q.id) AS total,
@@ -273,14 +236,7 @@ def recent_submissions(user_id, question_id, limit=10):
     """, (user_id, question_id, int(limit)))
 
 
-# ------------------------------------------------------------------ editorial
 def get_editorials(question_id):
-    """Published approaches for a question, each with its per-language code.
-
-    Shaped for the Editorial tab: approaches in order, and inside each one the
-    languages in the platform's canonical order so the tab strip never jumps
-    around between approaches.
-    """
     approaches = _all("""
         SELECT id, position, title, intro_html, outro_html,
                time_complexity, space_complexity
@@ -310,7 +266,6 @@ def get_editorials(question_id):
     return approaches
 
 
-# ------------------------------------------------------------------ bookmarks
 def is_bookmarked(user_id, question_id):
     return _one("SELECT id FROM pcp_bookmarks WHERE user_id = %s AND question_id = %s",
                 (user_id, question_id)) is not None
@@ -322,7 +277,6 @@ def bookmarked_question_ids(user_id):
 
 
 def bookmarked_questions(user_id):
-    """Saved questions, newest first, with this student's status on each."""
     return _all("""
         SELECT q.id, q.title, q.slug, q.difficulty, q.subject, q.is_paid,
                b.created_at AS saved_at,
@@ -341,7 +295,6 @@ def bookmarked_questions(user_id):
 
 
 def toggle_bookmark(user_id, question_id):
-    """Returns True when the question ends up bookmarked."""
     if is_bookmarked(user_id, question_id):
         _write("DELETE FROM pcp_bookmarks WHERE user_id = %s AND question_id = %s",
                (user_id, question_id))
@@ -351,10 +304,7 @@ def toggle_bookmark(user_id, question_id):
     return True
 
 
-# ------------------------------------------------------------------ companies
 def list_companies():
-    # The seeder's bookkeeping row (slug '__seeded__') is not a real company;
-    # exclude it so it never appears in the Trending Companies rail.
     return _all("""
         SELECT c.id, c.name, c.slug,
                COUNT(qc.question_id) AS question_count
@@ -384,7 +334,6 @@ def company_questions(company_id):
 
 
 def companies_for_questions(question_ids):
-    """{question_id: [company names]} for badge display on the list."""
     if not question_ids:
         return {}
     marks = ','.join(['%s'] * len(question_ids))
@@ -401,13 +350,7 @@ def companies_for_questions(question_ids):
     return out
 
 
-# ---------------------------------------------------- daily challenge / streak
 def daily_challenge(on_date=None):
-    """One deterministic question per calendar day.
-
-    Picking by date ordinal over the ordered active list means every student
-    sees the same challenge on the same day with no scheduler involved.
-    """
     rows = _all("SELECT id FROM pcp_questions WHERE is_active = 1 ORDER BY id")
     if not rows:
         return None
@@ -418,7 +361,6 @@ def daily_challenge(on_date=None):
 
 
 def solve_streak(user_id):
-    """Consecutive days (ending today or yesterday) with an accepted solution."""
     rows = _all("""
         SELECT DISTINCT DATE(created_at) AS d FROM pcp_submissions
         WHERE user_id = %s AND verdict = 'AC'
@@ -441,8 +383,6 @@ def solve_streak(user_id):
 
 
 def monthly_leaderboard(limit=10):
-    """Top solvers this calendar month: distinct questions with an accepted
-    solution. Display names only - the email never leaves the server."""
     return _all("""
         SELECT u.id AS user_id, u.username,
                COUNT(DISTINCT s.question_id) AS solved,
@@ -458,7 +398,6 @@ def monthly_leaderboard(limit=10):
 
 
 def subject_progress(user_id):
-    """Per-subject solved/total, for the sidebar progress bars."""
     return _all("""
         SELECT q.subject,
                COUNT(*) AS total,
@@ -473,8 +412,6 @@ def subject_progress(user_id):
 
 
 def random_unsolved(user_id, premium):
-    """A random question the student has not solved yet; free-only when the
-    student has no subscription so the pick is always openable."""
     sql = """
         SELECT q.id FROM pcp_questions q
         WHERE q.is_active = 1
@@ -490,11 +427,16 @@ def random_unsolved(user_id, premium):
     return row['id'] if row else None
 
 
-# -------------------------------------------------------------- subscriptions
-def active_subscription(email):
-    """The caller's live premium subscription, if any."""
+def active_subscription(email, course_code=None):
     if not email:
         return None
+    if course_code:
+        return _one("""
+            SELECT * FROM pcp_subscriptions
+            WHERE email = %s AND status = 'active' AND expires_at > %s
+              AND (course_code = %s OR course_code IS NULL)
+            ORDER BY expires_at DESC LIMIT 1
+        """, (email, datetime.now(), course_code))
     return _one("""
         SELECT * FROM pcp_subscriptions
         WHERE email = %s AND status = 'active' AND expires_at > %s
@@ -502,17 +444,23 @@ def active_subscription(email):
     """, (email, datetime.now()))
 
 
-def create_subscription_order(email, plan, amount_paise, order_id, phone=None):
-    """Records the pending order plus the phone the buyer just gave.
+def active_subscriptions(email):
+    if not email:
+        return []
+    return _all("""
+        SELECT * FROM pcp_subscriptions
+        WHERE email = %s AND status = 'active' AND expires_at > %s
+        ORDER BY expires_at ASC
+    """, (email, datetime.now()))
 
-    The phone is what Razorpay checkout is prefilled with, so it has to be
-    stored against the order rather than read back out of the session later.
-    """
+
+def create_subscription_order(email, plan, amount_paise, order_id, phone=None, course_code=None,
+                              list_paise=None, discount_pct=None, plan_label=None, plan_ends_at=None):
     return _write("""
         INSERT INTO pcp_subscriptions
-            (email, plan, amount_paise, razorpay_order_id, phone)
-        VALUES (%s,%s,%s,%s,%s)
-    """, (email, plan, amount_paise, order_id, phone))
+            (email, plan, plan_label, amount_paise, razorpay_order_id, phone, course_code, list_paise, discount_pct, plan_ends_at)
+        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+    """, (email, plan, plan_label or plan, amount_paise, order_id, phone, course_code, list_paise, discount_pct, plan_ends_at))
 
 
 def get_subscription_by_payment(payment_id):
@@ -521,11 +469,6 @@ def get_subscription_by_payment(payment_id):
 
 
 def subscription_history(email):
-    """Every subscription this account has paid for, newest first.
-
-    The dashboard used to show only the live one, so a lapsed plan and its
-    receipt disappeared from the student's own record of what they bought.
-    """
     return _all("SELECT * FROM pcp_subscriptions WHERE email = %s AND status = 'active' "
                 "ORDER BY starts_at DESC, id DESC", (email,))
 
@@ -535,10 +478,10 @@ def get_subscription_by_order(order_id):
                 (order_id,))
 
 
-def activate_subscription(order_id, payment_id, starts_at, expires_at):
+def activate_subscription(order_id, payment_id, starts_at, expires_at, fulfilled_by='browser'):
     return _write("""
         UPDATE pcp_subscriptions
-           SET status = 'active', razorpay_payment_id = %s,
+           SET status = 'active', razorpay_payment_id = %s, gateway_status = 'captured', fulfilled_by = %s,
                starts_at = %s, expires_at = %s
          WHERE razorpay_order_id = %s AND status = 'created'
-    """, (payment_id, starts_at, expires_at, order_id))
+    """, (payment_id, fulfilled_by, starts_at, expires_at, order_id))

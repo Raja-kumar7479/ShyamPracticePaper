@@ -3,7 +3,8 @@ from routes.db_pool import get_connection
 
 logger = logging.getLogger(__name__)
 
-STALE_SECONDS = 30
+STALE_SECONDS = 45
+CODING_STALE_SECONDS = 75
 
 
 def _rows(query, params=()):
@@ -17,30 +18,47 @@ def _rows(query, params=()):
         conn.close()
 
 
-def _release_stale(email, ignore_test_key=None):
-    """Release sessions whose window is gone.
+def _ignore_keys(ignore_test_key):
+    if isinstance(ignore_test_key, (list, tuple, set)):
+        keys = [k for k in ignore_test_key if k]
+    else:
+        keys = [ignore_test_key] if ignore_test_key else []
+    if keys:
+        try:
+            marks = ', '.join(['%s'] * len(keys))
+            for r in _rows(f"""
+                SELECT e.aptitude_test_key, ct.test_key AS coding_key
+                FROM tcs_exams e JOIN cp_tests ct ON ct.id = e.coding_test_id
+                WHERE e.aptitude_test_key IN ({marks}) OR ct.test_key IN ({marks})
+            """, tuple(keys) * 2):
+                for k in (r['aptitude_test_key'], r['coding_key']):
+                    if k and k not in keys:
+                        keys.append(k)
+        except Exception:
+            logger.exception(f"TEST LOCK: could not expand the TCS pair for {keys}")
+    return keys
 
-    ignore_test_key is the test the user is opening right now: never release it,
-    otherwise resuming a test would destroy the very session being resumed.
-    """
+
+def _release_stale(email, ignore_test_key=None, expanded=None):
+    keys = (expanded if expanded is not None else _ignore_keys(ignore_test_key)) or ['']
     conn = get_connection()
     cur = conn.cursor()
-    keep = ignore_test_key or ''
+    not_in = ' AND test_key NOT IN (' + ', '.join(['%s'] * len(keys)) + ')'
     try:
         cur.execute("""
             UPDATE user_test_log
             SET status = 'unperformed', end_time = NOW(), updated_at = NOW()
-            WHERE email = %s AND status = 'in_progress' AND test_key <> %s
+            WHERE email = %s AND status = 'in_progress'""" + not_in + """
               AND (last_heartbeat IS NULL OR last_heartbeat < NOW() - INTERVAL %s SECOND)
-        """, (email, keep, STALE_SECONDS))
+        """, (email, *keys, STALE_SECONDS))
         n1 = cur.rowcount
         cur.execute("""
             UPDATE comm_user_log
             SET status = 'terminated', session_token = NULL, tab_id = NULL
-            WHERE email = %s AND status = 'started' AND test_key <> %s
+            WHERE email = %s AND status = 'started'""" + not_in + """
               AND (last_heartbeat IS NULL OR last_heartbeat < NOW() - INTERVAL %s SECOND)
               AND test_key NOT IN (SELECT test_key FROM cp_tests WHERE test_key IS NOT NULL)
-        """, (email, keep, STALE_SECONDS))
+        """, (email, *keys, STALE_SECONDS))
         n2 = cur.rowcount
         conn.commit()
         if n1 or n2:
@@ -56,7 +74,8 @@ def _release_stale(email, ignore_test_key=None):
 def get_active_test(email, ignore_test_key=None):
     if not email:
         return None
-    _release_stale(email, ignore_test_key)
+    ignore = _ignore_keys(ignore_test_key)
+    _release_stale(email, ignore_test_key, expanded=list(ignore))
 
     mock = _rows("""
         SELECT utl.test_key, td.subject_title AS title, 'competitive' AS portal
@@ -79,11 +98,13 @@ def get_active_test(email, ignore_test_key=None):
         JOIN cp_tests t ON t.id = a.test_id
         JOIN auth u ON u.id = a.user_id
         WHERE u.email = %s AND a.status = 'in_progress'
+          AND a.resumed_at IS NOT NULL
+          AND a.last_seen IS NOT NULL AND a.last_seen > NOW() - INTERVAL %s SECOND
         ORDER BY a.id DESC LIMIT 1
-    """, (email,))
+    """, (email, CODING_STALE_SECONDS))
 
     for row in (mock + coding + comm):
-        if ignore_test_key and row.get('test_key') == ignore_test_key:
+        if row.get('test_key') in ignore:
             continue
         logger.warning(f"TEST LOCK: [{email}] already has an active {row['portal']} test "
                        f"{row['test_key']!r} ({row.get('title')!r})")

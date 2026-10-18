@@ -1,4 +1,3 @@
-"""Multi-language code execution for the coding section."""
 import os
 import time
 import shutil
@@ -6,23 +5,17 @@ import tempfile
 import logging
 
 from . import docker_runner
+from . import judge_queue
+from .judge_gate import JudgeBusy, current_user_key, gate
 from config import Config
 
 logger = logging.getLogger(__name__)
 
-# The six required languages. Each entry defines the source filename, the
-# compile step (None when interpreted), and the run command.
 LANGUAGES = {
     "python":     {"file": "main.py",     "compile": None,
                    "run": "python3 main.py"},
     "javascript": {"file": "main.js",     "compile": None,
                    "run": "node main.js"},
-    # JVM flags go on the command line, not JAVA_TOOL_OPTIONS: the env var
-    # makes the JVM print a "Picked up ..." banner to stderr, which would be
-    # shown to candidates as part of their error output.
-    # MaxRAMPercentage keeps the heap inside the container's memory cap --
-    # otherwise the JVM sizes it from host RAM and gets OOM-killed instead of
-    # reporting a clean error.
     "java":       {"file": "Main.java",   "compile": "javac Main.java",
                    "run": "java -XX:MaxRAMPercentage=75 -XX:+UseSerialGC "
                           "-Xss64m -cp . Main"},
@@ -34,16 +27,10 @@ LANGUAGES = {
                    "run": "mono main.exe"},
 }
 
-# Per-stream display cap. Large outputs (tens of thousands of lines) still run
-# fine -- only what is shown back is truncated, with an explicit marker.
 OUTPUT_CAP = 20000
 
-# Unlikely to appear in candidate output; used to frame per-testcase results so
-# one container run can report many testcases.
 _SEP = "@@CJ_CASE_SEP_9f3a@@"
 
-# Compile and run share one container; these let the host distinguish a
-# compilation failure from a runtime failure without a second round trip.
 _COMPILE_FAIL = "@@CJ_COMPILE_FAIL_9f3a@@"
 _COMPILE_LOG = "_cj_compile.log"
 
@@ -97,7 +84,6 @@ def _truncate(s):
 
 
 def _normalise(s):
-    """Trailing whitespace per line and at the end is not significant."""
     if s is None:
         return ""
     return "\n".join(line.rstrip() for line in s.strip().splitlines())
@@ -107,11 +93,6 @@ DEFAULT_FLOAT_TOLERANCE = 1e-6
 
 
 def _float_match(actual, expected, tol):
-    """Token-wise compare: numbers within `tol`, everything else exact.
-
-    Lets a problem whose answer is 3.14159... accept 3.141593 while still
-    catching a wrong integer or a stray word in the output.
-    """
     at, et = actual.split(), expected.split()
     if len(at) != len(et):
         return False
@@ -128,12 +109,6 @@ def _float_match(actual, expected, tol):
 
 
 def _matches(actual, expected, mode="exact", tol=None):
-    """Compare candidate output to the expected output for a testcase.
-
-    exact     - trimmed exact match (the default)
-    float     - numeric tokens compared within `tol`
-    unordered - the multiset of output lines, order ignored
-    """
     a = _normalise(actual)
     e = _normalise(expected)
     if mode == "unordered":
@@ -144,14 +119,6 @@ def _matches(actual, expected, mode="exact", tol=None):
 
 
 def _driver_script(run_cmd, n_cases, per_case_timeout):
-    """
-    Shell driver that runs every testcase inside ONE container.
-
-    Container start costs ~0.5-1s, which dominates short submissions; batching
-    turns N starts into 1. Each case is wrapped in `timeout` so a single
-    infinite loop cannot consume the whole budget, and results are framed with
-    a separator plus the exit code so the host can attribute them per case.
-    """
     return f"""
 for i in $(seq 1 {n_cases}); do
   start=$(date +%s%N)
@@ -166,12 +133,32 @@ done
 def execute(code: str, language: str, testcases: list,
             time_limit: int = None, memory_limit: str = None,
             compare_mode: str = "exact", float_tolerance: float = None) -> RunResult:
-    """
-    Compile (if needed) and run `code` against `testcases`.
+    if language not in LANGUAGES:
+        return RunResult(compiled=False, error=f"Unsupported language: {language}")
+    key = current_user_key()
+    if judge_queue.enabled():
+        budget = (time_limit or Config.RUN_TIMEOUT) * max(1, len(testcases or [])) + Config.COMPILE_TIMEOUT + 15
+        data = judge_queue.run_remote('exam', {
+            'code': code, 'language': language, 'testcases': testcases, 'time_limit': time_limit,
+            'memory_limit': memory_limit, 'compare_mode': compare_mode, 'float_tolerance': float_tolerance}, budget, key)
+        return judge_queue.dict_to_result(data, RunResult, CaseResult)
+    try:
+        gate.acquire(key)
+    except JudgeBusy as busy:
+        logger.warning("JUDGE GATE: refused run for %s (%s)", key or 'anonymous', busy)
+        return RunResult(compiled=True, error=str(busy))
+    try:
+        return _execute_now(code, language, testcases, time_limit, memory_limit, compare_mode, float_tolerance)
+    finally:
+        gate.release(key)
 
-    testcases: list of dicts with 'input_text' and 'expected_output'.
-    compare_mode: how output is graded - 'exact', 'float', or 'unordered'.
-    """
+
+SERVICE_DOWN = "The code execution service is not available right now. Please try again in a moment."
+
+
+def _execute_now(code: str, language: str, testcases: list,
+                 time_limit: int = None, memory_limit: str = None,
+                 compare_mode: str = "exact", float_tolerance: float = None) -> RunResult:
     if language not in LANGUAGES:
         return RunResult(compiled=False, error=f"Unsupported language: {language}")
     if not testcases:
@@ -194,10 +181,6 @@ def execute(code: str, language: str, testcases: list,
                       encoding="utf-8", newline="\n") as f:
                 f.write(tc.get("input_text") or "")
 
-        # Compile and run share ONE container: a second `docker run` costs
-        # ~0.6s of pure startup, which dominated compiled-language timings.
-        # The compiler writes a sentinel file so the host can tell a
-        # compilation failure from a runtime one without a second round trip.
         script = ""
         if spec["compile"]:
             script += (
@@ -206,7 +189,6 @@ def execute(code: str, language: str, testcases: list,
             )
         script += _driver_script(spec["run"], len(testcases), time_limit)
 
-        # Whole-batch ceiling; per-case `timeout` already bounds each case.
         batch_timeout = (time_limit * len(testcases)
                          + (Config.COMPILE_TIMEOUT if spec["compile"] else 0)
                          + 10)
@@ -220,6 +202,11 @@ def execute(code: str, language: str, testcases: list,
                      for _ in testcases]
             return RunResult(compiled=True, cases=cases)
 
+        if rc != 0 and _SEP not in stdout and _COMPILE_FAIL not in stdout:
+            logger.error("exec service failure rc=%s: %s", rc, _truncate(stderr)[:300])
+            docker_runner.docker_status(max_age=0)
+            return RunResult(compiled=True, error=SERVICE_DOWN)
+
         if _COMPILE_FAIL in stdout:
             log = _read(temp_dir, _COMPILE_LOG)
             logger.info("exec compile-error lang=%s in %.2fs",
@@ -227,7 +214,6 @@ def execute(code: str, language: str, testcases: list,
             return RunResult(compiled=False,
                              error=_truncate(log) or "Compilation failed")
 
-        # Parse the framed status lines.
         meta = {}
         for line in stdout.splitlines():
             if line.startswith(_SEP):
@@ -243,11 +229,12 @@ def execute(code: str, language: str, testcases: list,
             out = _read(temp_dir, f"out_{i}.txt")
             err = _read(temp_dir, f"err_{i}.txt")
 
-            if exit_code is None:
+            if _too_large(temp_dir, f"out_{i}.txt") or exit_code == 153:
+                cases.append(CaseResult("RE", _truncate(out), "Output limit exceeded: the program printed too much.", elapsed))
+            elif exit_code is None:
                 cases.append(CaseResult("RE", out, _truncate(err) or
                                         "No result produced", elapsed))
             elif exit_code == 124:
-                # `timeout` uses 124 for the timed-out case.
                 cases.append(CaseResult("TLE", out, "Time Limit Exceeded", elapsed))
             elif exit_code != 0:
                 cases.append(CaseResult("RE", out,
@@ -265,7 +252,6 @@ def execute(code: str, language: str, testcases: list,
         return result
 
     except FileNotFoundError:
-        # `docker` not on PATH -- an operational problem, not the candidate's.
         logger.error("Docker CLI not found; cannot execute submissions")
         return RunResult(
             compiled=True,
@@ -282,25 +268,36 @@ def execute(code: str, language: str, testcases: list,
         shutil.rmtree(temp_dir, ignore_errors=True)
 
 
+CASE_OUTPUT_LIMIT = max(65536, int(getattr(Config, 'JUDGE_CASE_OUTPUT_LIMIT_BYTES', 2 * 1024 * 1024)))
+
+
 def _read(temp_dir, name):
     path = os.path.join(temp_dir, name)
     if not os.path.exists(path):
         return ""
     try:
-        with open(path, "r", encoding="utf-8", errors="replace") as f:
-            return f.read()
+        with open(path, "rb") as f:
+            return f.read(CASE_OUTPUT_LIMIT).decode("utf-8", errors="replace")
     except OSError:
         return ""
 
 
+def _too_large(temp_dir, name):
+    try:
+        return os.path.getsize(os.path.join(temp_dir, name)) > CASE_OUTPUT_LIMIT
+    except OSError:
+        return False
+
+
 def run_custom_input(code: str, language: str, stdin_data: str,
                      time_limit: int = None, memory_limit: str = None):
-    """Single ad-hoc run for the 'Use Custom Input' box."""
     result = execute(code, language,
                      [{"input_text": stdin_data, "expected_output": None}],
                      time_limit, memory_limit)
     if not result.compiled:
         return {"compiled": False, "error": result.error, "output": ""}
+    if result.error and not result.cases:
+        return {"compiled": True, "output": "", "error": result.error, "execution_time": 0, "status": "ERR", "busy": True}
     case = result.cases[0] if result.cases else CaseResult()
     return {
         "compiled": True,

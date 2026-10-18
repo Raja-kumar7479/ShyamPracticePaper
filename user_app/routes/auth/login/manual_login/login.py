@@ -17,10 +17,20 @@ auth_db = AuthDb()
 mail = Mail()
 logger = logging.getLogger(__name__)
 
-from routes.auth.utils.utils_login import is_safe_url  # noqa: F401  (shared helper)
+from routes.auth.utils.utils_login import is_safe_url
+
+def _login_account_key():
+    email = (request.form.get('email') or session.get('user_email_pending') or '').strip().lower()
+    return f"login-account:{email}" if email else f"login-ip:{request.remote_addr}"
+
+
+def _login_ip_key():
+    return f"login-ip:{request.remote_addr}"
+
 
 @users_bp.route("/user_login", methods=['GET', 'POST'])
-@limiter.limit("15 per minute", methods=['POST'])
+@limiter.limit("600 per minute", methods=['POST'], key_func=_login_ip_key)
+@limiter.limit("20 per minute", methods=['POST'], key_func=_login_account_key)
 def user_login():
     try:
         if 'user_username' in session:
@@ -51,11 +61,6 @@ def user_login():
                     return redirect(url_for('users.user_login'))
                 
                 if user.get('auth_type') == 'google' and not user.get('password'):
-                    # Do not hand the visitor a set-password page for this
-                    # address. Anyone could type someone else's email here, and
-                    # forwarding them into set-password was the second half of
-                    # the takeover. They either sign in with Google, or prove
-                    # they own the address through the emailed reset link.
                     flash("This account uses Google sign-in. Continue with Google, or use "
                           "'Forgot password' to set a password by email.", 'login_info')
                     return redirect(url_for('users.user_login'))
@@ -78,13 +83,17 @@ def user_login():
                     session.pop('user_login_step', None)
                     return redirect(url_for('users.user_login'))
 
-                # Re-checked strictly on the guess itself: an unreadable attempt
-                # store must not turn into unlimited password attempts.
                 if is_user_locked_out(email, strict=True):
                     flash("Too many failed attempts. Try again in 5 minutes.", 'login_error')
                     return redirect(url_for('users.index'))
 
                 if verify_password(password, user['password']):
+                    from routes.session_guard import running_test_elsewhere
+                    if running_test_elsewhere(user['email']):
+                        flash("This account has a test open in another window. Finish or close that test first, "
+                              "then sign in again. It can take up to a minute to free up.", 'login_error')
+                        return redirect(url_for('users.user_login'))
+                    session.pop('_sid', None)
                     rebuild_session_at_login()
 
                     session['user_username'] = user['username']

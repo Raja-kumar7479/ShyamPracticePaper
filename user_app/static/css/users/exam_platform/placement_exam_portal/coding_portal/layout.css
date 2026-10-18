@@ -580,7 +580,6 @@ a.section-dd-item:hover { background: var(--surface-alt); text-decoration: none;
 .btn-fullscreen.is-on { background: rgba(255, 255, 255, .28); }
 .btn-fullscreen:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 
-/* ---- SPP branding in the coding portal header ---- */
 .brand-logo {
   height: 34px; width: 34px; border-radius: 50%;
   object-fit: contain; background: #fff; flex: 0 0 auto;
@@ -590,7 +589,6 @@ a.section-dd-item:hover { background: var(--surface-alt); text-decoration: none;
 .test-card { transition: box-shadow .15s ease, transform .15s ease; }
 .test-card:hover { box-shadow: var(--shadow-md, 0 6px 20px rgba(0,0,0,.12)); transform: translateY(-2px); }
 
-/* ---- exam header: SPP logo + name + signed-in user ---- */
 .exam-brand-logo {
   height: 30px; width: 30px; border-radius: 50%;
   background: #fff; object-fit: contain; flex: 0 0 auto;
@@ -611,7 +609,6 @@ a.section-dd-item:hover { background: var(--surface-alt); text-decoration: none;
                    text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 720px) { .exam-user__name, .exam-brand-name { display: none; } }
 
-/* ---- make the response tab panels (test cases / results) scroll ---- */
 .pane-response .tabpanel { overflow-y: auto; }
 .pane-response .tabpanel.is-active { display: flex; flex-direction: column; }
 .testcase-list, .result-list, .cases, .tc-scroll {

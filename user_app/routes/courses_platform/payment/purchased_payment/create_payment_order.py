@@ -123,6 +123,12 @@ def create_payment_order(course_code, unique_code):
         logger.error(f"Razorpay order creation failed for user {email}: {e}")
         return jsonify({"error": "Payment gateway error. Try again."}), 500
 
+    from routes.courses_platform.payment.purchased_payment.payment_orders import record_content_order
+    if not record_content_order(email, username, phone, course_code, unique_code, razorpay_order['id'],
+                                amount_in_paise, verified_cart, discount, total_price):
+        logger.error(f"Order {razorpay_order['id']} for {email} could not be stored - refusing checkout")
+        return jsonify({"error": "Payment could not be started. Please try again."}), 500
+
     session['pending_purchase'] = {
         'razorpay_order_id': razorpay_order['id'],
         'amount_in_paise': amount_in_paise,

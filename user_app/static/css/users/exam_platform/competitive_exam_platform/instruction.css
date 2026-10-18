@@ -346,3 +346,7 @@ hr {
     color: #6b7280;
     margin: 0;
 }
+
+.ins-spin { display: inline-block; width: 14px; height: 14px; margin-right: 8px; border: 2px solid rgba(255, 255, 255, .45); border-top-color: #ffffff; border-radius: 50%; animation: ins-spin .7s linear infinite; vertical-align: -2px; }
+@keyframes ins-spin { to { transform: rotate(360deg); } }
+.ins-busy { margin: 14px 0 0; color: #992c25; font-weight: 600; }

@@ -1,0 +1,100 @@
+
+:root {
+    --ad-primary: #833d17;
+    --ad-primary-dark: #6b3213;
+    --ad-accent: #f0ae06;
+    --ad-accent-dark: #d99c05;
+    --ad-cream: #fdf3e3;
+    --ad-cream-line: #f0dcc0;
+    --ad-white: #ffffff;
+    --ad-black: #000000;
+    --ad-muted: #5b5b5b;
+    --ad-line: #dee2e6;
+}
+
+
+.is-hidden { display: none; }
+
+
+.auth-sep { color: var(--ad-muted); margin: 0 6px; }
+.auth-note {
+    color: var(--ad-primary);
+    font-size: .9rem;
+    margin-bottom: 1rem;
+}
+
+
+.quick-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.qa-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background .18s ease, color .18s ease, box-shadow .18s ease;
+}
+.qa-btn--primary {
+    background: var(--ad-primary);
+    color: var(--ad-white);
+    box-shadow: 0 6px 16px rgba(131, 61, 23, .25);
+}
+.qa-btn--primary:hover {
+    background: var(--ad-accent);
+    color: var(--ad-black);
+}
+.qa-btn--ghost {
+    background: var(--ad-white);
+    color: var(--ad-primary);
+    border: 1.5px solid var(--ad-cream-line);
+}
+.qa-btn--ghost:hover {
+    background: var(--ad-cream);
+    color: var(--ad-primary);
+    border-color: var(--ad-accent);
+}
+
+
+.col-w20 { width: 20%; }
+.col-w45 { width: 45%; }
+.w-full { width: 100%; }
+.mw-240 { max-width: 240px; }
+
+@media (max-width: 575px) {
+    .quick-actions { flex-direction: column; }
+    .qa-btn { justify-content: center; }
+    .col-w20, .col-w45 { width: auto; }
+}
+
+
+.stagger-1 { --i: 1; }
+.stagger-2 { --i: 2; }
+.stagger-3 { --i: 3; }
+.stagger-4 { --i: 4; }
+.stagger-5 { --i: 5; }
+.stagger-6 { --i: 6; }
+
+.pp-howto {
+    background: #fffdf8;
+    border: 1px solid #ead9cc;
+    border-left: 4px solid #f0ae06;
+    border-radius: 10px;
+    padding: 14px 18px 14px 34px;
+    margin: 0 0 16px;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: #000000;
+}
+
+.pp-howto li {
+    margin-bottom: 6px;
+}
+
+.pp-howto strong {
+    color: #833d17;
+}

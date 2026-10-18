@@ -13,7 +13,6 @@ body { background: var(--pc-bg); color: var(--pc-text);
        font: 14px/1.5 -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; }
 a { color: inherit; text-decoration: none; }
 
-/* ---- top bar ---- */
 .pc-topbar {
     display: flex; align-items: center; gap: 22px;
     padding: 10px 22px; background: #992c25; border-bottom: 1px solid var(--pc-line);
@@ -144,7 +143,6 @@ body.pc-noscroll { overflow: hidden; }
 .pc-side__stat { display: flex; justify-content: space-between; padding: 4px 14px; color: var(--pc-muted); }
 .pc-side__stat strong { color: var(--pc-text); }
 
-/* ---- subject chips ---- */
 .pc-subjects { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
 .pc-chip {
     display: inline-flex; align-items: center; gap: 7px;
@@ -158,7 +156,6 @@ body.pc-noscroll { overflow: hidden; }
 }
 .pc-chip.is-active .pc-chip__n { background: rgba(255,255,255,.25); color:#fff; }
 
-/* ---- search / filter row ---- */
 .pc-tools { display: flex; gap: 10px; margin-bottom: 14px; }
 .pc-search {
     flex: 1 1 auto; display: flex; align-items: center; gap: 9px;
@@ -174,7 +171,6 @@ body.pc-noscroll { overflow: hidden; }
     border-radius: 8px; padding: 8px 14px; cursor: pointer;
 }
 
-/* ---- question rows ---- */
 /* No `overflow: hidden` here. It was only ever clipping the rounded corners,
    but this rule sits after the desktop block that makes the list scroll, so it
    silently won and left the list unscrollable with rows out of reach. The
@@ -200,7 +196,6 @@ body.pc-noscroll { overflow: hidden; }
 .pc-solved { color: var(--pc-easy); }
 .pc-empty { padding: 46px; text-align: center; color: var(--pc-muted); background: var(--pc-panel); }
 
-/* ---- right rail ---- */
 .pc-rail { position: sticky; top: 66px; align-self: start;
            max-height: calc(100vh - 86px); overflow-y: auto;
            display: flex; flex-direction: column; gap: 18px; }
@@ -257,7 +252,6 @@ body.pc-noscroll { overflow: hidden; }
     .pc-side__mobilenav { display: block; }
 }
 
-/* ---- streak / action row / company badges (feature round 2) ---- */
 .pc-streak {
     display: inline-flex; align-items: center; gap: 6px;
     color: #ff9d3c; font-weight: 700; font-size: 14px;
@@ -279,7 +273,6 @@ body.pc-noscroll { overflow: hidden; }
 /* rows gained a companies column */
 .pc-row { grid-template-columns: 34px minmax(0, 1fr) 120px 64px 56px 52px 34px; }
 
-/* ---- sidebar progress bars ---- */
 .pc-progress { padding: 5px 14px; }
 .pc-progress__row {
     display: flex; justify-content: space-between;
@@ -290,7 +283,6 @@ body.pc-noscroll { overflow: hidden; }
 }
 .pc-progress__bar span { display: block; height: 100%; background: var(--pc-easy); }
 
-/* ---- daily challenge card ---- */
 .pc-daily {
     /* Was a near-black gradient left over from the dark theme, which left the
        maroon heading and muted meta text unreadable on top of it. */
@@ -308,7 +300,6 @@ body.pc-noscroll { overflow: hidden; }
 /* Darker than --pc-muted: that only reaches 3.8:1 on the card's cream. */
 .pc-daily__meta { color: #5f5346; font-size: 12.5px; margin-top: 6px; }
 
-/* ---- list toolbar extras ---- */
 .pc-attempted { color: var(--pc-med); }
 
 .pc-solvedmeter {
@@ -325,7 +316,6 @@ body.pc-noscroll { overflow: hidden; }
 }
 .pc-clear:hover { background: var(--pc-panel2); }
 
-/* ---- live search affordances ---- */
 .pc-search { position: relative; }
 .pc-search__clear, .pc-search__spin {
     position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
@@ -335,16 +325,13 @@ body.pc-noscroll { overflow: hidden; }
 .pc-search__clear:hover { color: var(--pc-text); }
 .pc-search__spin { pointer-events: none; font-size: 12px; right: 30px; }
 
-/* ---- reset ---- */
 .pc-clear.is-off { opacity: .45; pointer-events: none; }
 
-/* ---- sidebar count chip ---- */
 .pc-side__count {
     margin-left: auto; background: var(--pc-panel2); color: var(--pc-muted);
     border-radius: 999px; padding: 0 8px; font-size: 11px; font-weight: 700;
 }
 
-/* ---- bookmarks page ---- */
 .pc-bmwrap { max-width: 1100px; margin: 0 auto; padding: 26px 22px 60px; }
 .pc-bmhead h1 { font-size: 24px; display: flex; align-items: center; gap: 10px; }
 .pc-bmhead h1 i { color: var(--pc-gold); }
@@ -375,7 +362,6 @@ body.pc-noscroll { overflow: hidden; }
     padding: 9px 20px; border-radius: 8px; font-weight: 600; font-size: 14px;
 }
 
-/* ---- infinite scroll footer ---- */
 .pc-more {
     display: flex; align-items: center; justify-content: center;
     padding: 18px 10px; min-height: 60px;
@@ -398,7 +384,6 @@ body.pc-noscroll { overflow: hidden; }
 }
 .pc-count strong { color: var(--pc-text); }
 
-/* ---- company page ---- */
 .pc-company-page { max-width: 1100px; margin: 0 auto; padding: 26px 22px 60px; }
 .pc-cohero { display: flex; gap: 20px; align-items: center; margin-bottom: 22px; }
 .pc-cohero__logo {
@@ -452,7 +437,6 @@ body.pc-noscroll { overflow: hidden; }
 }
 
 
-/* ============ ShyamPracticePaper brand overrides (palette: #992c25 / #f0ae06 / #fbf7f0) ============ */
 .pc-topbar { background: #992c25 !important; border-bottom: 1px solid #7c2018 !important; }
 .pc-topbar, .pc-topbar a, .pc-title-mini, .pc-back { color: #fff !important; }
 .pc-topnav__item { color: rgba(255,255,255,.78) !important; }
@@ -463,30 +447,25 @@ body.pc-noscroll { overflow: hidden; }
 .pc-premium-badge { color: var(--pc-gold) !important; }
 .pc-streak { color: var(--pc-gold) !important; }
 
-/* active chips / selected states on a light bg */
 .pc-chip.is-active { background: var(--pc-accent) !important; color: #fff !important; }
 .pc-chip.is-active .pc-chip__n { background: rgba(255,255,255,.25) !important; color: #fff !important; }
 .pc-company__n, .pc-cal__day.is-today { background: var(--pc-accent) !important; color: #fff !important; }
 .pc-solved { color: var(--pc-easy) !important; }
 .pc-crown { color: var(--pc-gold) !important; }
 
-/* code editor + gutter: light, on-brand, still high-contrast */
 #pcCode { background: #fffdf8 !important; color: #2a2220 !important; }
 .pc-gutter { background: #f4ece0 !important; color: #b9ab97 !important; }
 .pc-io__body textarea, .pc-customout { background: #fffdf8 !important; color: #2a2220 !important; }
 
-/* quiz option accents */
 .qz-opt.is-picked { border-color: var(--pc-accent) !important; }
 .qz-opt.is-picked .qz-opt__letter { background: var(--pc-accent) !important; color: #fff !important; }
 .qz-btn { background: var(--pc-accent) !important; color: #fff !important; }
 .qz-btn--alt { background: var(--pc-gold) !important; color: #3a2600 !important; }
 .qz-progress span { background: var(--pc-gold) !important; }
 
-/* premium plan cards */
 .pm-plan--featured { background: linear-gradient(135deg, #fff2d6, #ffd98c) !important; }
 .pm-subscribe { background: var(--pc-accent) !important; }
 
-/* ---- brand footer with pricing ---- */
 .pc-footer {
     margin-top: 40px; padding: 22px 26px; background: #992c25; color: #fff;
     display: flex; align-items: center; justify-content: space-between;
@@ -517,7 +496,6 @@ body.pc-noscroll { overflow: hidden; }
     .pc-footer__links { flex-wrap: wrap; justify-content: center; }
 }
 
-/* ---------- monthly leaderboard ---------- */
 .pc-lb { display: flex; flex-direction: column; }
 .pc-lb__row {
   display: flex; align-items: center; gap: 10px;

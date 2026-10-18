@@ -1,6 +1,6 @@
 from flask import flash, jsonify, redirect, render_template, request, session, url_for
 from routes.courses_platform.payment.purchased_payment.databases.payment_handler_db import UserOperation
-from routes.courses_platform.payment.purchased_payment.utils.utils_cart import  add_to_cart, remove_from_cart, clear_cart, apply_coupon, clean_field, get_discount_percent
+from routes.courses_platform.payment.purchased_payment.utils.utils_cart import  add_to_cart, remove_from_cart, clear_cart, apply_coupon, clean_field, get_discount_percent, refresh_cart_prices
 from routes.courses_platform.utils.utils_secure_code import secure_access_required
 from routes.courses_platform.utils.utils_token import csrf_protected
 from extensions import user_login_required
@@ -88,6 +88,7 @@ def add_cart(course_code, unique_code):
             logger.info(f"Cart cleared for user {email}.")
             return redirect(url_for('users.course_shop', course_code=course_code, unique_code=unique_code))
 
+    refresh_cart_prices(user_cart_key, course_code)
     total_price = sum(c['price'] for c in session.get(user_cart_key, []))
     discount = get_discount_percent()
     discount_amount = round(total_price * discount / 100, 2)

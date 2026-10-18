@@ -1351,7 +1351,8 @@ body {
 .tw-toasts {
     position: fixed;
     top: 16px;
-    right: 16px;
+    left: 16px;
+    right: auto;
     z-index: 9999;
     display: flex;
     flex-direction: column;
@@ -1473,3 +1474,9 @@ body {
 #question-palette-container .question-grid {
     padding: 8px 4px 12px;
 }
+
+.qp-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; position: sticky; top: 0; background: #fefefe; padding: 4px 0 8px; z-index: 2; }
+.qp-tab { border: 1px solid #d9d0cb; background: #fff; color: #5c1a15; border-radius: 999px; padding: 6px 14px; font-weight: 600; font-size: .85rem; cursor: pointer; }
+.qp-tab:hover { background: #f7efe9; }
+.qp-tab.is-on { background: #992c25; border-color: #992c25; color: #fff; }
+.qp-coding-note { margin: 8px 0 0; color: #7a5a52; font-size: .85rem; }

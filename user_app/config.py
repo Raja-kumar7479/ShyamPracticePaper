@@ -16,6 +16,7 @@ IS_PRODUCTION = bool(
 class Config:
 
     IS_PRODUCTION = IS_PRODUCTION
+    RATELIMIT_ENABLED = os.environ.get('RATELIMIT_ENABLED', '1').strip().lower() not in ('0', 'false', 'no', 'off')
     SECRET_KEY = os.environ.get('SECRET_KEY')
     CSRF_SESSION_KEY = os.environ.get('CSRF_SESSION_KEY')
     TEST_TOKEN_SECRET = os.environ.get('TEST_TOKEN_SECRET')
@@ -44,9 +45,6 @@ class Config:
     GOOGLE_CLIENT_SECRET = os.environ.get("CLIENT_SECRET")
     
    
-    # The app serves on 5002, so the hardcoded 5000 never matched the running
-    # server and the Google callback could not complete locally. Overridable
-    # via REDIRECT_URI for the deployed domain.
     REDIRECT_URI = os.environ.get('REDIRECT_URI') or "http://127.0.0.1:5002/callback"
     
    
@@ -61,32 +59,33 @@ class Config:
     SESSION_COOKIE_SECURE = False
     SESSION_COOKIE_SAMESITE = 'Lax'
 
-    UPLOAD_BASE = os.environ.get('UPLOAD_BASE') or os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'shared_uploads')
+    UPLOAD_BASE = os.environ.get('UPLOAD_BASE') or os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 
-    # ---- Coding portal (placement Coding round) -------------------------
-    # The coding portal reuses this app's database; these are the extra
-    # settings its sandbox and SQL judge need.
     DB_HOST = DATABASE_HOST
     DB_PORT = int(os.environ.get('DB_PORT', 3306))
     DB_USER = DATABASE_USER
     DB_PASS = DATABASE_PASSWORD
     DB_NAME = DATABASE_NAME
 
-    # Code execution sandbox (Docker)
     JUDGE_IMAGE = os.environ.get('JUDGE_IMAGE', 'codejudge-runner:latest')
     RUN_TIMEOUT = int(os.environ.get('RUN_TIMEOUT', 10))
     COMPILE_TIMEOUT = int(os.environ.get('COMPILE_TIMEOUT', 20))
     MEMORY_LIMIT = os.environ.get('MEMORY_LIMIT', '512m')
-    CPU_QUOTA = float(os.environ.get('CPU_QUOTA', -1))
+    CPU_QUOTA = float(os.environ.get('CPU_QUOTA', 1))
     DOCKER_NETWORK_DISABLED = os.environ.get('DOCKER_NETWORK_DISABLED', 'true').lower() in ('1', 'true', 'yes', 'on')
-    DOCKER_READONLY_ROOTFS = os.environ.get('DOCKER_READONLY_ROOTFS', 'false').lower() in ('1', 'true', 'yes', 'on')
+    DOCKER_READONLY_ROOTFS = os.environ.get('DOCKER_READONLY_ROOTFS', 'true').lower() in ('1', 'true', 'yes', 'on')
+    DOCKER_RUN_AS_NONROOT = os.environ.get('DOCKER_RUN_AS_NONROOT', 'true').lower() in ('1', 'true', 'yes', 'on')
+    JUDGE_FILE_LIMIT_MB = int(os.environ.get('JUDGE_FILE_LIMIT_MB', 32))
+    JUDGE_STDOUT_LIMIT_BYTES = int(os.environ.get('JUDGE_STDOUT_LIMIT_BYTES', 4 * 1024 * 1024))
+    JUDGE_CASE_OUTPUT_LIMIT_BYTES = int(os.environ.get('JUDGE_CASE_OUTPUT_LIMIT_BYTES', 2 * 1024 * 1024))
     DOCKER_STARTUP_GRACE = int(os.environ.get('DOCKER_STARTUP_GRACE', 5))
 
-    # SQL sandbox: candidate queries run as this low-privilege user
     SQL_SANDBOX_USER = os.environ.get('SQL_SANDBOX_USER', 'cj_sandbox')
     SQL_SANDBOX_PASS = os.environ.get('SQL_SANDBOX_PASS', 'cj_sandbox_pw')
     SQL_SANDBOX_PREFIX = os.environ.get('SQL_SANDBOX_PREFIX', 'sbx_q')
     SQL_QUERY_TIMEOUT_MS = int(os.environ.get('SQL_QUERY_TIMEOUT_MS', 5000))
+    SQL_SANDBOX_PARALLEL = int(os.environ.get('SQL_SANDBOX_PARALLEL', 8))
+    SQL_SANDBOX_WAIT = int(os.environ.get('SQL_SANDBOX_WAIT', 10))
     SQL_MAX_ROWS = int(os.environ.get('SQL_MAX_ROWS', 500))
 
     UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),

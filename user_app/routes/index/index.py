@@ -18,11 +18,13 @@ logger = logging.getLogger(__name__)
 @users_bp.route('/', methods=['GET'])
 def index():
     try:
-        group_names_result = enroll_user_op.get_course_groups()
+        group_names_result = enroll_user_op.get_course_groups(strict=True)
         group_names = [row['name'] for row in group_names_result]
     except Exception as e:
         logger.error(f"Error fetching course groups for index: {e}")
-        group_names = []
+        return make_response(render_template(
+            "users/auth/error.html",
+            error_message="The site is very busy right now. Please refresh this page in a few seconds."), 503)
 
     user_email, user_username, user_is_authenticated = get_user_session()
     csrf_token = generate_csrf_token()
@@ -197,7 +199,7 @@ def api_cookie_consent():
         resp = make_response(jsonify({'status': 'success', 'message': 'Preferences saved', 'consent': consent_data}))
 
         one_year_seconds = 365 * 24 * 60 * 60
-        is_secure = bool(os.environ.get('RENDER') or os.environ.get('GUNICORN_CMD_ARGS'))
+        is_secure = bool(request.is_secure or os.environ.get('RENDER') or os.environ.get('GUNICORN_CMD_ARGS') or os.environ.get('APP_ENV', '').lower() == 'production')
 
         resp.set_cookie(
             'cookie_consent',

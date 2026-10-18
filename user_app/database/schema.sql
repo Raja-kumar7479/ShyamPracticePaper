@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS auth (
     is_verified BOOLEAN DEFAULT 0,
     cookie_consent JSON DEFAULT NULL,
     last_active DATETIME DEFAULT NULL,
+    active_session VARCHAR(64) NULL DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_auth_email (email),
@@ -20,7 +21,8 @@ CREATE TABLE IF NOT EXISTS course_groups (
     group_name  VARCHAR(40) NOT NULL PRIMARY KEY,
     label       VARCHAR(80) NOT NULL,
     position    INT DEFAULT 0,
-    is_active   TINYINT(1) DEFAULT 1
+    is_active   TINYINT(1) DEFAULT 1,
+    platform    VARCHAR(20) NOT NULL DEFAULT 'competitive'
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS course_group_codes (
@@ -76,16 +78,13 @@ CREATE TABLE IF NOT EXISTS course_content (
     status VARCHAR(20) DEFAULT 'active',
     image_url TEXT,
     section_id VARCHAR(100) NOT NULL UNIQUE,
-    preview_url TEXT DEFAULT NULL,
-    validity_expires_at DATETIME DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_cc_code (code),
     INDEX idx_cc_label (label),
     INDEX idx_cc_status (status),
     INDEX idx_cc_section (section),
-    INDEX idx_cc_created_at (created_at),
-    INDEX idx_cc_validity (validity_expires_at)
+    INDEX idx_cc_created_at (created_at)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS enrollment (
@@ -161,6 +160,8 @@ CREATE TABLE IF NOT EXISTS purchase (
     INDEX idx_purchase_payment_id (payment_id),
     INDEX idx_purchase_course_code (course_code),
     INDEX idx_purchase_code (purchase_code),
+    INDEX idx_purchase_username (username),
+    INDEX idx_purchase_phone (phone),
     CONSTRAINT fk_purchase_auth FOREIGN KEY (email) REFERENCES auth(email) ON DELETE SET NULL,
     CONSTRAINT fk_purchase_content FOREIGN KEY (section_id) REFERENCES course_content(section_id) ON DELETE SET NULL
 ) ENGINE=InnoDB;
@@ -183,7 +184,7 @@ CREATE TABLE IF NOT EXISTS notes_content (
 CREATE TABLE IF NOT EXISTS practice_questions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(100) NOT NULL,
-    section ENUM('Topic-wise', 'Subject-wise', 'Year-wise') NOT NULL,
+    section VARCHAR(100) NOT NULL,
     title VARCHAR(255) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_pq_code (code)
@@ -315,6 +316,7 @@ CREATE TABLE IF NOT EXISTS test_result (
     submission_timestamp DATETIME,
     INDEX idx_tr_email (email),
     INDEX idx_tr_test_key (test_key),
+    INDEX idx_tr_rank (test_key, net_score, total_time_taken_seconds),
     CONSTRAINT fk_test_result_desc FOREIGN KEY (test_key) REFERENCES test_description(test_key) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
@@ -506,3 +508,18 @@ CREATE TABLE IF NOT EXISTS comm_proctoring_logs (
     log_type VARCHAR(50),
     timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS shared_files (
+    path VARCHAR(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL PRIMARY KEY,
+    size INT UNSIGNED NOT NULL DEFAULT 0,
+    sha256 CHAR(64) NOT NULL,
+    chunks INT UNSIGNED NOT NULL DEFAULT 0,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS shared_file_chunks (
+    path VARCHAR(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+    seq INT UNSIGNED NOT NULL,
+    data MEDIUMBLOB NOT NULL,
+    PRIMARY KEY (path, seq)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

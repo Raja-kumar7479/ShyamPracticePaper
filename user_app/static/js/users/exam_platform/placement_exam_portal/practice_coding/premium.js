@@ -1,11 +1,3 @@
-/* Premium checkout: collect the phone, confirm the billing summary, order
- * from our server, pay in Razorpay's window, then verify on our server. The
- * server-side signature check is what actually grants premium - this file
- * only drives the flow.
- *
- * The details step sits in front of the gateway on purpose. Opening Razorpay
- * with no contact prefilled let it fill that field from whatever it had
- * remembered in the browser, so buyers saw a phone number that was not theirs. */
 (function () {
     'use strict';
 
@@ -26,20 +18,35 @@
     var plan = null;
     var activeButton = null;
 
+    var AUTO_HIDE_MS = 5000;
+    var failTimer = null;
+    var modalErrTimer = null;
+
     function fail(message) {
         if (!errorBox) { alert(message); return; }
+        if (failTimer) clearTimeout(failTimer);
         errorBox.textContent = message;
-        errorBox.classList.remove('is-hidden');
+        errorBox.classList.remove('is-hidden', 'is-leaving');
         errorBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        failTimer = setTimeout(function () {
+            errorBox.classList.add('is-leaving');
+            failTimer = setTimeout(function () { errorBox.classList.add('is-hidden'); errorBox.classList.remove('is-leaving'); }, 350);
+        }, AUTO_HIDE_MS);
     }
 
     function showModalError(message) {
         if (!modalErr) { alert(message); return; }
+        if (modalErrTimer) clearTimeout(modalErrTimer);
         modalErr.textContent = message;
-        modalErr.classList.remove('is-hidden');
+        modalErr.classList.remove('is-hidden', 'is-leaving');
+        modalErrTimer = setTimeout(function () {
+            modalErr.classList.add('is-leaving');
+            modalErrTimer = setTimeout(function () { modalErr.classList.add('is-hidden'); modalErr.classList.remove('is-leaving'); }, 350);
+        }, AUTO_HIDE_MS);
     }
 
     function clearModalError() {
+        if (modalErrTimer) { clearTimeout(modalErrTimer); modalErrTimer = null; }
         if (modalErr) modalErr.classList.add('is-hidden');
     }
 
@@ -71,8 +78,6 @@
     }
     digitsOnly(document.getElementById('pmPhone'), 10);
 
-    /* Mirrors _clean_phone() on the server. The server is the authority; this
-     * only saves the buyer a round trip. */
     function stepError(which) {
         if (which === 1 && !/^[1-9]\d{9}$/.test(value('pmPhone'))) {
             return 'Enter a valid 10-digit phone number starting from 1-9.';
@@ -85,20 +90,44 @@
         return '₹' + (whole % 1 === 0 ? String(whole) : whole.toFixed(2));
     }
 
-    /* The billing summary: plan, price, and for the yearly plan the saving vs
-     * paying month by month, shown as a discount off the 12-month price. */
-    function renderSummary() {
+    function planData() {
+        var d = (activeButton && activeButton.dataset) || {};
         var info = (CFG.plans || {})[plan] || {};
         var paise = Number(info.paise) || 0;
+        var price = d.price ? Number(d.price) * 100 : 0;
         var monthly = Number(((CFG.plans || {}).monthly || {}).paise) || 0;
-        var original = plan === 'yearly' && monthly ? monthly * 12 : paise;
-        var discount = original - paise;
+        var original = price || (plan === 'yearly' && monthly ? monthly * 12 : paise);
+        return { info: info, paise: paise, original: original, discount: Math.max(0, original - paise),
+                 days: Number(d.days) || (plan === 'yearly' ? 365 : 30), label: d.label || info.label || plan,
+                 off: d.discount ? Number(d.discount) : 0 };
+    }
+
+    function renderTicket() {
+        var pd = planData();
+        function set(id, text) { var el = document.getElementById(id); if (el) el.textContent = text; }
+        function show(id, on) { var el = document.getElementById(id); if (el) el.classList.toggle('is-hidden', !on); }
+        set('pmTkPlan', pd.label + ' plan');
+        set('pmTkNow', rupees(pd.paise));
+        set('pmTkWas', rupees(pd.original)); show('pmTkWas', pd.discount > 0);
+        set('pmTkOff', (pd.off ? pd.off + '% off' : 'save ' + rupees(pd.discount))); show('pmTkOff', pd.discount > 0);
+        var days = document.querySelector('#pmTkDays span');
+        var until = (activeButton && activeButton.dataset && activeButton.dataset.until) || '';
+        if (days) days.textContent = until ? 'Access until ' + until + ' (' + pd.days + ' days)' : 'Valid for ' + pd.days + ' days from today';
+    }
+
+    function renderSummary() {
+        var pd = planData();
+        var info = pd.info;
+        var paise = pd.paise;
+        var original = pd.original;
+        var discount = pd.discount;
 
         function set(id, text) {
             var el = document.getElementById(id);
             if (el) el.textContent = text;
         }
-        set('pmSumPlan', (info.label || plan) + (plan === 'yearly' ? ' (12 months)' : ' (30 days)'));
+        var untilText = (activeButton && activeButton.dataset && activeButton.dataset.until) || '';
+        set('pmSumPlan', pd.label + (untilText ? ' (until ' + untilText + ')' : ' (' + pd.days + ' days)'));
         set('pmSumPhone', '+91 ' + value('pmPhone'));
         set('pmSumPrice', rupees(original));
         set('pmSumTotal', rupees(paise));
@@ -123,6 +152,10 @@
             nextBtn.textContent = step === LAST_STEP ? 'Proceed to Pay' : 'Next';
             nextBtn.disabled = false;
         }
+        var title = document.getElementById('pmStepTitle');
+        if (title) title.textContent = step === 1 ? 'Your phone number' : 'Confirm your order';
+        var rail = document.getElementById('pmRail');
+        if (rail) rail.style.width = (step === 1 ? 33 : 66) + '%';
         if (step === LAST_STEP) renderSummary();
         var current = form.querySelector('.pm-step[data-step="' + step + '"] input');
         if (current) current.focus();
@@ -134,11 +167,8 @@
         step = 1;
         clearModalError();
         if (errorBox) errorBox.classList.add('is-hidden');
-        if (planLine) {
-            var info = (CFG.plans || {})[planKey] || {};
-            planLine.textContent = (info.label || planKey) + ' plan';
-            if (info.paise) planLine.textContent += ' - ' + rupees(Number(info.paise));
-        }
+        if (planLine) planLine.textContent = 'Checkout';
+        renderTicket();
         modal.classList.remove('is-hidden');
         document.body.classList.add('pm-noscroll');
         render();
@@ -164,7 +194,7 @@
             onSuccess: function (resp) {
                 post(CFG.verifyUrl, resp).then(function (v) {
                     if (v.ok && v.data.success) {
-                        window.location.replace(v.data.redirect || window.location.href);
+                        window.location.replace(CFG.nextUrl || v.data.redirect || window.location.href);
                     } else {
                         fail(v.data.error ||
                              'Payment received but verification failed. Contact support with your payment ID.');
@@ -190,15 +220,14 @@
 
         post(CFG.orderUrl, {
             plan: plan,
-            phone: value('pmPhone')
+            phone: value('pmPhone'),
+            course_code: CFG.courseCode || ''
         }).then(function (r) {
             if (!r.ok) {
                 showModalError(r.data.error || 'Could not start the payment. Please try again.');
                 render();
                 return;
             }
-            /* The gateway replaces this dialog, so it closes before opening -
-             * otherwise dismissing Razorpay leaves the form stacked behind it. */
             modal.classList.add('is-hidden');
             document.body.classList.remove('pm-noscroll');
             openCheckout(r.data);
@@ -236,6 +265,34 @@
             if (event.key === 'Escape' && !modal.classList.contains('is-hidden')) closeModal();
         });
     }
+
+    (function () {
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        document.querySelectorAll('.pm-price__amount[data-count]').forEach(function (el, i) {
+            var target = Number(el.getAttribute('data-count')) || 0;
+            var start = null;
+            var duration = 650;
+            function tick(ts) {
+                if (start === null) start = ts;
+                var t = Math.min(1, (ts - start) / duration);
+                var eased = 1 - Math.pow(1 - t, 3);
+                el.textContent = '\u20B9' + Math.round(target * eased);
+                if (t < 1) requestAnimationFrame(tick); else el.classList.add('is-counting');
+            }
+            setTimeout(function () { requestAnimationFrame(tick); }, 150 + i * 120);
+        });
+    })();
+
+    (function () {
+        var targets = document.querySelectorAll('.pm-what, .pm-section, .pm-faq');
+        if (!targets.length || !('IntersectionObserver' in window)) return;
+        var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (en) {
+                if (en.isIntersecting) { en.target.classList.add('is-in'); io.unobserve(en.target); }
+            });
+        }, { threshold: 0, rootMargin: '0px 0px -8% 0px' });
+        targets.forEach(function (el) { el.classList.add('pm-reveal'); io.observe(el); });
+    })();
 
     document.querySelectorAll('.pm-subscribe').forEach(function (button) {
         button.addEventListener('click', function () {

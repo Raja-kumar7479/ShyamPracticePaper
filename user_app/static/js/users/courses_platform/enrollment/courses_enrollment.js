@@ -8,16 +8,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const popupSpinner        = document.getElementById('popupLoadingSpinner');
     const popupTitle          = document.getElementById('popupTitle');
     const popupBackBtn        = document.getElementById('popupBackBtn');
-    const confirmPopup        = document.getElementById('confirm-popup');
     const enrollPopup         = document.getElementById('enrollment-popup');
     const limitPopup          = document.getElementById('enrollment-limit-popup');
     const enrollForm          = document.getElementById('enroll-form');
-    const confirmEnrollBtn    = document.getElementById('confirm-enroll-btn');
 
     let currentCourseCode  = null;
     let currentCourseName  = null;
     let isSubmitting       = false;
-    let paymentRequired    = false;
     let popupNav           = { group: null, subgroup: null };
 
     window.popupGoBack = () => {
@@ -327,31 +324,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (data.status === 'continue') {
-                paymentRequired = data.payment_required;
-
-                if (!data.payment_required) {
-                    openCaptchaPopup(code, name, false, data.message);
-                } else {
-                    document.getElementById('confirm-course-code').textContent = code;
-                    document.getElementById('confirm-enroll-message').innerHTML = escapeHtml(data.message);
-                    if (confirmEnrollBtn) {
-                        confirmEnrollBtn.textContent = `Pay ₹${parseFloat(data.price).toFixed(2)} & Enroll`;
-                    }
-                    openPopup(confirmPopup);
-                }
+                openCaptchaPopup(code, name, false, data.message);
             }
         } catch (err) {
             console.error('handleEnrollment error:', err);
             showFlash('Something went wrong. Please check your connection.', 'error');
         }
     };
-
-    if (confirmEnrollBtn) {
-        confirmEnrollBtn.addEventListener('click', () => {
-            closePopup(confirmPopup);
-            openCaptchaPopup(currentCourseCode, currentCourseName, true);
-        });
-    }
 
     async function openCaptchaPopup(code, name, isPaid, infoMsg) {
         const codeField    = document.getElementById('final-course-code');
@@ -442,12 +421,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (result.success) {
                     closePopup(enrollPopup);
-                    if (!result.payment_required) {
-                        markCardEnrolled(currentCourseCode, result.redirect_url);
-                        window.location.href = result.redirect_url;
-                    } else {
-                        await initiateRazorpay(result.price);
-                    }
+                    markCardEnrolled(currentCourseCode, result.redirect_url);
+                    window.location.href = result.redirect_url;
                 } else {
                     if (captchaError) captchaError.textContent = result.error || 'Verification failed.';
                     if (result.new_captcha) {
@@ -466,86 +441,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 isSubmitting = false;
             }
         });
-    }
-
-    async function initiateRazorpay(price) {
-        try {
-            const res  = await fetch('/api/enrollment/payment/create_order', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify({})
-            });
-            const data = await res.json();
-
-            if (data.status !== 'success') {
-                showFlash(data.error || 'Payment initiation failed. Please try again.', 'error');
-                isSubmitting = false;
-                return;
-            }
-
-            if (!window.Razorpay) {
-                showFlash('Payment system unavailable. Please refresh the page.', 'error');
-                isSubmitting = false;
-                return;
-            }
-
-            window.sppCheckout.open({
-                key: data.razorpay_key_id,
-                amount: data.amount,
-                description: `Enrollment: ${currentCourseCode}`,
-                orderId: data.razorpay_order_id,
-                name: data.username,
-                email: data.email,
-                contact: data.phone || '',
-                onSuccess: async (response) => {
-                    await verifyPayment(response);
-                },
-                onDismiss: () => { isSubmitting = false; },
-                onFailed: (response) => {
-                    console.error('Razorpay payment failed:', response.error);
-                    showFlash(`Payment failed: ${response.error.description}`, 'error');
-                    isSubmitting = false;
-                },
-                onUnavailable: () => {
-                    showFlash('Payment system unavailable. Please refresh the page.', 'error');
-                    isSubmitting = false;
-                }
-            });
-
-        } catch (err) {
-            console.error('initiateRazorpay error:', err);
-            showFlash('Network error initiating payment. Please try again.', 'error');
-            isSubmitting = false;
-        }
-    }
-
-    async function verifyPayment(paymentResponse) {
-        try {
-            const res  = await fetch('/api/enrollment/payment/success', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': csrfToken
-                },
-                body: JSON.stringify(paymentResponse)
-            });
-            const data = await res.json();
-
-            if (data.success) {
-                markCardEnrolled(currentCourseCode, data.redirect_url);
-                window.location.href = data.redirect_url;
-            } else {
-                showFlash(`Payment verification failed: ${data.error || 'Unknown error'}. Please contact support.`, 'error');
-                isSubmitting = false;
-            }
-        } catch (err) {
-            console.error('verifyPayment error:', err);
-            showFlash('Verification error. Please contact support with your payment reference.', 'error');
-            isSubmitting = false;
-        }
     }
 
     function showFlash(message, type) {
@@ -572,13 +467,6 @@ document.addEventListener('DOMContentLoaded', () => {
         target.classList.remove('show');
         setTimeout(() => { target.style.display = 'none'; }, 300);
     };
-
-    if (!window.Razorpay) {
-        const script  = document.createElement('script');
-        script.src    = 'https://checkout.razorpay.com/v1/checkout.js';
-        script.async  = true;
-        document.head.appendChild(script);
-    }
 
     // Refresh button: fetch a brand-new CAPTCHA on demand. /api/enrollment/start
     // already pops the old value and mints a fresh one server-side, so this is

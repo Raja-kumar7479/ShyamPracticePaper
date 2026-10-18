@@ -1,0 +1,12 @@
+.tl-portal-chip { display: inline-flex; align-items: center; gap: 8px; margin-left: 12px; padding: 6px 14px; border-radius: 999px; background: rgba(153, 44, 37, .08); color: var(--primary-color); font-weight: 700; font-size: .86rem; }
+.tl-intro { color: var(--text-secondary); margin: 0 0 18px; font-size: .95rem; }
+.tl-paid { margin: 26px 0 8px; }
+.tl-paid__head h4 { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin: 0 0 4px; }
+.tl-paid__head h4 i { color: var(--primary-color); margin-right: 6px; }
+.tl-paid__head p { color: var(--text-secondary); font-size: .88rem; margin: 0 0 14px; }
+.test-grid .test-card .meta-info:empty { display: none; }
+.test-grid .test-card .tag-info { background: #f4efe9; color: #5c1a15; border: 1px solid #e8ddd6; }
+.tl-spin { display: inline-block; width: 16px; height: 16px; margin-right: 8px; border: 2px solid rgba(255, 255, 255, .45); border-top-color: #ffffff; border-radius: 50%; animation: tl-spin .7s linear infinite; vertical-align: -3px; flex: 0 0 auto; }
+@keyframes tl-spin { to { transform: rotate(360deg); } }
+.test-grid .test-card .btn-action.is-loading { cursor: progress; opacity: .92; }
+body.tl-busy .test-grid .test-card .btn-action:not(.is-loading):not(.is-open) { pointer-events: none; opacity: .5; }

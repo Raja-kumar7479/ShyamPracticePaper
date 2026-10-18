@@ -1,0 +1,16 @@
+<div class="app-flash-stack" id="appFlashStack">
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+        {% set c = category|lower %}
+        {% if 'success' in c %}{% set t = 'success' %}{% set icon = 'fa-circle-check' %}
+        {% elif 'error' in c or 'danger' in c or 'fail' in c %}{% set t = 'danger' %}{% set icon = 'fa-circle-exclamation' %}
+        {% elif 'warn' in c %}{% set t = 'warning' %}{% set icon = 'fa-triangle-exclamation' %}
+        {% else %}{% set t = 'info' %}{% set icon = 'fa-circle-info' %}{% endif %}
+        <div class="app-flash app-flash--{{ t }}" role="alert">
+            <i class="fas {{ icon }} app-flash__icon" aria-hidden="true"></i>
+            <span class="app-flash__msg">{{ message }}</span>
+            <button type="button" class="app-flash__close" aria-label="Close">&times;</button>
+        </div>
+    {% endfor %}
+</div>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin/shared/flash.css') }}">
+<script src="{{ url_for('static', filename='js/admin/admin-flash.js') }}"></script>

@@ -262,3 +262,6 @@
 .section-header {
     flex-shrink: 0;
 }
+
+.lobby-spin { display: inline-block; width: 14px; height: 14px; margin-right: 8px; border: 2px solid rgba(255, 255, 255, .45); border-top-color: #ffffff; border-radius: 50%; animation: lobby-spin .7s linear infinite; vertical-align: -2px; }
+@keyframes lobby-spin { to { transform: rotate(360deg); } }

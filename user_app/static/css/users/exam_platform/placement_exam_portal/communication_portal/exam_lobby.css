@@ -218,3 +218,6 @@
 .section-header {
     flex-shrink: 0;
 }
+
+#consentWrap.is-missing label { color: #b91c1c; }
+#consentWrap.is-missing .form-check-input { outline: 2px solid #b91c1c; }

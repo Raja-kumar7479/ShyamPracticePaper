@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ portal_label }} - ShyamPracticePaper</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/brand-bootstrap.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/competitive_exam_platform/test_dashboard/test_dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/test_list.css') }}">
+</head>
+<body class="{{ 'premium-dashboard' if dashboard_type == 'paid' else 'free-dashboard' }}">
+
+    <div class="wrapper">
+        <aside class="sidebar" id="sidebar" aria-hidden="true">
+            <button class="sb-close-btn" type="button" data-sb-close aria-label="Close menu"><i class="fas fa-times"></i></button>
+            <div class="sidebar-header">
+                <a href="{{ url_for('users.index') }}" class="brand-logo" title="Go to home">
+                    <img src="{{ url_for('static', filename='images/favicon.png') }}"
+                         alt="ShyamPracticePaper" class="brand-logo-img">
+                    <span>ShyamPracticePaper</span>
+                </a>
+            </div>
+
+            <div class="user-profile-section">
+                <div class="d-flex align-items-center">
+                    <div class="avatar-circle">
+                        {% if username %}
+                            {% set parts = username.split(' ') %}
+                            {{ parts[0][0] }}{% if parts|length > 1 and parts[1] %}{{ parts[1][0] }}{% endif %}
+                        {% else %}
+                            <i class="fas fa-user"></i>
+                        {% endif %}
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name">{{ username or 'Sign in' }}</div>
+                        <div class="user-role">{{ course_code }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <ul class="sidebar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('users.index') }}" data-tip="Home">
+                        <i class="fas fa-home"></i>
+                        <span>Home</span>
+                    </a>
+                </li>
+                {% if back_url %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ back_url }}" data-tip="Course Home">
+                        <i class="fas fa-box-open"></i>
+                        <span>Course Home</span>
+                    </a>
+                </li>
+                {% endif %}
+                <li class="nav-item">
+                    <a class="nav-link active" href="#" data-tip="{{ portal_label }}">
+                        <i class="fas {{ portal_icon or 'fa-file-alt' }}"></i>
+                        <span>{{ portal_label }}</span>
+                    </a>
+                </li>
+                {% for link in extra_links or [] %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ link.url }}" data-tip="{{ link.label }}">
+                        <i class="fas {{ link.icon }}"></i>
+                        <span>{{ link.label }}</span>
+                    </a>
+                </li>
+                {% endfor %}
+            </ul>
+            <div class="sb-foot">
+                <div class="sb-user">
+                    <div class="sb-user__avatar">
+                        {% if username %}{{ username[0]|upper }}{% else %}<i class="fas fa-user"></i>{% endif %}
+                    </div>
+                    <div class="sb-user__info">
+                        <div class="sb-user__name">{{ username or 'Guest' }}</div>
+                        <div class="sb-user__role">{{ 'Signed in' if username else 'Not signed in' }}</div>
+                    </div>
+                    {% if username %}
+                    <a href="{{ url_for('users.user_logout') }}" class="sb-user__logout" title="Logout">
+                        <i class="fas fa-right-from-bracket"></i>
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('users.user_login') }}" class="sb-user__logout" title="Login">
+                        <i class="fas fa-right-to-bracket"></i>
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </aside>
+
+        <div class="main-content">
+            <div class="overlay" id="overlay"></div>
+
+            <div class="floating-bar">
+                <button class="toggle-btn" id="mobileToggle" type="button" data-sb-toggle aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <span class="tl-portal-chip"><i class="fas {{ portal_icon or 'fa-file-alt' }}"></i> {{ portal_label }}</span>
+                {% if dashboard_type == 'paid' %}
+                <span class="premium-chip"><i class="fas fa-crown"></i><span class="d-none d-sm-inline">Purchased</span></span>
+                {% endif %}
+            </div>
+
+            <main class="content-container">
+                {% include 'users/_flash.html' %}
+
+                {% if intro %}<p class="tl-intro">{{ intro }}</p>{% endif %}
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon bg-indigo-light"><i class="fas fa-layer-group"></i></div>
+                        <div class="stat-info">
+                            <div class="value">{{ tests|length + completed|length }}</div>
+                            <div class="label">Total Tests</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-emerald-light"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-info">
+                            <div class="value">{{ completed|length }}</div>
+                            <div class="label">Completed</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon bg-amber-light"><i class="fas fa-hourglass-half"></i></div>
+                        <div class="stat-info">
+                            <div class="value">{{ tests|length }}</div>
+                            <div class="label">Pending</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="custom-tabs">
+                    <button class="tab-btn active" id="btnAll">All Tests</button>
+                    <button class="tab-btn" id="btnUnperformed">Unperformed</button>
+                    <button class="tab-btn" id="btnResults">Results &amp; History</button>
+                </div>
+
+                <div class="test-grid" id="testGrid">
+                    {% for test in tests %}
+                        <div class="test-card" data-status="{{ test.status }}" data-locked="{{ '1' if test.locked else '0' }}">
+                            {% if test.status == 'unperformed' %}
+                                <div class="card-status bg-warning text-dark">In Progress</div>
+                            {% else %}
+                                <div class="card-status bg-secondary text-white">Pending</div>
+                            {% endif %}
+
+                            <div class="card-body">
+                                <div class="card-title">{{ test.title }}</div>
+                                <div class="card-subtitle">{{ test.subtitle or '' }}</div>
+
+                                <div class="tags-container">
+                                    {% if test.access == 'premium' %}
+                                        <div class="tag tag-premium" title="Opens with a Premium subscription for this course - one Premium unlocks every Premium test"><i class="fas fa-crown"></i> Premium</div>
+                                    {% elif test.access == 'paid' %}
+                                        <div class="tag tag-paid" title="Inside paid content: bought once, on its own - not part of Premium"><i class="fas fa-cart-shopping"></i> Paid</div>
+                                    {% else %}
+                                        <div class="tag tag-free"><i class="fas fa-gift"></i> Free</div>
+                                    {% endif %}
+                                    {% if test.access != 'free' and not test.locked %}
+                                        <div class="tag tag-new" title="You already have access"><i class="fas fa-unlock"></i> Unlocked</div>
+                                    {% endif %}
+                                    {% if test.is_new %}
+                                        <div class="tag tag-new"><i class="fas fa-star"></i> New</div>
+                                    {% endif %}
+                                    {% for tag in test.tags or [] %}
+                                        <div class="tag tag-info">{{ tag }}</div>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="meta-info">
+                                    {% for m in test.meta %}
+                                    <div class="meta-item">
+                                        <i class="{{ m.icon }}"></i> {{ m.text }}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <div class="card-footer">
+                                {% if test.locked %}
+                                    <a href="{{ test.unlock_url }}" class="btn-action btn-unlock-custom">
+                                        <i class="fas fa-unlock"></i> {{ test.unlock_label or 'Unlock' }}
+                                    </a>
+                                {% elif test.status == 'unperformed' %}
+                                    <a href="{{ test.action_url }}" class="btn-action btn-warning-custom{% if test.launch == 'popup' %} tl-launch{% endif %}">
+                                        <i class="fas fa-play"></i> {{ test.resume_label or 'Resume Test' }}
+                                    </a>
+                                {% else %}
+                                    <a href="{{ test.action_url }}" class="btn-action btn-primary-custom{% if test.launch == 'popup' %} tl-launch{% endif %}">
+                                        <i class="fas fa-play"></i> {{ test.action_label or 'Start Test' }}
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-folder-open empty-icon"></i>
+                            <div class="empty-text">{{ empty_text or 'No tests available in this section currently.' }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {% if paid_blocks %}
+                <section class="tl-paid">
+                    <div class="tl-paid__head">
+                        <h4><i class="fas fa-cart-shopping"></i> Paid content</h4>
+                        <p>These test packs are bought once, on their own. They are not part of Premium.</p>
+                    </div>
+                    <div class="test-grid">
+                        {% for block in paid_blocks %}
+                        <div class="test-card" data-status="pending" data-locked="1">
+                            <div class="card-status bg-secondary text-white">Locked</div>
+                            <div class="card-body">
+                                <div class="card-title">{{ block.title }}</div>
+                                <div class="card-subtitle">{{ block.subtitle or '' }}</div>
+                                <div class="tags-container">
+                                    <div class="tag tag-paid"><i class="fas fa-cart-shopping"></i> Paid</div>
+                                    {% if block.discount %}<div class="tag tag-new">{{ block.discount|int }}% OFF</div>{% endif %}
+                                </div>
+                                <div class="meta-info">
+                                    <div class="meta-item"><i class="far fa-question-circle"></i> {{ block.test_count or 0 }} Tests</div>
+                                    <div class="meta-item"><i class="fas fa-indian-rupee-sign"></i> {{ block.price|int }}</div>
+                                    <div class="meta-item"><i class="fas fa-lock"></i> Buy once</div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <a href="{{ shop_url }}" class="btn-action btn-unlock-custom"><i class="fas fa-unlock"></i> Buy content</a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endif %}
+
+                <div id="resultsList" style="display: none;">
+                    {% if completed %}
+                        {% for test in completed %}
+                        <div class="report-card">
+                            <div class="report-details">
+                                <h5>{{ test.title }}</h5>
+                                <small>{{ test.subtitle or '' }}</small>
+                                <div class="mt-2 text-secondary" style="font-size: 0.85rem;">
+                                    <i class="far fa-calendar-alt me-1"></i>
+                                    Submitted: {{ test.submitted_at or 'N/A' }}
+                                </div>
+                            </div>
+
+                            <div class="report-actions">
+                                {% if test.score is not none or test.percentage is not none %}
+                                <div class="score-box">
+                                    {% if test.score is not none %}
+                                    <div class="score-item">
+                                        <label>Score</label>
+                                        <span>{{ test.score }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if test.percentage is not none %}
+                                    <div class="score-item">
+                                        <label>Percentage</label>
+                                        <span>{{ test.percentage }}%</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+                                <div class="ms-md-4 mt-3 mt-md-0">
+                                    <a href="{{ test.result_url }}" class="btn-outline-custom">
+                                        <i class="fas fa-chart-pie me-1"></i> {{ test.result_label or 'Analysis' }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-chart-bar empty-icon"></i>
+                            <div class="empty-text">No completed tests found. Complete a test to see results here.</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </main>
+
+            <footer class="main-footer">
+                &copy; 2026 ShyamPracticePaper. All rights reserved. <br>
+                Designed for optimal learning experience.
+            </footer>
+        </div>
+    </div>
+
+<script src="{{ url_for('static', filename='js/users/exam_platform/competitive_exam_platform/test_dashboard/test_dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/test_list.js') }}"></script>
+</body>
+</html>

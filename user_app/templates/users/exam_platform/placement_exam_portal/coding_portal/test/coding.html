@@ -21,6 +21,7 @@
 {% block response %}
 <div class="pane-main">
   <div class="editor-bar">
+    {% if embedded %}<label class="lang-label" for="lang-select">Choose programming language</label>{% endif %}
     <select class="lang-select" id="lang-select">
       {% for lang in question.languages %}
         <option value="{{ lang }}">{{ lang | upper }}</option>
@@ -64,8 +65,8 @@
         </label>
         <span class="info-dot" title="Runs your code against the sample testcases">i</span>
         <div class="spacer"></div>
-        <button class="btn btn-primary" id="btn-run">Compile and Test</button>
-        <button class="btn btn-ghost" id="btn-submit">Submit Code</button>
+        <button class="btn btn-primary" id="btn-run">{% if embedded %}Compile Code{% else %}Compile and Test{% endif %}</button>
+        <button class="btn btn-ghost" id="btn-submit">{% if embedded %}Final Submit{% else %}Submit Code{% endif %}</button>
       </div>
 
       <div class="custom-input-box hidden" id="custom-input-box">

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ content.title }} | ShyamPracticePaper</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/brand-bootstrap.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/courses_platform/dashboard/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/courses_platform/dashboard/content_details.css') }}">
+</head>
+<body>
+
+<div class="cd-page">
+    <header class="cd-topbar">
+        <a href="{{ dashboard_url }}" class="cd-back">
+            <i class="fas fa-arrow-left"></i> Back to dashboard
+        </a>
+        <a href="{{ url_for('users.index') }}" class="cd-brand" title="Go to home">
+            <img src="{{ url_for('static', filename='images/favicon.png') }}" alt="" class="cd-brand__logo">
+            <span>ShyamPracticePaper</span>
+        </a>
+    </header>
+
+    <main class="cd-main">
+        <article class="cd-card{% if is_paid %} cd-card--paid{% endif %}">
+            <div class="cd-hero{% if not content.image_url %} cd-hero--plain{% endif %}">
+                {% if content.image_url %}
+                    {% set cover_path = content.image_url.replace('\\', '/').replace('static/', '', 1) %}
+                    <img class="cd-hero__img" src="{{ url_for('static', filename=cover_path) }}"
+                         alt="{{ content.title }}">
+                {% else %}
+                    <div class="cd-hero__pattern"></div>
+                    <i class="fas fa-book-open cd-hero__icon"></i>
+                {% endif %}
+                <div class="cd-hero__tags">
+                    <span class="cd-tag cd-tag--{{ 'paid' if content.label == 'Paid' else 'free' }}">
+                        {{ content.label }}
+                    </span>
+                    {% if section_label %}<span class="cd-tag cd-tag--section">{{ section_label }}</span>{% endif %}
+                    {% if content.is_newly_added %}<span class="cd-tag cd-tag--new"><i class="fas fa-star"></i> Latest</span>{% endif %}
+                </div>
+            </div>
+
+            <div class="cd-body">
+                {% if is_paid %}
+                <div class="cd-premium">
+                    <span class="cd-premium__flag"><i class="fas fa-tag"></i> Paid</span>
+                    {% set list_price = content.price|float(0) %}
+                    {% set off = content.discount|float(0) %}
+                    {% set payable = (list_price - (list_price * off / 100)) if 0 < off < 100 else list_price %}
+                    <span class="cd-premium__price">
+                        {% if off > 0 and off < 100 %}
+                        <span class="cd-premium__was">&#8377;{{ "%.0f"|format(list_price) }}</span>
+                        {% endif %}
+                        &#8377;{{ "%.0f"|format(payable) }}
+                    </span>
+                    {% if off > 0 and off < 100 %}
+                    <span class="cd-premium__off">{{ "%g"|format(off) }}% off</span>
+                    {% endif %}
+                    {% if can_open %}<span class="cd-premium__owned"><i class="fas fa-circle-check"></i> You own this</span>{% endif %}
+                </div>
+                {% endif %}
+                <h1 class="cd-title">{{ content.title }}</h1>
+                {% if content.subtitle %}<p class="cd-subtitle">{{ content.subtitle }}</p>{% endif %}
+
+                <div class="cd-facts">
+                    {% if content.stream %}
+                    <span class="cd-fact"><i class="fas fa-layer-group"></i> {{ content.stream }}</span>
+                    {% endif %}
+                    {% if content.created_at %}
+                    <span class="cd-fact"><i class="fas fa-calendar-plus"></i>
+                        Added {{ content.created_at.strftime('%d %b %Y') }}
+                    </span>
+                    {% endif %}
+                    <span class="cd-fact"><i class="fas fa-infinity"></i> No expiry</span>
+                </div>
+
+                {% macro syllabus_block() %}
+                    {% if content.syllabus_url %}
+                    {% set syllabus_path = content.syllabus_url.replace('\\', '/').replace('static/', '', 1) %}
+                    <a class="cd-syllabus" href="{{ url_for('static', filename=syllabus_path) }}"
+                       target="_blank" rel="noopener noreferrer">
+                        <span class="cd-syllabus__icon"><i class="fas fa-file-pdf"></i></span>
+                        <span class="cd-syllabus__text">
+                            <strong>{{ content.syllabus_label or 'Syllabus' }}</strong>
+                            <small>PDF, opens in a new tab</small>
+                        </span>
+                        <i class="fas fa-arrow-up-right-from-square cd-syllabus__go"></i>
+                    </a>
+                    {% endif %}
+                {% endmacro %}
+
+                {% if content.syllabus_position == 'above' %}{{ syllabus_block() }}{% endif %}
+
+                {% if content.details and content.details|trim %}
+                <div class="cd-details">{{ content.details|safe }}</div>
+                {% else %}
+                <p class="cd-details cd-details--empty">No additional details were added for this resource.</p>
+                {% endif %}
+
+                {% if content.syllabus_position != 'above' %}{{ syllabus_block() }}{% endif %}
+            </div>
+
+            <footer class="cd-foot">
+                <a href="{{ dashboard_url }}" class="cd-btn cd-btn--ghost">Back</a>
+
+                {% if can_open %}
+                    {% if open_url %}
+                    <a href="{{ open_url }}" class="cd-btn cd-btn--primary"
+                       {% if new_window %}target="_blank" rel="noopener noreferrer"{% endif %}>
+                        Continue
+                        {% if new_window %}<i class="fas fa-external-link-alt"></i>{% else %}<i class="fas fa-arrow-right"></i>{% endif %}
+                    </a>
+                    {% else %}
+                    <span class="cd-btn cd-btn--disabled" aria-disabled="true">Not available yet</span>
+                    {% endif %}
+                {% elif in_cart %}
+                <a href="{{ url_for('users.add_cart', course_code=course_code, unique_code=unique_code) }}"
+                   class="cd-btn cd-btn--incart">
+                    <i class="fas fa-check"></i> In cart - view it
+                </a>
+                {% elif cart_is_full %}
+                <a href="{{ url_for('users.add_cart', course_code=course_code, unique_code=unique_code) }}"
+                   class="cd-btn cd-btn--incart" title="Cart limit reached">Cart full - view cart</a>
+                {% else %}
+                <form method="POST" action="{{ url_for('users.add_cart', course_code=course_code, unique_code=unique_code) }}" class="cd-cart-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="course_code" value="{{ content.code or '' }}">
+                    <input type="hidden" name="unique_code" value="{{ unique_code }}">
+                    <input type="hidden" name="title" value="{{ content.title or '' }}">
+                    <input type="hidden" name="subtitle" value="{{ content.subtitle or '' }}">
+                    <input type="hidden" name="section" value="{{ content.section or '' }}">
+                    <input type="hidden" name="section_id" value="{{ content.section_id or '' }}">
+                    <button type="submit" name="add_cart" value="true" class="cd-btn cd-btn--cart">
+                        <i class="fas fa-cart-plus"></i> Add to Cart
+                    </button>
+                </form>
+                {% endif %}
+            </footer>
+        </article>
+    </main>
+</div>
+
+{% with flash_scopes = ['cart', 'payment', 'purchase'] %}
+    {% include 'users/_flash.html' %}
+{% endwith %}
+
+</body>
+</html>

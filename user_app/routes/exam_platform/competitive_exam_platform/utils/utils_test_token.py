@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 user_op = UserOperation()
 TOKEN_EXPIRY_BUFFER_SECONDS = 30
+SUBMIT_GRACE_SECONDS = 300
 
 
 def generate_test_token(email, test_id, duration_seconds):
@@ -24,7 +25,7 @@ def generate_test_token(email, test_id, duration_seconds):
     signature = hmac.new(secret_key.encode(), data.encode(), hashlib.sha256).hexdigest()
     return f"{data}:{signature}"
 
-def validate_test_token(token, email, test_id):
+def validate_test_token(token, email, test_id, grace_seconds=TOKEN_EXPIRY_BUFFER_SECONDS):
     if not token:
         logger.warning("Token validation failed: No token provided.")
         return False
@@ -49,7 +50,7 @@ def validate_test_token(token, email, test_id):
             logger.warning("Token validation failed: Signature mismatch.")
             return False
         current_time = int(time.time())
-        expiry_time = timestamp + duration + TOKEN_EXPIRY_BUFFER_SECONDS
+        expiry_time = timestamp + duration + grace_seconds
         if current_time > expiry_time:
             logger.warning(f"Token validation failed: Token has expired. Current time: {current_time}, Expiry time: {expiry_time}")
             return False

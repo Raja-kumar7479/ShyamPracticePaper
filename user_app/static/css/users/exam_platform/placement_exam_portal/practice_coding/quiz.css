@@ -12,7 +12,6 @@ body { background: var(--pc-bg); color: var(--pc-text);
 a { color: inherit; text-decoration: none; }
 .is-hidden { display: none !important; }
 
-/* ---- shared topbar ---- */
 .pc-topbar {
     display: flex; align-items: center; gap: 16px;
     padding: 10px 20px; background: #992c25; border-bottom: 1px solid var(--pc-line);
@@ -42,7 +41,6 @@ a { color: inherit; text-decoration: none; }
     box-shadow: 0 0 0 2px rgba(255, 255, 255, .25);
 }
 
-/* ================= HOME ================= */
 .qz-wrap { max-width: 1080px; margin: 0 auto; padding: 30px 20px 70px; }
 .qz-title { font-size: 28px; }
 .qz-sub { color: var(--pc-muted); margin: 8px 0 24px; }
@@ -96,7 +94,6 @@ a { color: inherit; text-decoration: none; }
 .qz-mode--assessment { background: rgba(153, 44, 37, .12); color: var(--pc-accent); }
 .qz-review-link { color: var(--pc-accent); font-weight: 600; }
 
-/* ================= TAKING WINDOW ================= */
 .qz-progress { height: 5px; background: rgba(240, 174, 6, .28);
                border-bottom: 1px solid var(--pc-line); }
 .qz-progress span { display: block; height: 100%; background: var(--pc-accent);
@@ -168,7 +165,6 @@ a { color: inherit; text-decoration: none; }
 }
 .qz-lg--locked { opacity: .42; border-style: dashed; }
 
-/* ================= REVIEW ================= */
 .qz-score {
     display: flex; align-items: center; gap: 26px; flex-wrap: wrap;
     background: var(--pc-panel); border-radius: 14px; padding: 24px; margin-bottom: 10px;
@@ -227,7 +223,6 @@ a { color: inherit; text-decoration: none; }
 }
 .qz-rev__why i { color: var(--pc-accent); margin-right: 7px; }
 
-/* ================= responsive ================= */
 @media (max-width: 860px) {
     .qz-window { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 20px 16px 50px; }
     .qz-qpane { padding-right: 0; border-right: 0;
@@ -244,7 +239,6 @@ a { color: inherit; text-decoration: none; }
 }
 
 
-/* ============ ShyamPracticePaper brand overrides (palette: #992c25 / #f0ae06 / #fbf7f0) ============ */
 .pc-topbar { background: #992c25 !important; border-bottom: 1px solid #7c2018 !important; }
 .pc-topbar, .pc-topbar a, .pc-title-mini, .pc-back { color: #fff !important; }
 .pc-topnav__item { color: rgba(255,255,255,.78) !important; }
@@ -255,26 +249,22 @@ a { color: inherit; text-decoration: none; }
 .pc-premium-badge { color: var(--pc-gold) !important; }
 .pc-streak { color: var(--pc-gold) !important; }
 
-/* active chips / selected states on a light bg */
 .pc-chip.is-active { background: var(--pc-accent) !important; color: #fff !important; }
 .pc-chip.is-active .pc-chip__n { background: rgba(255,255,255,.25) !important; color: #fff !important; }
 .pc-company__n, .pc-cal__day.is-today { background: var(--pc-accent) !important; color: #fff !important; }
 .pc-solved { color: var(--pc-easy) !important; }
 .pc-crown { color: var(--pc-gold) !important; }
 
-/* code editor + gutter: light, on-brand, still high-contrast */
 #pcCode { background: #fffdf8 !important; color: #2a2220 !important; }
 .pc-gutter { background: #f4ece0 !important; color: #b9ab97 !important; }
 .pc-io__body textarea, .pc-customout { background: #fffdf8 !important; color: #2a2220 !important; }
 
-/* quiz option accents */
 .qz-opt.is-picked { border-color: var(--pc-accent) !important; }
 .qz-opt.is-picked .qz-opt__letter { background: var(--pc-accent) !important; color: #fff !important; }
 .qz-btn { background: var(--pc-accent) !important; color: #fff !important; }
 .qz-btn--alt { background: var(--pc-gold) !important; color: #3a2600 !important; }
 .qz-progress span { background: var(--pc-gold) !important; }
 
-/* premium plan cards */
 .pm-plan--featured { background: linear-gradient(135deg, #fff2d6, #ffd98c) !important; }
 .pm-subscribe { background: var(--pc-accent) !important; }
 

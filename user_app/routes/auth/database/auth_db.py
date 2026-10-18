@@ -11,14 +11,6 @@ class AuthOperation:
 
     @contextmanager
     def connection(self):
-        """A pooled connection.
-
-        This layer used to open a brand new connection for every call, so the
-        hottest paths in the app - login, signup checks, update_last_active -
-        each paid a full connect and teardown while the rest of the app used
-        the pool. Closing a pooled connection returns it to the pool, so the
-        surrounding code does not change.
-        """
         conn = None
         try:
             from routes.db_pool import get_connection
@@ -43,7 +35,6 @@ class AuthOperation:
             logger.exception("Error fetching user by email")
             raise
 
-    # ------------------------------------------------- pending signup
     PENDING_FIELDS = ('username', 'email', 'password_hash',
                       'otp_hash', 'otp_expires_at', 'otp_attempts')
 
@@ -54,7 +45,6 @@ class AuthOperation:
             return cursor.fetchone()
 
     def upsert_pending_signup(self, token, **fields):
-        """Create or update the row, touching only the fields supplied."""
         data = {k: v for k, v in fields.items() if k in self.PENDING_FIELDS}
         cols = ['token'] + list(data)
         marks = ', '.join(['%s'] * len(cols))
@@ -80,9 +70,6 @@ class AuthOperation:
             cursor.execute("DELETE FROM pending_signups WHERE token = %s", (token,))
             db.commit()
 
-    # ------------------------------------------------------------ lockout
-    # Shared storage so a failed-login counter cannot be reset by throwing
-    # away a cookie. Mirrors the admin app's table.
     def is_locked_out(self, identifier):
         with self.connection() as db:
             cursor = db.cursor()
@@ -126,9 +113,6 @@ class AuthOperation:
                 cursor.execute(query, (username,))
                 return cursor.fetchone() is not None
         except Exception:
-            # Reporting "not taken" on a database error let signup continue and
-            # create a duplicate username. Fail closed: the caller treats this
-            # as taken and asks for another name.
             logger.exception(f"Error checking username {username}")
             raise
 
@@ -192,6 +176,9 @@ class AuthOperation:
             return False
 
     def update_last_active(self, email):
+        from routes.activity import should_touch
+        if not should_touch(email):
+            return
         try:
             with self.connection() as db:
                 cursor = db.cursor()

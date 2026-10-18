@@ -12,7 +12,6 @@
     --cr-bad: #d93025;
 }
 
-/* ---------- hero ---------- */
 .cr-hero {
     display: flex;
     align-items: center;
@@ -72,7 +71,6 @@
 .cr-stat__lbl { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--cr-muted); }
 .cr-ok { color: var(--cr-ok); }
 
-/* ---------- time used ---------- */
 .cr-timebar {
     background: #fff;
     border: 1px solid var(--cr-line);
@@ -102,7 +100,6 @@
 }
 .cr-timebar__note i { color: var(--cr-gold); margin-right: 6px; }
 
-/* ---------- panels ---------- */
 .cr-panel {
     background: #fff;
     border: 1px solid var(--cr-line);
@@ -131,7 +128,6 @@
 .cr-panel__head h3 i { margin-right: 7px; }
 .cr-panel__meta { font-size: .8125rem; color: var(--cr-muted); }
 
-/* ---------- comparison bars ---------- */
 .cr-compare { display: grid; gap: 12px; margin-bottom: 16px; }
 
 .cr-bar { display: grid; grid-template-columns: 110px 1fr 62px; align-items: center; gap: 12px; }
@@ -170,7 +166,6 @@
 .cr-chip--good { background: rgba(26, 127, 75, .10); border-color: rgba(26, 127, 75, .25); color: var(--cr-ok); }
 .cr-chip--bad { background: rgba(217, 48, 37, .08); border-color: rgba(217, 48, 37, .22); color: var(--cr-bad); }
 
-/* ---------- sections ---------- */
 .cr-secgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px; }
 
 .cr-seccard {
@@ -188,7 +183,6 @@
 .cr-mini-track span.is-full { background: var(--cr-ok); }
 .cr-mini-track--sm { height: 6px; margin-top: 6px; }
 
-/* ---------- question list ---------- */
 .cr-filters { display: flex; gap: 6px; flex-wrap: wrap; }
 
 .cr-fbtn {
@@ -277,7 +271,6 @@
     overflow: auto;
 }
 
-/* ---------- code viewer ---------- */
 .cr-code { margin-top: 14px; }
 
 .cr-code__toggle {
@@ -336,7 +329,6 @@
 .cr-empty i { color: #cbbfae; margin-bottom: 10px; }
 .cr-empty p { margin: 0; font-size: .875rem; }
 
-/* ---------- polish ---------- */
 body { background: #faf8f5; }
 
 .cr-hero,
@@ -364,7 +356,6 @@ body { background: #faf8f5; }
 }
 .ra-sidebar__nav .ra-sidebar__label { margin-top: 18px; margin-bottom: 10px; }
 
-/* ---------- responsive ---------- */
 @media (max-width: 992px) {
     .container.py-5 { padding-top: 1.6rem !important; padding-bottom: 1.6rem !important; }
     .cr-hero__stats { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
@@ -409,7 +400,6 @@ body { background: #faf8f5; }
     .cr-bar__fill, .cr-mini-track span, .cr-code__toggle i { transition: none; }
 }
 
-/* ---------- share / certificate ---------- */
 .cr-share {
   display: flex;
   align-items: center;

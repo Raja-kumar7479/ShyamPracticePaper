@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium Catalog</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/brand-bootstrap.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-utils.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-shell.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/manage_premium/premium_catalog.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token is defined else '' }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-csrf.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-toast.css') }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-toast.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-confirm.css') }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-confirm.js') }}"></script>
+</head>
+<body data-can-manage="{{ 'true' if can_manage else 'false' }}">
+
+{% with page_key = 'premium', sidebar_courses = courses %}
+    {% include 'admin/_sidebar.html' %}
+{% endwith %}
+
+<div class="as-main">
+    <header class="as-topbar">
+        <button class="as-toggle" type="button" onclick="asToggle()" aria-label="Toggle menu"><i class="fas fa-bars"></i></button>
+        <h1 class="as-title">Premium Catalog</h1>
+        <span class="as-chip" id="pcCount">{{ courses|length }} course{{ '' if courses|length == 1 else 's' }}</span>
+    </header>
+
+    <div class="as-page">
+        <div class="pc-hint">
+            <i class="fas fa-crown"></i>
+            <div>
+                <strong>Premium is sold per course.</strong>
+                <p>Pick a course, add the plans students can buy - each with a name, an amount and the date access ends - and write what a student gets.
+                    A student who subscribes from that course unlocks <em>every</em> premium item in it - mock tests, coding, notes, practice. The text shows under
+                    <strong>What you get</strong>
+                    on the premium page. A course with no plan shows only "coming soon" to students - no price, no page text.</p>
+            </div>
+        </div>
+
+        <section class="as-view is-active" data-panel="setup">
+        <div class="pc-layout">
+
+            <div class="pc-editor">
+                <div class="pc-empty" id="pcEmpty">
+                    <i class="fas fa-hand-pointer"></i>
+                    <p>Choose a course in the sidebar to set up its premium.</p>
+                </div>
+
+                <form id="pcForm" class="pc-form is-hidden" autocomplete="off" novalidate>
+                    <div class="pc-form__head">
+                        <div>
+                            <h2 id="pcTitle">GATE</h2>
+                            <p id="pcSub">Premium for course <code id="pcCode">CS</code></p>
+                        </div>
+                    </div>
+
+                    <div id="pcMessage" class="pc-message is-hidden" role="alert"></div>
+
+                    <h3 class="pc-heading">Plans</h3>
+                    <div class="pc-today" id="pcToday"><i class="fas fa-calendar-day"></i> <span>Today is <strong id="pcTodayLabel">{{ today_label }}</strong>. Every day count below starts from today.</span></div>
+                    <p class="pc-help">Each plan is what a student can buy. Give it a name, an amount and the <strong>date access ends</strong>.
+                        Days are counted from today automatically. A name with "month" needs a date at least 30 days away, "year" at least 365,
+                        and a name with a year (GATE 2027) needs a date in that year. Later is always allowed, earlier is refused.
+                        A saved plan is on sale; remove it to stop selling it - students who already bought it keep their access.
+                        Changing a plan never touches students who already bought it: they keep the amount they paid and their own end date. Only new buyers get the new terms.</p>
+                    <div id="pcPlanList" class="pc-plan-list"></div>
+                    <button type="button" class="btn btn-outline-brand" id="pcAddPlan"><i class="fas fa-plus"></i> Add a plan</button>
+
+                    <h3 class="pc-heading">Page text</h3>
+                    <p class="pc-help pc-help--locked is-hidden" id="pcCopyLocked"><i class="fas fa-lock"></i> Save a plan first. Page text is shown only when a plan is on sale.</p>
+                    <fieldset id="pcCopy" class="pc-copy">
+                    <div class="pc-grid pc-grid--top">
+                        <label>Headline <small>required - one line under "Premium" on the student page</small>
+                            <input type="text" id="pcHeadline" maxlength="160" placeholder="e.g. Everything for GATE 2027 in one plan" required></label>
+                    </div>
+
+                    <div class="pc-field">
+                        <label>What you get <small>required - shown on the premium page of this course</small></label>
+                        <div class="pc-editor-wrap">
+                            <div id="pcToolbar">
+                                <span class="ql-formats">
+                                    <select class="ql-header">
+                                        <option value="1"></option><option value="2"></option><option value="3"></option><option selected></option>
+                                    </select>
+                                </span>
+                                <span class="ql-formats"><button class="ql-bold"></button><button class="ql-italic"></button><button class="ql-underline"></button></span>
+                                <span class="ql-formats"><button class="ql-list" value="ordered"></button><button class="ql-list" value="bullet"></button><button class="ql-blockquote"></button></span>
+                                <span class="ql-formats"><select class="ql-color"></select><select class="ql-background"></select></span>
+                                <span class="ql-formats"><select class="ql-align"></select></span>
+                                <span class="ql-formats"><button class="ql-link"></button><button class="ql-clean"></button></span>
+                            </div>
+                            <div id="pcDetails"></div>
+                        </div>
+                    </div>
+
+                    <div class="pc-actions">
+                        <span class="pc-saved" id="pcSavedAt"></span>
+                        <button type="submit" class="btn btn-brand" id="pcSave"><i class="fas fa-save"></i> Save page text for <span id="pcSaveCode">CS</span></button>
+                    </div>
+                    </fieldset>
+                </form>
+
+                <template id="pcPlanTemplate">
+                    <div class="pc-plan-row" data-plan-id="">
+                        <div class="pc-plan-row__grid">
+                            <label>Plan name<input type="text" data-f="label" maxlength="80" placeholder="Monthly / Yearly / Valid till GATE 2027"></label>
+                            <label>Amount (&#8377;)<input type="number" min="1" step="0.01" data-f="price"></label>
+                            <label>Discount (%) <small>optional</small><input type="number" min="0" max="99.99" step="0.01" data-f="discount" value="0"></label>
+                            <label>Discount valid until <small>required with a discount</small><input type="datetime-local" data-f="discount_ends_at"></label>
+                            <label>Valid until <small>the date access ends</small><input type="datetime-local" data-f="valid_until"></label>
+                            <label>Extra days <small>optional - pushes the end date out</small><input type="number" min="0" step="1" data-f="extra_days" value="0"></label>
+                            <label>Days <small>counted from today - not editable</small><input type="text" data-days readonly value="-"><small class="pc-span" data-span></small></label>
+                        </div>
+                        <div class="pc-plan-row__foot">
+                            <span class="pc-plan-row__note" data-note></span>
+                            <button type="button" class="btn btn-sm btn-outline-brand" data-act="save"><i class="fas fa-save"></i> Save plan</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger" data-act="delete"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+        </section>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='js/admin/admin-shell.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js"></script>
+<script src="{{ url_for('static', filename='js/admin/manage_premium/premium_catalog.js') }}"></script>
+</body>
+</html>

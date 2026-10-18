@@ -18,11 +18,4 @@ function filterGrid(val) {
         if (noResults) noResults.style.display = (visibleCount === 0 && items.length > 0) ? 'block' : 'none';
     }
 
-    function openModal(title, details) {
-        document.getElementById('modalTitle').innerText = title;
-        var body = document.getElementById('modalDetails');
-        if (details && details.trim()) { body.innerHTML = details; }
-        else { body.innerText = 'No additional details available.'; }
-        new bootstrap.Modal(document.getElementById('detailsModal')).show();
-    }
 

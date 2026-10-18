@@ -6,7 +6,14 @@ const testManager = {
     timeLeft: initialDurationSeconds,
     timerInterval: null,
     questionIdToIndexMap: new Map(),
+    coding: { sections: [], current: null, visited: new Set(), pendingSection: null, section: null, ready: false },
     init: async function(testKey, courseCode, uniqueCode) {
+        try {
+            const nav = JSON.parse(document.getElementById('pageData').dataset.codingNav || '[]');
+            if (Array.isArray(nav)) this.coding.sections = nav;
+        } catch (e) {
+            this.coding.sections = [];
+        }
         await this.fetchAllQuestions(testKey, courseCode, uniqueCode);
         const numQuestions = this.questions.length;
         this.userAnswers = new Array(numQuestions).fill(null);
@@ -22,11 +29,7 @@ const testManager = {
             };
             this.questionIdToIndexMap.set(q.id, index);
         });
-        document.getElementById('not-visited-count').textContent = numQuestions;
-        document.getElementById('not-answered-count').textContent = 0;
-        document.getElementById('answered-count').textContent = 0;
-        document.getElementById('marked-review-count').textContent = 0;
-        document.getElementById('answered-marked-count').textContent = 0;
+        this.updateStatusCounts();
         this.buildQuestionPalette();
         this.attachEventListeners();
 
@@ -145,6 +148,13 @@ const testManager = {
                 counts[ua.status]++;
             }
         });
+        this.coding.sections.forEach(sec => sec.questions.forEach(q => {
+            if (q.attempted && q.review) counts.answered_marked_review++;
+            else if (q.review) counts.marked_review++;
+            else if (q.attempted) counts.answered++;
+            else if (this.coding.visited.has(q.id)) counts.not_answered++;
+            else counts.not_visited++;
+        }));
         document.getElementById('answered-count').textContent = counts.answered + counts.answered_marked_review;
         document.getElementById('not-answered-count').textContent = counts.not_answered;
         document.getElementById('not-visited-count').textContent = counts.not_visited;
@@ -443,7 +453,154 @@ const testManager = {
         }
     },
 
+    codingFrameParts: function() {
+        return document.querySelectorAll('.question-header, .question-number-header, #question-box-container, .question-actions');
+    },
+
+    codingSectionKey: function(sectionId) {
+        return '__coding__' + String(sectionId);
+    },
+
+    codingSectionOf: function(questionId) {
+        return this.coding.sections.find(sec => sec.questions.some(q => q.id === questionId)) || null;
+    },
+
+    selectCodingTab: function() {
+        const wrap = document.getElementById('coding-frame-wrap');
+        if (!wrap) return;
+        this.currentSectionId = '__coding__';
+        this.updateSectionTabActive();
+        this.codingFrameParts().forEach(el => { el.style.display = 'none'; });
+        wrap.style.display = 'flex';
+        const subtabs = document.getElementById('coding-subtabs');
+        if (subtabs) subtabs.style.display = 'flex';
+        const frame = document.getElementById('coding-frame');
+        const url = document.getElementById('pageData').dataset.codingUrl;
+        if (frame && url && !frame.getAttribute('src')) frame.setAttribute('src', url);
+        const open = this.codingSectionOf(this.coding.current);
+        const first = subtabs ? subtabs.querySelector('.tab[data-coding-section]') : null;
+        this.selectCodingSection(open ? open.id : (this.coding.section != null ? this.coding.section : (first && first.dataset.codingSection)));
+    },
+
+    selectCodingSection: function(sectionId) {
+        if (sectionId == null) return;
+        this.coding.section = String(sectionId);
+        this.updateCodingSubtabActive();
+        this.buildCodingPalette();
+        this.showPaletteForSection(this.codingSectionKey(this.coding.section));
+        this.openCodingSection(this.coding.section);
+    },
+
+    updateCodingSubtabActive: function() {
+        document.querySelectorAll('#coding-subtabs .tab[data-coding-section]').forEach(tab => {
+            const on = tab.dataset.codingSection === this.coding.section;
+            tab.classList.toggle('active-tab', on);
+            tab.classList.toggle('inactive-tab', !on);
+        });
+    },
+
+    openCodingSection: function(sectionId) {
+        const sec = this.coding.sections.find(x => String(x.id) === String(sectionId));
+        if (!this.coding.ready || !sec || !sec.questions.length) { this.coding.pendingSection = String(sectionId); return; }
+        this.coding.pendingSection = null;
+        if (this.codingSectionOf(this.coding.current) === sec) return;
+        this.goToCodingQuestion(sec.questions[0]);
+    },
+
+    goToCodingQuestion: function(q) {
+        const frame = document.getElementById('coding-frame');
+        if (frame && frame.contentWindow) {
+            frame.contentWindow.postMessage({ type: 'tcs-coding-go', url: q.url }, window.location.origin);
+        }
+    },
+
+    onCodingMessage: function(event) {
+        const data = event.data;
+        if (event.origin !== window.location.origin || !data || data.type !== 'tcs-coding-state') return;
+        if (!Array.isArray(data.sections)) return;
+        this.coding.ready = true;
+        this.coding.sections = data.sections;
+        this.coding.current = data.current;
+        if (data.current != null) this.coding.visited.add(data.current);
+        if (this.coding.pendingSection != null) {
+            this.openCodingSection(this.coding.pendingSection);
+        } else if (this.currentSectionId === '__coding__') {
+            const sec = this.codingSectionOf(data.current);
+            if (sec && String(sec.id) !== this.coding.section) {
+                this.coding.section = String(sec.id);
+                this.updateCodingSubtabActive();
+                this.showPaletteForSection(this.codingSectionKey(this.coding.section));
+            }
+        }
+        this.buildCodingPalette();
+        this.updateStatusCounts();
+    },
+
+    buildCodingPalette: function() {
+        const container = document.getElementById('question-palette-container');
+        if (!container) return;
+        document.querySelectorAll('#coding-subtabs .tab[data-coding-section]').forEach(tab => {
+            const sectionId = tab.dataset.codingSection;
+            const key = this.codingSectionKey(sectionId);
+            const sec = this.coding.sections.find(x => String(x.id) === sectionId);
+            let box = document.getElementById(`section-palette-${key}`);
+            if (!box) {
+                box = document.createElement('div');
+                box.className = 'section-box';
+                box.id = `section-palette-${key}`;
+                box.style.display = (this.currentSectionId === '__coding__' && this.coding.section === sectionId) ? 'block' : 'none';
+                container.appendChild(box);
+            }
+            box.innerHTML = '';
+            const title = document.createElement('div');
+            title.className = 'section-title';
+            title.textContent = sec ? sec.title : tab.textContent.trim();
+            box.appendChild(title);
+            const chooseLabel = document.createElement('div');
+            chooseLabel.className = 'choose-label';
+            chooseLabel.textContent = sec ? 'Choose a Question' : 'Loading questions...';
+            box.appendChild(chooseLabel);
+            if (!sec) return;
+            const grid = document.createElement('div');
+            grid.className = 'question-grid';
+            sec.questions.forEach(q => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.id = `cqbtn_${q.id}`;
+                btn.textContent = q.n;
+                if (q.attempted && q.review) {
+                    btn.className = 'qbtn purple-green-circle';
+                    btn.textContent = '';
+                    const icon = document.createElement('span');
+                    icon.className = 'center-icon';
+                    icon.textContent = '✓';
+                    btn.appendChild(icon);
+                    btn.appendChild(document.createTextNode(` ${q.n}`));
+                } else {
+                    btn.className = 'qbtn ' + (q.review ? 'circle purple-circle' : q.attempted ? 'shield green-shield'
+                        : this.coding.visited.has(q.id) ? 'shield red-shield' : 'box gray-box');
+                }
+                if (q.id === this.coding.current) btn.style.border = '2px solid #007bff';
+                btn.onclick = () => {
+                    this.goToCodingQuestion(q);
+                    if (window.innerWidth <= 992) {
+                        document.querySelector('.content').classList.add('right-panel-hidden');
+                    }
+                };
+                grid.appendChild(btn);
+            });
+            box.appendChild(grid);
+        });
+    },
+
     selectSection: function(sectionId) {
+        const wrap = document.getElementById('coding-frame-wrap');
+        if (wrap) {
+            wrap.style.display = 'none';
+            this.codingFrameParts().forEach(el => { el.style.display = ''; });
+            const subtabs = document.getElementById('coding-subtabs');
+            if (subtabs) subtabs.style.display = 'none';
+        }
         this.currentSectionId = sectionId;
         this.updateSectionTabActive();
         this.showPaletteForSection(sectionId);
@@ -525,17 +682,15 @@ const testManager = {
     startTimer: function() {
         const timerDisplay = document.getElementById('time-left-display');
         if (!timerDisplay) return;
-        // A missing / zero / non-numeric duration must never be read as
-        // "0 seconds left" and auto-submit an untouched test on the first tick.
-        // Only a real positive countdown is allowed to end the test.
         const secs = Number(this.timeLeft);
         if (!isFinite(secs) || secs <= 0) {
             timerDisplay.textContent = "Time Left : --:--";
             return;
         }
         this.timeLeft = Math.floor(secs);
+        const endsAt = Date.now() + this.timeLeft * 1000;
         this.timerInterval = setInterval(() => {
-            this.timeLeft--;
+            this.timeLeft = Math.max(0, Math.ceil((endsAt - Date.now()) / 1000));
             const minutes = Math.floor(this.timeLeft / 60);
             const seconds = this.timeLeft % 60;
             timerDisplay.textContent = `Time Left : ${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
@@ -566,16 +721,34 @@ const testManager = {
             device_info: navigator.userAgent
         };
 
-        try {
-           const response = await fetch(`/submit-test-action/${sectionId}/${testKey}/${courseCode}/${uniqueCode}`, {
+        const pause = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+        const waits = [2000, 4000, 8000, 15000, 30000, 30000];
+        const sendOnce = async () => {
+            const response = await fetch(`/submit-test-action/${sectionId}/${testKey}/${courseCode}/${uniqueCode}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(submissionData)
             });
+            if (response.ok) return response;
+            let message = '';
+            try { message = (await response.json()).error || ''; } catch (e) { message = ''; }
+            const failure = new Error(message || `The server answered ${response.status}`);
+            failure.retry = response.status >= 500 || response.status === 429 || response.status === 408;
+            throw failure;
+        };
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Server error: ${response.status} - ${errorText}`);
+        try {
+            if (isAutoSubmit) await pause(Math.floor(Math.random() * 5000));
+            let response = null;
+            for (let attempt = 0; response === null; attempt++) {
+                try {
+                    response = await sendOnce();
+                } catch (error) {
+                    const canRetry = error.retry !== false && attempt < waits.length;
+                    if (!canRetry) throw error;
+                    sppExamToast("Your answers are safe on this device. Sending them again...");
+                    await pause(waits[attempt] + Math.floor(Math.random() * 1500));
+                }
             }
 
            const result = await response.json();
@@ -587,7 +760,7 @@ const testManager = {
             }
         } catch (error) {
             window.sppAllowFsExit = false;
-            sppExamToast(`Test submission failed: ${error.message}. Please contact support.`);
+            sppExamToast(`Test submission failed: ${error.message}. Do not close this window. Press Submit to try again.`);
             document.querySelectorAll('button, input').forEach(el => el.disabled = false);
         }
     },
@@ -603,6 +776,9 @@ const testManager = {
         if (submitBtn) submitBtn.onclick = () => {
             sppExamConfirm("Are you sure you want to submit the test?", () => this.submitTest());
         };
+        if (document.getElementById('coding-frame')) {
+            window.addEventListener('message', (event) => this.onCodingMessage(event));
+        }
 
         const paletteToggleBtn = document.getElementById('palette-toggle-btn');
         const closePaletteBtn = document.getElementById('close-palette-btn');
@@ -691,11 +867,13 @@ function sppExamToast(message) {
     const host = document.fullscreenElement || document.body;
     const t = document.createElement('div');
     t.textContent = message;
-    t.style.cssText = 'position:fixed;left:50%;top:24px;transform:translateX(-50%);z-index:2147483647;' +
+    t.className = 'spp-exam-toast';
+    t.style.cssText = 'position:fixed;left:16px;top:16px;z-index:2147483647;' +
         'background:#992c25;color:#fff;padding:12px 22px;border-radius:8px;font-weight:600;' +
-        'box-shadow:0 6px 24px rgba(0,0,0,.25);max-width:90%;text-align:center;font-size:15px;';
+        'box-shadow:0 6px 24px rgba(0,0,0,.25);max-width:min(420px, calc(100% - 32px));text-align:left;font-size:15px;';
+    host.querySelectorAll('.spp-exam-toast').forEach(old => old.remove());
     host.appendChild(t);
-    setTimeout(() => { if (t.parentNode) t.parentNode.removeChild(t); }, 3500);
+    setTimeout(() => { if (t.parentNode) t.parentNode.removeChild(t); }, 3000);
 }
 
 function sppExamConfirm(message, onYes, onNo) {

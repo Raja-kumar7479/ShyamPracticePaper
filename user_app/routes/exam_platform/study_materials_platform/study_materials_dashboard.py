@@ -9,6 +9,7 @@ from routes.exam_platform.competitive_exam_platform.databases.question_handler_d
 from routes.courses_platform.utils.utils_secure_code import secure_access_required
 from extensions import user_login_required
 from routes import users_bp
+from routes.content_guard import content_unavailable
 import logging
 
 user_op = UserOperation()
@@ -30,10 +31,14 @@ def structure_notes_data(notes):
 
         if not note.get('sub_title'):
             titles[title_key]['main_path'] = note['file_path']
+            titles[title_key]['main_locked'] = bool(note.get('is_locked'))
+            titles[title_key]['main_premium'] = bool(note.get('is_premium'))
         else:
             titles[title_key]['subtitles'].append({
                 'name': note['sub_title'],
-                'path': note['file_path']
+                'path': note['file_path'],
+                'locked': bool(note.get('is_locked')),
+                'premium': bool(note.get('is_premium'))
             })
     return structured_data
 
@@ -50,13 +55,19 @@ def open_hnotes_section(section_id, course_code, unique_code):
 
     section_details = content_op.get_course_section_details(section_id)
     if not section_details:
-        abort(404, "Course section not found.")
+        return content_unavailable(course_code, unique_code, section_id, email)
 
     section_label = section_details.get('label', 'Free')
     section_title = section_details.get('title', 'Notes Dashboard')
 
     notes = content_op.get_notes_for_display(section_id)
-    logger.info(f"STUDY NOTES: [{email}] opened section {section_id} ({section_label}) in {course_code}")
+    from routes.exam_platform.subscription_access import has_platform_subscription, premium_url
+    subscribed = has_platform_subscription(email, course_code)
+    for note in notes:
+        note['is_premium'] = (note.get('access_label') or 'free').lower() == 'paid'
+        note['is_locked'] = note['is_premium'] and not subscribed
+    logger.info(f"STUDY NOTES: [{email}] opened section {section_id} ({section_label}) in {course_code}, "
+                f"{sum(1 for n in notes if n.get('is_locked'))} premium note(s) locked")
 
     structured_data = structure_notes_data(notes)
 
@@ -70,7 +81,9 @@ def open_hnotes_section(section_id, course_code, unique_code):
         email=email,
         user_is_authenticated=user_is_authenticated,
         course_code=course_code,
-        unique_code=unique_code
+        unique_code=unique_code,
+        subscribed=subscribed,
+        premium_url=premium_url(course_code, unique_code, section_id)
     )
 
 @users_bp.route('/view_note_file/<path:filepath>')
@@ -82,6 +95,16 @@ def view_note_file(filepath):
                 or content_op.get_note_course_and_label('/' + filepath.lstrip('/')))
         label = (note or {}).get('label', 'Paid')
         note_code = (note or {}).get('code')
+        note_access = ((note or {}).get('access_label') or 'free').lower()
+
+        if note_access == 'paid':
+            if not user_is_authenticated:
+                flash("Please log in to view this premium file.", "info")
+                return redirect(url_for('users.user_login', next=request.url))
+            from routes.exam_platform.subscription_access import has_platform_subscription
+            if not has_platform_subscription(email, note_code):
+                logger.warning(f"STUDY NOTES: [{email}] denied premium note in {note_code!r} without a subscription")
+                abort(403)
 
         if label == 'Paid':
             if not user_is_authenticated:
@@ -94,17 +117,15 @@ def view_note_file(filepath):
                     f"{note_code!r} (not enrolled). path={filepath}")
                 abort(403)
 
-        rel = filepath.lstrip('/\\')
-        if rel.lower().startswith('static/') or rel.lower().startswith('static\\'):
+        from routes.shared_files import ensure_local
+        rel = filepath.replace('\\', '/').lstrip('/')
+        if rel.lower().startswith('static/'):
             rel = rel[len('static/'):]
-        static_root = os.path.realpath(current_app.static_folder)
-        file_path = os.path.realpath(os.path.join(static_root, rel))
-        if os.path.commonpath([static_root, file_path]) != static_root:
-            logger.error(f"STUDY NOTES: path traversal blocked: {filepath}")
-            abort(404)
-
-        if not os.path.isfile(file_path):
-            logger.error(f"STUDY NOTES: file not found: {file_path}")
+        if rel.lower().startswith('uploads/'):
+            rel = rel[len('uploads/'):]
+        file_path = ensure_local(rel)
+        if not file_path:
+            logger.error(f"STUDY NOTES: file not found: {filepath}")
             abort(404)
 
         logger.info(f"STUDY NOTES: [{email}] serving file {file_path}")

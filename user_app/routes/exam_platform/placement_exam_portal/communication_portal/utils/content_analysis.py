@@ -1,11 +1,3 @@
-"""Dependency-free content-relevance analysis for open-ended communication
-answers (THINK_SPEAK topic speech, WRITING essays/emails).
-
-No ML model to download — uses a TF cosine-similarity to the prompt plus
-lexical-quality signals (vocabulary richness, sentence structure, fillers,
-length adequacy). Good enough to give a student an honest, explainable score
-and specific guidance, and it deploys with zero extra packages.
-"""
 import math
 import re
 from collections import Counter
@@ -50,7 +42,6 @@ def _cosine(a_counter, b_counter):
 
 def analyse_content(prompt_text, answer_text, mode='writing',
                     word_limit=0, duration_seconds=0):
-    """mode: 'writing' or 'speaking'. Returns an explainable relevance report."""
     ans_tokens = _tokens(answer_text)
     if not ans_tokens:
         return {
@@ -64,13 +55,11 @@ def analyse_content(prompt_text, answer_text, mode='writing',
     prompt_content = _content_words(_tokens(prompt_text))
     ans_content = _content_words(ans_tokens)
 
-    # topic keywords = distinctive words from the prompt
     keyword_set = list(dict.fromkeys(prompt_content))[:12]
     ans_set = set(ans_content)
     covered = [k for k in keyword_set if k in ans_set]
     missing = [k for k in keyword_set if k not in ans_set]
 
-    # relevance = keyword coverage blended with TF cosine similarity
     coverage = (len(covered) / len(keyword_set)) if keyword_set else None
     cosine = _cosine(Counter(ans_content), Counter(prompt_content))
     if coverage is None:
@@ -78,7 +67,6 @@ def analyse_content(prompt_text, answer_text, mode='writing',
     else:
         relevance = round((0.6 * coverage + 0.4 * cosine) * 100)
 
-    # quality signals
     words = ans_tokens
     wc = len(words)
     unique_ratio = round(len(set(words)) / wc, 2) if wc else 0
@@ -88,7 +76,6 @@ def analyse_content(prompt_text, answer_text, mode='writing',
     sentences = [s for s in re.split(r'[.!?]+', re.sub(r'<[^>]+>', ' ', answer_text or '')) if s.strip()]
     avg_sentence = round(wc / len(sentences), 1) if sentences else wc
 
-    # length adequacy
     target = word_limit or (55 if mode == 'speaking' else 90)
     length_ratio = min(1.0, wc / target) if target else 1.0
 

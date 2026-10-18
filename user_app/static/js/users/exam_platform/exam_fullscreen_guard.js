@@ -5,6 +5,8 @@
     if (!cfg) return;
 
     var GRACE = Math.max(5, parseInt(cfg.dataset.graceSeconds, 10) || 20);
+    var CARRY_MS = 60000;
+    var MIN_LEFT_MS = 5000;
     var TERMINATE_URL = cfg.dataset.terminateUrl || '';
     var TERMINATED_URL = cfg.dataset.terminatedUrl || '';
     var REQUIRE_FS = cfg.dataset.requireFullscreen !== '0';
@@ -19,10 +21,12 @@
     var finished = false;
     var terminated = false;
     var unloading = false;
-    var enteredOnce = false;      // has the candidate been in full screen at all yet
+    var enteredOnce = false;
     var timerId = null;
     var tickId = null;
     var trigger = null;
+    var deadline = 0;
+    var carry = null;
 
     var popup = null;
     var cardEl = null;
@@ -82,13 +86,9 @@
             try { window.focus(); } catch (e) {}
             evaluate();
         } else {
-            // entry or fullscreen violation - re-enter full screen, then
-            // re-check so the popup and countdown clear the moment we are back.
             requestFs().then(evaluate).catch(function () {});
         }
     }
-
-    // mode: 'entry' (no countdown), 'fullscreen' or 'away' (countdown)
     function showPopup(mode) {
         if (!popup) buildPopup();
         trigger = mode;
@@ -115,24 +115,44 @@
         if (popup) popup.classList.remove('is-on');
     }
 
+    function leftMs() {
+        return deadline - Date.now();
+    }
+
+    function paintCount() {
+        var left = leftMs();
+        if (countEl) countEl.textContent = Math.max(0, Math.ceil(left / 1000));
+        if (left <= 0 && timerId) terminate(trigger === 'away' ? 'away' : 'fullscreen');
+    }
+
     function startCountdown(mode) {
         if (terminated || finished) return;
-        if (timerId && trigger === mode) return;
-        clearTimers();
-        var remaining = GRACE;
+        if (timerId) {
+            if (trigger !== mode) showPopup(mode);
+            paintCount();
+            return;
+        }
+        var total = GRACE * 1000;
+        if (carry && Date.now() - carry.at < CARRY_MS) {
+            total = Math.max(MIN_LEFT_MS, Math.min(total, carry.left));
+        }
+        carry = null;
+        deadline = Date.now() + total;
         showPopup(mode);
-        if (countEl) countEl.textContent = remaining;
-        tickId = setInterval(function () {
-            remaining -= 1;
-            if (countEl) countEl.textContent = remaining > 0 ? remaining : 0;
-        }, 1000);
-        timerId = setTimeout(function () { terminate(mode); }, GRACE * 1000);
+        timerId = setTimeout(function () { terminate(trigger === 'away' ? 'away' : 'fullscreen'); }, total);
+        tickId = setInterval(paintCount, 250);
+        paintCount();
     }
 
     function cancelCountdown() {
+        if (timerId) carry = { left: leftMs(), at: Date.now() };
         clearTimers();
         hidePopup();
         trigger = null;
+    }
+
+    function violationMode() {
+        return isFullscreenViolation() ? 'fullscreen' : 'away';
     }
 
     function clearTimers() {
@@ -141,8 +161,6 @@
     }
 
     function leaveTo(url) {
-        // Signal the exam's own leave-guard that this navigation is intentional
-        // so it does NOT raise a "Leave site?" prompt the candidate could cancel.
         window.sppExamLeaving = true;
         window.location.replace(url || '/');
     }
@@ -182,8 +200,8 @@
 
     function evaluate() {
         if (terminated || finished || unloading) return;
+        if (fsElement() && trigger === 'entry') hidePopup();
         if (fsElement()) {
-            // in full screen - the exam is running
             enteredOnce = true;
             if (trigger !== 'away' || !isAway()) cancelCountdown();
         }
@@ -201,21 +219,32 @@
 
     document.addEventListener('visibilitychange', function () {
         if (document.visibilityState === 'hidden') {
-            if (enteredOnce) startCountdown('away');
+            if (enteredOnce) startCountdown(violationMode());
         } else {
             evaluate();
         }
     });
 
     window.addEventListener('blur', function () {
-        // A blur can fire briefly while the page swaps content during an in-app
-        // navigation; re-check after a moment so that never trips the guard.
-        setTimeout(function () { if (enteredOnce && isAway()) startCountdown('away'); }, 250);
+        setTimeout(function () { if (enteredOnce && isAway()) startCountdown(violationMode()); }, 250);
     });
 
     window.addEventListener('focus', evaluate);
 
-    window.addEventListener('beforeunload', function () { unloading = true; });
+    var unloadTimer = null;
+    window.addEventListener('beforeunload', function () {
+        unloading = true;
+        if (unloadTimer) clearTimeout(unloadTimer);
+        unloadTimer = setTimeout(function () {
+            unloading = false;
+            if (!terminated && !finished && enteredOnce && (isFullscreenViolation() || isAway())) {
+                startCountdown(violationMode());
+            } else {
+                evaluate();
+            }
+        }, 900);
+    });
+    window.addEventListener('pageshow', function () { unloading = false; evaluate(); });
 
     var sppPrevMarkFinished = window.sppMarkExamFinished;
     window.sppMarkExamFinished = function () {
@@ -235,16 +264,15 @@
         document.addEventListener('keydown', onFirst, true);
         document.addEventListener('touchstart', onFirst, true);
     }
+    function demandEntry() {
+        if (terminated || finished || fsElement() || !REQUIRE_FS || !fsSupported()) return;
+        showPopup('entry');
+    }
 
-    // No entry popup: the test window opens straight into full screen. A
-    // top-level navigation drops the full screen the Start button entered, so
-    // we re-request it immediately (works when the browser still holds the
-    // Start click's activation) and, failing that, silently on the candidate's
-    // very first interaction. The countdown popup appears only on a later
-    // violation - leaving full screen or the window - never to begin.
     if (REQUIRE_FS && fsSupported() && !fsElement()) {
         requestFs().then(function () { enteredOnce = true; evaluate(); }).catch(function () {});
         armFirstGestureFs();
+        setTimeout(demandEntry, 700);
     } else if (fsElement()) {
         enteredOnce = true;
     }

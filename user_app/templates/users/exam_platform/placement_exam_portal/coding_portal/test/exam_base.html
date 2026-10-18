@@ -3,9 +3,14 @@
 
 {% block body %}
 
-<div class="exam-shell">
+<div class="exam-shell{% if embedded %} is-embedded{% endif %}">
+  {% if not embedded %}
   {% include "users/exam_platform/placement_exam_portal/coding_portal/partials/exam_header.html" %}
   {% include "users/exam_platform/placement_exam_portal/coding_portal/partials/question_nav.html" %}
+  {% endif %}
+  {% if embedded %}
+  <div class="emb-note"><strong>Note :</strong> You need to press "Final Submit" for your program to be considered for evaluation. If the exam is auto-closed due to time out, only the code left in the editor is evaluated.</div>
+  {% endif %}
 
   <div class="exam-body">
     <section class="pane-question">
@@ -32,6 +37,20 @@
       {% block question_extra %}{% endblock %}
 
       <div class="q-marks">Marks: {{ question.marks }}</div>
+
+      {% if embedded %}
+      <script>
+        (function () {
+          if (window.parent === window) return;
+          window.tcsCodingState = {
+            type: "tcs-coding-state",
+            current: {{ question.id }},
+            sections: {{ embedded_nav | tojson }}
+          };
+          window.parent.postMessage(window.tcsCodingState, window.location.origin);
+        })();
+      </script>
+      {% endif %}
     </section>
 
 
@@ -40,14 +59,52 @@
 
     <section class="pane-response">
       <div class="response-head">
-        <span class="label">&laquo; Enter your Response</span>
+        <span class="label">{% if embedded %}Program Editor{% else %}&laquo; Enter your Response{% endif %}</span>
         {% block response_head_extra %}{% endblock %}
       </div>
       {% block response %}{% endblock %}
     </section>
   </div>
 
+  {% if embedded %}
+  <div class="emb-footer">
+    <button type="button" class="emb-btn emb-btn--review{% if answer and answer.is_review %} is-marked{% endif %}" id="emb-review"
+            data-review-url="{{ url_for('coding_test.review_api', attempt_id=attempt.id) }}" data-question-id="{{ question.id }}">Marked For Review</button>
+    {% if next_question %}
+    <a class="emb-btn emb-btn--nav" href="{{ url_for('coding_test.question_page', attempt_id=attempt.id, question_id=next_question.id) }}">Next</a>
+    {% endif %}
+    {% if prev_question %}
+    <a class="emb-btn emb-btn--nav" href="{{ url_for('coding_test.question_page', attempt_id=attempt.id, question_id=prev_question.id) }}">Previous</a>
+    {% endif %}
+  </div>
+  <script>
+    (function () {
+      var btn = document.getElementById("emb-review");
+      if (!btn) return;
+      var qid = parseInt(btn.dataset.questionId, 10);
+      btn.addEventListener("click", function () {
+        var next = !btn.classList.contains("is-marked");
+        btn.disabled = true;
+        CJ.api(btn.dataset.reviewUrl, { method: "POST", body: { question_id: qid, review: next } })
+          .then(function (res) {
+            btn.classList.toggle("is-marked", !!res.review);
+            var state = window.tcsCodingState;
+            if (state && window.parent !== window) {
+              state.sections.forEach(function (sec) {
+                sec.questions.forEach(function (q) { if (q.id === qid) q.review = !!res.review; });
+              });
+              window.parent.postMessage(state, window.location.origin);
+            }
+            CJ.toast(res.review ? "Marked for review" : "Review mark removed", res.review ? "warn" : "ok");
+          })
+          .catch(function (e) { CJ.toast("Could not save the review mark: " + e.message, "error"); })
+          .finally(function () { btn.disabled = false; });
+      });
+    })();
+  </script>
+  {% else %}
   {% include "users/exam_platform/placement_exam_portal/coding_portal/partials/footer.html" %}
+  {% endif %}
 </div>
 
 <form id="finish-form" method="post"
@@ -55,18 +112,55 @@
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 </form>
 
+<div id="examSecure" hidden data-block-clipboard="1" data-watermark="{{ user.email if user else '' }}"></div>
 <div id="examFullscreenGuard" hidden
      data-grace-seconds="{{ away_seconds | default(20) }}"
      data-terminate-url="{{ url_for('coding_test.terminate', attempt_id=attempt.id) }}"
      data-terminated-url="{{ url_for('coding_test.terminated', attempt_id=attempt.id) }}"
-     data-require-fullscreen="1"
+     data-require-fullscreen="{{ '0' if embedded else '1' }}"
      data-start-label="Start test"></div>
 {% endblock %}
 
 {% block scripts %}
 
+{% if embedded %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/coding_portal/embedded.css') }}">
+<script>
+  window.addEventListener("message", function (e) {
+    if (e.origin !== window.location.origin || !e.data || e.data.type !== "tcs-coding-go") return;
+    if (typeof e.data.url === "string" && e.data.url.indexOf("/coding/attempt/") === 0) CJ.examNav.go(e.data.url);
+  });
+  (function () {
+    if (window.parent === window) return;
+    function report(type, details) {
+      window.parent.postMessage({ type: "tcs-coding-violation", violationType: type, details: details }, window.location.origin);
+    }
+    window.addEventListener("contextmenu", function (e) {
+      e.preventDefault();
+      report("context_menu", "Right-click (context menu) was disabled and attempted in the coding section.");
+    });
+    ["copy", "paste", "cut"].forEach(function (ev) {
+      window.addEventListener(ev, function (e) {
+        e.preventDefault();
+        report("clipboard_" + ev, "Attempted to " + ev + " content in the coding section.");
+      });
+    });
+  })();
+  window.addEventListener("cj:submitted", function (e) {
+    var state = window.tcsCodingState;
+    if (!state || window.parent === window) return;
+    var qid = (e.detail && e.detail.questionId) || state.current;
+    state.sections.forEach(function (sec) {
+      sec.questions.forEach(function (q) { if (q.id === qid) q.attempted = true; });
+    });
+    window.parent.postMessage(state, window.location.origin);
+  });
+</script>
+{% else %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/exam_fullscreen_guard.css') }}">
 <script src="{{ url_for('static', filename='js/users/exam_platform/exam_fullscreen_guard.js') }}"></script>
+{% endif %}
+<script src="{{ url_for('static', filename='js/users/exam_platform/exam_secure.js') }}"></script>
 <script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/editor.js') }}"></script>
 <script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/autosave.js') }}"></script>
 <script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/coding_portal/timer.js') }}"></script>

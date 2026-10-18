@@ -1,6 +1,8 @@
 import mysql.connector
+from routes.db_pool import get_connection
 from mysql.connector import Error, IntegrityError
 from config import Config
+import hashlib
 import logging
 import secrets
 from datetime import datetime
@@ -10,12 +12,7 @@ logger = logging.getLogger(__name__)
 class UserOperation:
     def connection(self):
         try:
-            conn = mysql.connector.connect(
-                host=Config.DATABASE_HOST,
-                user=Config.DATABASE_USER,
-                password=Config.DATABASE_PASSWORD,
-                database=Config.DATABASE_NAME
-            )
+            conn = get_connection()
             return conn
         except Error as e:
             logger.critical(f"DATABASE CONNECTION ERROR: {e}")
@@ -54,13 +51,6 @@ class UserOperation:
         try:
             db = self.connection()
             cursor = db.cursor(dictionary=True)
-            # The enrollment row is the source of truth for "is this user
-            # enrolled". Requiring a matching enrollment_payment row (via the
-            # old WHERE, which turned the LEFT JOIN into an INNER JOIN) meant a
-            # single missing/failed payment-log row left the user unable to
-            # access the course AND unable to re-enroll - prompted forever.
-            # A missing payment record now counts as FREE; only an explicitly
-            # failed/refunded payment excludes the enrollment.
             query = """
                 SELECT
                     e.code, e.unique_code,
@@ -100,13 +90,43 @@ class UserOperation:
             if cursor: cursor.close()
             if db: db.close()
 
-    def enroll_user(self, email, course_code, course_name, unique_code, payment_id=None):
+    def get_platform_setting(self, key):
         db = None
         cursor = None
-        enrollment_id = None
         try:
             db = self.connection()
             cursor = db.cursor()
+            cursor.execute("SELECT setting_value FROM platform_settings WHERE setting_key = %s", (key,))
+            row = cursor.fetchone()
+            return row[0] if row else None
+        except Exception as e:
+            logger.error(f"DB Error reading setting {key}: {e}")
+            return None
+        finally:
+            if cursor: cursor.close()
+            if db and db.is_connected(): db.close()
+
+    def enroll_user(self, email, course_code, course_name, unique_code, payment_id=None, max_enrollments=None):
+        db = None
+        cursor = None
+        enrollment_id = None
+        lock_name = None
+        try:
+            db = self.connection()
+            cursor = db.cursor()
+            if max_enrollments:
+                lock_name = f"enroll_{hashlib.sha256(email.encode()).hexdigest()[:32]}"
+                cursor.execute("SELECT GET_LOCK(%s, 10)", (lock_name,))
+                got = cursor.fetchone()
+                if not got or not got[0]:
+                    lock_name = None
+                    logger.error(f"DB: enrollment lock busy for {email}")
+                    return None
+                cursor.execute("SELECT COUNT(*) FROM enrollment WHERE email = %s", (email,))
+                current = (cursor.fetchone() or [0])[0]
+                if current >= int(max_enrollments):
+                    logger.warning(f"DB: enrollment cap {max_enrollments} reached for {email}; refusing {course_code}")
+                    return 'limit_reached'
             query = "INSERT INTO enrollment (email, code, name, unique_code, payment_id) VALUES (%s, %s, %s, %s, %s)"
             cursor.execute(query, (email, course_code, course_name, unique_code, payment_id))
             enrollment_id = cursor.lastrowid
@@ -129,8 +149,16 @@ class UserOperation:
         except Exception as e:
             logger.error(f"DB Error enrolling user {email}: {e}")
             if db: db.rollback()
+            if 'Enrollment limit reached' in str(e):
+                return 'limit_reached'
             return None
         finally:
+            if lock_name and cursor:
+                try:
+                    cursor.execute("SELECT RELEASE_LOCK(%s)", (lock_name,))
+                    cursor.fetchall()
+                except Exception:
+                    pass
             if cursor: cursor.close()
             if db: db.close()
 
@@ -229,9 +257,9 @@ class UserOperation:
         try:
             db = self.connection()
             cursor = db.cursor()
-            query = "SELECT DISTINCT section FROM practice_questions WHERE code = %s"
+            query = "SELECT section, title FROM practice_questions WHERE code = %s ORDER BY id"
             cursor.execute(query, (code,))
-            result = [row[0] for row in cursor.fetchall()]
+            result = [{'section': row[0], 'title': row[1]} for row in cursor.fetchall()]
             logger.info(f"DB: Fetched practice sections for {code}")
             return result
         except Exception as e:
@@ -241,7 +269,7 @@ class UserOperation:
             if cursor: cursor.close()
             if db: db.close()
 
-    def get_free_courses_by_code(self, code):
+    def get_free_courses_by_code(self, code, include_hidden=False):
         db = None
         cursor = None
         try:
@@ -249,7 +277,8 @@ class UserOperation:
             cursor = db.cursor(dictionary=True)
             query = """
                 SELECT * FROM course_content 
-                WHERE code = %s AND status = 'active' AND label = 'Free'
+                WHERE code = %s AND label = 'Free'
+            """ + ("" if include_hidden else " AND status = 'active'") + """
                 ORDER BY FIELD(section, 'NOTES', 'PRACTICE BOOK', 'PYQ','MOCK TEST')
             """
             cursor.execute(query, (code,))
@@ -263,7 +292,27 @@ class UserOperation:
             if cursor: cursor.close()
             if db: db.close()
 
-    def get_paid_courses_by_code(self, code):
+    def get_content_by_section_id(self, section_id, code):
+        db = None
+        cursor = None
+        try:
+            db = self.connection()
+            cursor = db.cursor(dictionary=True)
+            cursor.execute(
+                "SELECT * FROM course_content WHERE section_id = %s AND code = %s",
+                (section_id, code),
+            )
+            row = cursor.fetchone()
+            logger.info(f"DB: Fetched content {section_id} for {code}: {'found' if row else 'not found'}")
+            return row
+        except Exception as e:
+            logger.error(f"DB Error fetching content {section_id} for {code}: {e}")
+            return None
+        finally:
+            if cursor: cursor.close()
+            if db: db.close()
+
+    def get_paid_courses_by_code(self, code, include_hidden=False):
         db = None
         cursor = None
         try:
@@ -271,7 +320,8 @@ class UserOperation:
             cursor = db.cursor(dictionary=True)
             query = """
                 SELECT * FROM course_content 
-                WHERE code = %s AND status = 'active' AND label = 'Paid'
+                WHERE code = %s AND label = 'Paid'
+            """ + ("" if include_hidden else " AND status = 'active'") + """
                 ORDER BY FIELD(section, 'NOTES', 'PRACTICE BOOK', 'PYQ','MOCK TEST')
             """
             cursor.execute(query, (code,))
@@ -485,7 +535,7 @@ class UserOperation:
             conn = self.connection()
             cursor = conn.cursor(dictionary=True, buffered=True)
             query = """
-                SELECT p.*, cc.validity_expires_at FROM purchase AS p
+                SELECT p.*, cc.status AS content_status FROM purchase AS p
                 LEFT JOIN course_content AS cc ON p.section_id = cc.section_id
                 WHERE p.email = %s
                 ORDER BY p.payment_date DESC, p.section_id ASC

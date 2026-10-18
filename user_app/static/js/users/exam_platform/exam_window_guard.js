@@ -23,10 +23,6 @@
 
     function claim() {
         if (blocked) return;
-        // The first claim of this window declares itself fresh: a newly
-        // opened window takes the test over from a dead holder instead of
-        // being bounced. Heartbeats are never fresh, so a window that has
-        // lost the claim to a newer one is closed by its own next beat.
         fetch('/api/exam-window/claim', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -51,7 +47,7 @@
     }
 
     claim();
-    setInterval(claim, 8000);
+    setInterval(claim, 15000);
 
     window.addEventListener('pagehide', function () {
         if (blocked) return;

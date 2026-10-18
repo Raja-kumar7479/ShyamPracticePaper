@@ -1,0 +1,31 @@
+#logDataContainer {
+    display: none;
+}
+#viewDataContainer {
+    text-align: center;
+    margin: 2rem 0;
+}
+
+
+@media (max-width: 1199px) {
+    .container, .container-fluid { padding-left: 1rem; padding-right: 1rem; }
+}
+@media (max-width: 991px) {
+    .table-responsive { -webkit-overflow-scrolling: touch; }
+}
+@media (max-width: 767px) {
+    h1 { font-size: 1.4rem; }
+    h2 { font-size: 1.2rem; }
+    h3, h4 { font-size: 1.05rem; }
+    .card, .panel { border-radius: 10px; }
+    .btn { font-size: .88rem; padding: .45rem .8rem; }
+    table { font-size: .85rem; }
+}
+@media (max-width: 480px) {
+    .container, .container-fluid { padding-left: .75rem; padding-right: .75rem; }
+    .btn { width: auto; }
+    .d-flex.gap-3 { gap: .6rem !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+}

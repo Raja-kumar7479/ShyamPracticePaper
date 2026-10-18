@@ -10,6 +10,7 @@ from routes.auth.database.auth_db import AuthOperation
 from routes.auth.utils.utils_login import is_safe_url, safe_next_url
 import time
 import bcrypt
+from routes.auth.utils.utils_login import hash_password, verify_password
 import logging
 from routes import users_bp
 from routes.exam_platform.competitive_exam_platform.utils.utils_test_dashboard import establish_user_session
@@ -38,10 +39,6 @@ def user_signup():
             flash("You're already logged in.", 'info')
             return redirect(url_for('users.index'))
 
-        # Wizard state lives on the pending_signups row, not in the cookie. The
-        # session carries only the opaque token that points at it, so nothing
-        # about a half-finished signup is readable from (or forgeable in) the
-        # signed-but-unencrypted session cookie.
         pending = get_pending_signup() or {}
         signup_data = {
             'user_signup_username': pending.get('username'),
@@ -55,8 +52,6 @@ def user_signup():
             step = 'password'
 
         if request.method == 'GET':
-            # Only a URL on this host is stored, so a crafted ?next= cannot
-            # bounce the user to an external site after they sign up.
             next_url = request.args.get('next')
             if next_url and is_safe_url(next_url):
                 session['user_login_next_url'] = next_url
@@ -69,10 +64,6 @@ def user_signup():
                 return redirect(url_for('users.user_signup'))
 
         if request.method == 'POST':
-            # Every branch below redirects, including the failures. Falling
-            # through to render on a failed POST left the URL on the POST, so
-            # Back or Refresh re-showed this page and offered to resubmit the
-            # form. The flash survives the redirect and shows on the reload.
             if 'username' in request.form:
                 username = request.form.get('username', '').strip()
                 if not username:
@@ -103,10 +94,7 @@ def user_signup():
                     flash("Password must include uppercase, number, and special character.", 'signup_warning')
                     return redirect(url_for('users.user_signup'))
                 else:
-                    hashed_pw = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-                    # The hash and the OTP stay server-side. Only an opaque
-                    # token goes into the cookie, so neither can be read out
-                    # of it and replayed.
+                    hashed_pw = hash_password(password)
                     save_pending_signup(password_hash=hashed_pw)
 
                     otp_value = generate_otp()
@@ -130,7 +118,6 @@ def user_signup():
 @users_bp.route("/user_email_otp_verify", methods=['GET', 'POST'])
 def user_email_otp_verify():
     try:
-        # The account details now come from the server-side row, not the cookie.
         pending = get_pending_signup()
 
         if not pending or not pending.get('password_hash'):
@@ -170,8 +157,6 @@ def user_email_otp_verify():
                     flash("Database error creating account. Please contact support.", 'signup_error')
                     return redirect(url_for('users.user_signup'))
             else:
-                # Redirect rather than render, so a wrong OTP does not leave
-                # the browser sitting on the POST with a resubmit prompt.
                 flash(msg, 'signup_error')
                 return redirect(url_for('users.user_email_otp_verify'))
 
@@ -191,10 +176,6 @@ def user_resend_otp():
             flash("Wait 60 seconds before resending OTP.", 'signup_warning')
             return redirect(url_for('users.user_email_otp_verify'))
 
-        # generate_otp() stores the new hash on the pending row. Writing the OTP
-        # back into the cookie here both re-exposed it and raised a KeyError on
-        # the key that no longer exists, which the bare except turned into a
-        # silent bounce to the start of signup.
         new_otp = generate_otp()
         session['user_signup_otp_last_sent'] = time.time()
 

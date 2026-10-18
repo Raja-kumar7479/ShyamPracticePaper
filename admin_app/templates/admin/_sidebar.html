@@ -1,0 +1,181 @@
+{% set nav = page_key | default('', true) %}
+
+{% set sections = {
+    'courses': {
+        'title': 'Courses & Groups',
+        'icon': 'fa-layer-group',
+        'label': 'Course Options',
+        'items': [
+            {'key': 'panel-groups', 'icon': 'fa-layer-group', 'text': 'Add Group & Code', 'owner_only': true},
+            {'key': 'panel-add',    'icon': 'fa-plus-circle', 'text': 'Add New Course', 'owner_only': true},
+            {'key': 'panel-list',   'icon': 'fa-list',        'text': 'All Courses', 'count': 'nav-count'}
+        ]
+    },
+    'course_content': {
+        'title': 'Course Content',
+        'icon': 'fa-folder-open',
+        'label': 'Content Options',
+        'items': [
+            {'key': 'add', 'icon': 'fa-circle-plus',        'text': 'Add New Content'},
+            {'key': 'all', 'icon': 'fa-table-cells-large',  'text': 'All Content', 'count': 'ccNavCount'}
+        ]
+    },
+    'tests': {
+        'title': 'Test Question Upload',
+        'icon': 'fa-file-pen',
+        'label': 'Test Options',
+        'items': [
+            {'key': 'upload', 'icon': 'fa-file-arrow-up', 'text': 'Upload Questions'}
+        ]
+    },
+    'practice_papers': {
+        'title': 'Practice Papers',
+        'icon': 'fa-file-lines',
+        'label': 'Paper Options',
+        'items': [
+            {'key': 'format', 'icon': 'fa-sitemap',          'text': 'Practice Format'},
+            {'key': 'csv',    'icon': 'fa-file-arrow-up',    'text': 'Upload CSV / Excel'},
+            {'key': 'manual', 'icon': 'fa-pen-to-square',    'text': 'Manual Entry'},
+            {'key': 'image',  'icon': 'fa-image',            'text': 'Image Questions'},
+            {'key': 'search', 'icon': 'fa-magnifying-glass', 'text': 'Search & Edit'},
+            {'key': 'notes',  'icon': 'fa-book',             'text': 'Study Notes'}
+        ]
+    },
+    'practice_coding': {
+        'title': 'Practice Coding',
+        'icon': 'fa-laptop-code',
+        'label': 'Bank Options',
+        'items': [
+            {'key': 'add',  'icon': 'fa-plus-circle', 'text': 'Add Question'},
+            {'key': 'bank', 'icon': 'fa-list-ol',     'text': 'Question Bank'}
+        ]
+    },
+    'practice_quiz': {
+        'title': 'Quiz Bank',
+        'icon': 'fa-circle-question',
+        'label': 'Quiz Options',
+        'items': [
+            {'key': 'add',  'icon': 'fa-plus-circle', 'text': 'Add Question'},
+            {'key': 'bank', 'icon': 'fa-list-ol',     'text': 'Quiz Bank'}
+        ]
+    },
+    'catalog': {
+        'title': 'Course Catalog',
+        'icon': 'fa-sitemap',
+        'label': 'Catalog Options',
+        'items': [
+            {'key': 'sections', 'icon': 'fa-shapes',      'text': 'Content Sections'}
+        ]
+    },
+    'premium': {
+        'title': 'Premium Catalog',
+        'icon': 'fa-crown',
+        'label': 'Premium Options',
+        'items': [
+            {'key': 'setup', 'icon': 'fa-crown', 'text': 'Premium per Course'}
+        ]
+    },
+    'practice_questions': {'title': 'Practice Questions', 'icon': 'fa-circle-question', 'label': 'Question Options', 'items': []},
+    'notes':              {'title': 'Study Notes',        'icon': 'fa-book',            'label': 'Notes Options',    'items': []},
+    'test_logs':          {'title': 'Student Test Logs',  'icon': 'fa-clipboard-list',  'label': 'Report Options',   'items': []},
+    'feedback': {
+        'title': 'Student Feedback',
+        'icon': 'fa-comment-dots',
+        'label': 'Report Options',
+        'items': [
+            {'key': 'feedback', 'icon': 'fa-comment-dots', 'text': 'Student Feedback'},
+            {'key': 'logs',     'icon': 'fa-users',        'text': 'No. of Students'}
+        ]
+    },
+    'purchases': {
+        'title': 'Purchases',
+        'icon': 'fa-receipt',
+        'label': 'Payment Support',
+        'items': [
+            {'key': 'lookup',    'icon': 'fa-magnifying-glass', 'text': 'Search Customers'},
+            {'key': 'attention', 'icon': 'fa-triangle-exclamation', 'text': 'Needs Attention'},
+            {'key': 'payment',   'icon': 'fa-magnifying-glass-dollar', 'text': 'Find by Payment ID'}
+        ]
+    }
+} %}
+
+{% set section = sections.get(nav) %}
+
+<div class="as-backdrop" id="asBackdrop" onclick="asClose()"></div>
+
+<aside class="as-sidebar" id="asSidebar">
+    <a href="{{ url_for('admin.admin_dashboard') }}" class="as-brand" title="Go to dashboard">
+        <img src="{{ url_for('static', filename='images/favicon.png') }}" alt="ShyamPracticePaper" class="as-brand__logo">
+        <span class="as-brand__text">
+            <span class="as-brand__name">ShyamPracticePaper</span>
+            <span class="as-brand__role">Admin</span>
+        </span>
+    </a>
+
+    <a href="{{ url_for('admin.admin_dashboard') }}" class="as-back" data-tip="All Sections">
+        <i class="fas fa-arrow-left"></i><span>All Sections</span>
+    </a>
+
+    <nav class="as-nav">
+        {% if section %}
+            <div class="as-current" data-tip="{{ section.title }}">
+                <i class="fas {{ section.icon }}"></i>
+                <span>{{ section.title }}</span>
+            </div>
+
+            {% set is_owner = can_manage %}
+            {% set visible = section['items'] | rejectattr('owner_only', 'defined') | list %}
+            {% if is_owner %}{% set visible = section['items'] %}{% endif %}
+
+            {% if visible %}
+                <div class="as-label">{{ section.label }}</div>
+                {% for item in visible %}
+                    <button type="button"
+                            class="as-link as-view{% if loop.first %} is-active{% endif %}"
+                            data-view="{{ item.key }}"
+                            data-panel="{{ item.key }}"
+                            data-tip="{{ item.text }}">
+                        <i class="fas {{ item.icon }}"></i><span>{{ item.text }}</span>
+                        {% if item.count %}
+                            <span class="as-count" id="{{ item.count }}">{{ (nav_counts | default({}, true)).get(item.count, 0) }}</span>
+                        {% endif %}
+                    </button>
+                {% endfor %}
+            {% endif %}
+            {% if sidebar_courses %}
+                <div class="as-label">Courses</div>
+                {% for c in sidebar_courses %}
+                    <button type="button" class="as-link pc-course" data-code="{{ c.code }}" data-tip="{{ c.code }} · {{ c.name }}">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span class="pc-course__body">
+                            <span class="pc-course__line"><b class="pc-course__code">{{ c.code }}</b> {{ c.name }}</span>
+                            <small class="pc-course__state" data-state-for="{{ c.code }}">...</small>
+                        </span>
+                    </button>
+                {% endfor %}
+            {% endif %}
+        {% else %}
+            <div class="as-label">Overview</div>
+            <a href="{{ url_for('admin.admin_dashboard') }}" class="as-link is-active" data-tip="Dashboard">
+                <i class="fas fa-gauge-high"></i><span>Dashboard</span>
+            </a>
+        {% endif %}
+    </nav>
+
+    <div class="as-foot">
+        <div class="as-user">
+            <div class="as-user__avatar">
+                {% if session.admin_username %}{{ session.admin_username[0]|upper }}{% else %}A{% endif %}
+            </div>
+            <div class="as-user__info">
+                <div class="as-user__name">{{ session.admin_username | default('Admin', true) }}</div>
+                <div class="as-user__role">{{ session.admin_role | default('Signed in', true) | title }}</div>
+            </div>
+            <a href="{{ url_for('admin.admin_logout') }}" class="as-user__out" title="Logout">
+                <i class="fas fa-right-from-bracket"></i>
+            </a>
+        </div>
+    </div>
+</aside>
+
+<script src="{{ url_for('static', filename='js/admin/admin-shell.js') }}"></script>

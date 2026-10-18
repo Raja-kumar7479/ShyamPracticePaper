@@ -74,7 +74,7 @@
                 if (current.get(k) && !p.get(k)) p.set(k, current.get(k));
             });
             for (var key of Array.from(p.keys())) {
-                if (!p.get(key)) p.delete(key);          // drop empty selects
+                if (!p.get(key)) p.delete(key);
             }
             return p;
         }
@@ -116,7 +116,7 @@
         input.addEventListener('input', function () {
             if (clear) clear.hidden = !input.value;
             clearTimeout(timer);
-            timer = setTimeout(run, 300);               // wait for a pause in typing
+            timer = setTimeout(run, 300);
         });
 
         // Enter should filter in place rather than reload the page.

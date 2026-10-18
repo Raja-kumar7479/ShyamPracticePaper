@@ -1,0 +1,160 @@
+{% extends "admin/admin_dashboard/base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-home.css') }}">
+{% endblock %}
+
+{% block body %}
+<header class="ah-topbar">
+    <a href="{{ url_for('admin.admin_dashboard') }}" class="ah-brand">
+        <img src="{{ url_for('static', filename='images/favicon.png') }}"
+             alt="ShyamPracticePaper" class="ah-brand__logo">
+        <span class="ah-brand__text">
+            <span class="ah-brand__name">ShyamPracticePaper</span>
+            <span class="ah-brand__role">Admin</span>
+        </span>
+    </a>
+
+    <div class="ah-topbar__right">
+        <div class="ah-who">
+            <div class="ah-who__avatar">{{ username[0]|upper if username else 'A' }}</div>
+            <div class="ah-who__meta">
+                <div class="ah-who__name">{{ username }}</div>
+                <div class="ah-who__role">{{ role | default('Signed in', true) }}</div>
+            </div>
+        </div>
+        <a href="{{ url_for('admin.admin_logout') }}" class="ah-logout">
+            <i class="fas fa-right-from-bracket"></i><span>Logout</span>
+        </a>
+    </div>
+</header>
+
+<div class="ah-wrap">
+    <section class="ah-hero">
+        <div class="ah-hero__text">
+            <h1>Welcome back, {{ username }}</h1>
+            <p>Pick a section below to start managing your platform.</p>
+        </div>
+        <div class="ah-clock">
+            <div class="ah-clock__time" id="live-timer">--:--:--</div>
+            <div class="ah-clock__date" id="date-display"></div>
+        </div>
+    </section>
+
+    <section class="ah-section">
+        <div class="ah-section__head">
+            <h2 class="ah-section__title">Courses</h2>
+            <span class="ah-section__rule"></span>
+        </div>
+        <div class="ah-grid">
+            <a href="{{ url_for('admin.manage_courses') }}" class="ah-card">
+                <div class="ah-card__icon"><i class="fas fa-layer-group"></i></div>
+                <h3 class="ah-card__title">Courses &amp; Groups</h3>
+                <p class="ah-card__desc">Create a new course, edit its details, and see every course you have published.</p>
+                <span class="ah-card__open">Open <i class="fas fa-arrow-right"></i></span>
+            </a>
+
+            <a href="{{ url_for('admin.manage_catalog') }}" class="ah-card">
+                <div class="ah-card__icon"><i class="fas fa-sitemap"></i></div>
+                <h3 class="ah-card__title">Course Catalog</h3>
+                <p class="ah-card__desc">Define exam groups, course codes and content sections, and choose which portal each section opens.</p>
+                <span class="ah-card__open">Open <i class="fas fa-arrow-right"></i></span>
+            </a>
+
+            <a href="{{ url_for('admin.manage_premium') }}" class="ah-card">
+                <div class="ah-card__icon"><i class="fas fa-crown"></i></div>
+                <h3 class="ah-card__title">Premium Catalog</h3>
+                <p class="ah-card__desc">Set premium per course: monthly and yearly amounts, discounts, and the "What you get" text students read before they subscribe.</p>
+                <span class="ah-card__open">Open <i class="fas fa-arrow-right"></i></span>
+            </a>
+
+            <a href="{{ url_for('admin.manage_course_content') }}" class="ah-card">
+                <div class="ah-card__icon"><i class="fas fa-folder-open"></i></div>
+                <h3 class="ah-card__title">Course Content</h3>
+                <p class="ah-card__desc">Add lectures, topics and study material inside a course, and set free or paid access.</p>
+                <span class="ah-card__open">Open <i class="fas fa-arrow-right"></i></span>
+            </a>
+        </div>
+    </section>
+
+    <section class="ah-section">
+        <div class="ah-section__head">
+            <h2 class="ah-section__title">Placement Exam Portal</h2>
+            <span class="ah-section__rule"></span>
+        </div>
+        <div class="ah-grid">
+            <a href="{{ url_for('admin.manage_tests') }}?group=PLACEMENT" class="ah-card">
+                <div class="ah-card__icon"><i class="fas fa-file-pen"></i></div>
+                <h3 class="ah-card__title">Test Question Upload</h3>
+                <p class="ah-card__desc">Communication tests, TCS NQT exams and coding tests for the placement courses - pick the course, then the exam, then upload its questions.</p>
+                <span class="ah-card__open">Open <i class="fas fa-arrow-right"></i></span>
+            </a>
+
+            <a href="{{ url_for('admin.manage_practice_coding') }}" class="ah-card">
+                <div class="ah-card__icon"><i class="fas fa-laptop-code"></i></div>
+                <h3 class="ah-card__title">Practice Coding</h3>
+                <p class="ah-card__desc">The subject-wise coding practice bank for placement students: difficulty, test cases, free or premium per question.</p>
+                <span class="ah-card__open">Open <i class="fas fa-arrow-right"></i></span>
+            </a>
+
+            <a href="{{ url_for('admin.manage_practice_quiz') }}" class="ah-card">
+                <div class="ah-card__icon"><i class="fas fa-circle-question"></i></div>
+                <h3 class="ah-card__title">Quiz Bank</h3>
+                <p class="ah-card__desc">Subject-wise MCQs with instant feedback for placement students. Paid questions bundle with Coding Practice Premium.</p>
+                <span class="ah-card__open">Open <i class="fas fa-arrow-right"></i></span>
+            </a>
+        </div>
+    </section>
+
+    <section class="ah-section">
+        <div class="ah-section__head">
+            <h2 class="ah-section__title">Competitive Exam Platform</h2>
+            <span class="ah-section__rule"></span>
+        </div>
+        <div class="ah-grid">
+            <a href="{{ url_for('admin.manage_tests') }}" class="ah-card">
+                <div class="ah-card__icon"><i class="fas fa-file-pen"></i></div>
+                <h3 class="ah-card__title">Test Question Upload</h3>
+                <p class="ah-card__desc">Mock tests for GATE, JEE and the other competitive courses - pick the course group, the course, then the test series and upload its questions.</p>
+                <span class="ah-card__open">Open <i class="fas fa-arrow-right"></i></span>
+            </a>
+
+            <a href="{{ url_for('admin.manage_practice_papers') }}" class="ah-card">
+                <div class="ah-card__icon"><i class="fas fa-file-lines"></i></div>
+                <h3 class="ah-card__title">Practice Papers</h3>
+                <p class="ah-card__desc">Subject and topic practice questions per course: set the format, upload by sheet or by hand, manage study notes.</p>
+                <span class="ah-card__open">Open <i class="fas fa-arrow-right"></i></span>
+            </a>
+        </div>
+    </section>
+
+    <section class="ah-section">
+        <div class="ah-section__head">
+            <h2 class="ah-section__title">Reports</h2>
+            <span class="ah-section__rule"></span>
+        </div>
+        <div class="ah-grid">
+            <a href="{{ url_for('admin.manage_feedback') }}" class="ah-card">
+                <div class="ah-card__icon"><i class="fas fa-comment-dots"></i></div>
+                <h3 class="ah-card__title">Student Feedback</h3>
+                <p class="ah-card__desc">Read student feedback, send thank-you replies and see how many unique students gave tests in each course.</p>
+                <span class="ah-card__open">Open <i class="fas fa-arrow-right"></i></span>
+            </a>
+
+            <a href="{{ url_for('admin.manage_purchases') }}" class="ah-card">
+                <div class="ah-card__icon"><i class="fas fa-receipt"></i></div>
+                <h3 class="ah-card__title">Purchases</h3>
+                <p class="ah-card__desc">Check every paid order, the payment status and the student who bought it.</p>
+                <span class="ah-card__open">Open <i class="fas fa-arrow-right"></i></span>
+            </a>
+        </div>
+    </section>
+
+    <div class="ah-quote">
+        <i class="fas fa-lightbulb"></i>
+        <span id="motivational-quote"></span>
+    </div>
+</div>
+{% endblock %}

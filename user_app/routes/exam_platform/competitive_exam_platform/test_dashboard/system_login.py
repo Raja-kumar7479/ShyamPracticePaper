@@ -28,17 +28,18 @@ def test_login(section_id, test_key, course_code, unique_code):
         running = active_test_redirect(email, ignore_test_key=test_key)
         if running:
             flash(blocked_message(), 'test_error')
-            return redirect(running)
+            return redirect(url_for('users.open_mock_test_section', section_id=section_id,
+                                    course_code=course_code, unique_code=unique_code))
 
-    from routes.exam_platform.subscription_access import has_platform_subscription, PREMIUM_ENDPOINT
-    from routes.exam_platform.competitive_exam_platform.databases.question_handler_db import ContentOperation
-    access = ContentOperation().get_test_access_label(test_key)
-    if access == 'paid' and not has_platform_subscription(email):
-        logger.warning(f"TEST LOGIN BLOCKED: [{email}] premium test {test_key} without subscription")
+    from routes.exam_platform.competitive_exam_platform.utils.utils_test_access import test_access_denied
+    denied = test_access_denied(email, section_id, test_key, course_code, unique_code)
+    if denied:
+        logger.warning(f"TEST LOGIN BLOCKED: [{email}] {denied['reason']} needed for test {test_key}")
         if request.method == 'POST':
-            return jsonify({"success": False, "message": "This is a premium test. Subscribe to unlock it."}), 403
-        flash('This is a premium test. Subscribe to unlock all tests.', 'warning')
-        return redirect(url_for(PREMIUM_ENDPOINT))
+            return jsonify({"success": False, "message": denied['message'],
+                            "redirect": denied['redirect_url']}), 403
+        flash(denied['message'], 'warning')
+        return redirect(denied['redirect_url'])
 
     test_details = user_op.get_test_details(test_key)
     logger.info(f"TEST LOGIN 2: test_details {'found' if test_details else 'NOT FOUND'} for key={test_key}")

@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 testGrid.style.display = 'grid';
                 resultsList.style.display = 'none';
                 testCards.forEach(card => {
-                    card.style.display = 'flex';
+                    card.style.display = card.dataset.status === 'pending' ? 'flex' : 'none';
                 });
             });
         }

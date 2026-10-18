@@ -69,7 +69,6 @@
         }).then(function (data) {
             window.sppExamLeaving = true; window.location.replace(data.redirect || CFG.terminatedUrl);
         }).catch(function () {
-            // Even if the call fails the attempt must not continue here.
             window.sppExamLeaving = true; window.location.replace(CFG.terminatedUrl);
         });
     }
@@ -108,8 +107,6 @@
     });
 
     window.addEventListener('blur', function () {
-        // A blur can fire for in-page reasons (an iframe or the code editor
-        // taking focus). Only treat it as leaving if focus really left.
         setTimeout(function () { if (isAway()) startCountdown(); }, 150);
     });
 

@@ -1,4 +1,5 @@
 import mysql.connector
+from routes.db_pool import get_connection
 from mysql.connector import Error
 from config import Config
 import logging
@@ -8,18 +9,19 @@ logger = logging.getLogger(__name__)
 class UserOperation:
     def connection(self):
         try:
-            conn = mysql.connector.connect(
-                host=Config.DATABASE_HOST,
-                user=Config.DATABASE_USER,
-                password=Config.DATABASE_PASSWORD,
-                database=Config.DATABASE_NAME
-            )
+            conn = get_connection()
             return conn
         except Error as e:
             logger.critical(f"DATABASE CONNECTION ERROR: {e}")
             raise e
 
-    def get_course_groups(self):
+    _groups_cache = {'at': 0.0, 'rows': None}
+
+    def get_course_groups(self, strict=False):
+        import time
+        cache = UserOperation._groups_cache
+        if cache['rows'] is not None and time.monotonic() - cache['at'] < 30:
+            return cache['rows']
         db = None
         cursor = None
         try:
@@ -27,9 +29,15 @@ class UserOperation:
             cursor = db.cursor(dictionary=True)
             cursor.execute("SELECT DISTINCT name FROM courses ORDER BY name")
             result = cursor.fetchall()
+            cache['rows'] = result
+            cache['at'] = time.monotonic()
             return result
         except Exception as e:
             logger.error(f"DB Error fetching course groups: {e}")
+            if cache['rows'] is not None:
+                return cache['rows']
+            if strict:
+                raise
             return []
         finally:
             if cursor: cursor.close()

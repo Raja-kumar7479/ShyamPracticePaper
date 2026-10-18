@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function () {
         setTimeout(function () {
             box.classList.add('is-out');
             setTimeout(function () { box.remove(); }, 250);
-        }, 5000);
+        }, 3000);
     });
 
     function toast(message) {

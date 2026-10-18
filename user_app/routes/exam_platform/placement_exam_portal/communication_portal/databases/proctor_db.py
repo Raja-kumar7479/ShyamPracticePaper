@@ -347,8 +347,6 @@ class ProctorDB:
             cursor.close(); conn.close()
 
     def get_comm_certificate(self, code):
-        """Public certificate lookup: only completed assessments resolve, and
-        only display-safe fields leave the database (never the email)."""
         conn = self.get_conn(); cursor = conn.cursor(dictionary=True)
         try:
             cursor.execute("""
@@ -370,11 +368,6 @@ class ProctorDB:
             cursor.close(); conn.close()
 
     def clear_attempt_details(self, email, test_key):
-        """Wipe the working answers of an unfinished sitting. Called when a new
-        sitting begins, so a reopened test starts clean instead of showing the
-        options picked before the window was closed. Completed assessments
-        never reach this (re-entry is blocked), so result analysis keeps its
-        answer details."""
         conn = self.get_conn(); cursor = conn.cursor()
         try:
             cursor.execute("DELETE FROM comm_attempt_details WHERE email=%s AND test_key=%s",
@@ -467,9 +460,6 @@ class ProctorDB:
                         entry['correct'] += 1
                 speech = None
                 if a and a.get('audio_response_path'):
-                    # Analyse EVERY recorded answer. When no transcription was
-                    # captured, analyse_speech() still returns a report saying so,
-                    # instead of the question silently showing nothing.
                     from routes.exam_platform.placement_exam_portal.communication_portal.utils.speech_analysis import analyse_speech
                     speech = analyse_speech(q.get('question_text'), a.get('transcription_text'),
                                             float(a.get('recording_duration') or 0))
@@ -537,7 +527,6 @@ class ProctorDB:
         return max(counts, key=counts.get) if counts else 'MCQ'
 
     def get_result_overview(self, email, test_key):
-        """Lightweight summary: one card per section, no per-question payload."""
         report = self.get_result_report(email, test_key)
         cards = []
         for idx, sec in enumerate(report['sections'], start=1):
@@ -571,8 +560,6 @@ class ProctorDB:
         }
 
     def get_full_analysis(self, email, test_key):
-        """Every section with per-question content analysis — for the one-page
-        sidebar result view (no extra round-trips when switching sections)."""
         report = self.get_result_report(email, test_key)
         from routes.exam_platform.placement_exam_portal.communication_portal.utils.content_analysis import analyse_content
         for idx, sec in enumerate(report['sections'], start=1):
@@ -601,7 +588,6 @@ class ProctorDB:
         return report
 
     def get_section_detail(self, email, test_key, index):
-        """One section (1-based index) with per-question content analysis."""
         report = self.get_result_report(email, test_key)
         sections = report['sections']
         if index < 1 or index > len(sections):
@@ -715,11 +701,6 @@ class ProctorDB:
             cursor.close(); conn.close()
 
     def get_user_test_status(self, email, test_key):
-        """The candidate's status for this test, or None if they never took it.
-
-        Result pages check this so a score is only ever shown for a genuinely
-        completed attempt, never for one still in progress.
-        """
         conn = self.get_conn(); cursor = conn.cursor(dictionary=True)
         try:
             cursor.execute("SELECT status FROM comm_user_log WHERE email=%s AND test_key=%s",

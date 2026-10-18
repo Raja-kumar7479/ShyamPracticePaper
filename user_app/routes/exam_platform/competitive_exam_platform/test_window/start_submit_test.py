@@ -3,13 +3,15 @@ from routes.exam_platform.competitive_exam_platform.databases.test_handler_db im
 from routes.exam_platform.competitive_exam_platform.databases.main_handler_db import UserOperation
 from routes.exam_platform.competitive_exam_platform.utils.utils_test_dashboard import get_user_session
 from routes.exam_platform.competitive_exam_platform.utils.utils_secure_code import secure_access_required
-from routes.exam_platform.competitive_exam_platform.utils.utils_test_token import generate_test_token, validate_test_token
-from extensions import user_login_required
+from routes.exam_platform.competitive_exam_platform.utils.utils_test_access import test_access_required
+from routes.exam_platform.competitive_exam_platform.utils.utils_test_token import generate_test_token, validate_test_token, SUBMIT_GRACE_SECONDS
+from extensions import user_login_required, limiter
 from routes import users_bp
 import json
 import os
 import logging
 import datetime
+import time
 
 test_op = TestHandler()
 user_op = UserOperation()
@@ -17,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 @users_bp.route('/start-test/<section_id>/<test_key>/<course_code>/<unique_code>', methods=['GET'])
 @secure_access_required(('course_code', 'unique_code'))
+@test_access_required
 def start_test(section_id, test_key, course_code, unique_code):
     email, username, user_is_authenticated = get_user_session()
 
@@ -83,10 +86,45 @@ def start_test(section_id, test_key, course_code, unique_code):
         with open(file_path, 'r', encoding='utf-8') as f:
             instructions_data = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError) as e:
-        print(f"ERROR: Could not load instruction_popup.json. Details: {e}")
+        logger.error(f"Could not load instruction_popup.json: {e}")
         instructions_data = {"part1": "<p>Error: Instructions could not be loaded.</p>", "part2": ""}
 
     duration_seconds = (test_course_info.get('total_duration_minutes') or 0) * 60
+
+    tcs_exam = None
+    try:
+        from routes.exam_platform.placement_exam_portal.tcs_portal import models as tcs_models
+        tcs_exam = tcs_models.exam_for_aptitude_key(test_key)
+    except Exception:
+        logger.exception(f"TCS: could not look up the exam behind {test_key}")
+    coding_sections = []
+    coding_nav = []
+    if tcs_exam:
+        duration_seconds += (tcs_exam.get('coding_minutes') or 0) * 60
+        session['tcs_window_deadline'] = int(time.time()) + duration_seconds
+        try:
+            from routes.exam_platform.placement_exam_portal.coding_portal import models as cp_models
+            from routes.exam_platform.placement_exam_portal.coding_portal.auth_bridge import current_user as coding_user
+            coding_sections = cp_models.get_sections(tcs_exam['coding_test_id'])
+            candidate = coding_user()
+            if candidate and coding_sections:
+                coding_attempt = cp_models.get_or_create_attempt(tcs_exam['coding_test_id'], candidate['id'])
+                cleared = cp_models.reset_attempt(coding_attempt['id'])
+                if cleared:
+                    logger.info(f"TCS FRESH SITTING: [{email}] exam {tcs_exam['id']} restarted, {cleared} saved coding item(s) cleared")
+                if coding_attempt['status'] != 'submitted':
+                    for sec in coding_sections:
+                        coding_nav.append({
+                            'id': sec['id'], 'title': sec['title'],
+                            'questions': [{'id': q['id'], 'n': i + 1, 'attempted': False, 'review': False,
+                                           'url': url_for('coding_test.question_page', attempt_id=coding_attempt['id'], question_id=q['id'])}
+                                          for i, q in enumerate(cp_models.get_questions(sec['id']))],
+                        })
+        except Exception:
+            logger.exception(f"TCS: could not load the coding sections of exam {tcs_exam['id']}")
+    else:
+        session.pop('tcs_window_deadline', None)
+
     new_token = generate_test_token(email, test_key, duration_seconds)
     session['test_token'] = new_token
     sections = user_op.get_test_sections(test_key)
@@ -98,6 +136,9 @@ def start_test(section_id, test_key, course_code, unique_code):
                            duration_seconds=duration_seconds,
                            test_course_info=test_course_info,
                            sections_data=sections, 
+                           tcs_exam=tcs_exam,
+                           coding_sections=coding_sections,
+                           coding_nav=coding_nav,
                            username=username, 
                            unique_code=unique_code, 
                            course_code=course_code,
@@ -107,21 +148,24 @@ def start_test(section_id, test_key, course_code, unique_code):
 
 @users_bp.route('/submit-test-action/<section_id>/<test_key>/<course_code>/<unique_code>', methods=['POST'])
 @secure_access_required(('course_code', 'unique_code'))
+@test_access_required
 def submit_test_action(section_id, test_key, course_code, unique_code):
     email, username, user_is_authenticated = get_user_session()
     token = session.get('test_token')
 
-    if not validate_test_token(token, email, test_key):
-        return jsonify({"error": "Invalid or expired session token."}), 403
+    if not validate_test_token(token, email, test_key, grace_seconds=SUBMIT_GRACE_SECONDS):
+        test_result_id = test_op.completed_result_id(email, test_key)
+        if not test_result_id:
+            return jsonify({"error": "Invalid or expired session token."}), 403
+    else:
+        submission_data = request.get_json(silent=True)
+        if not submission_data or not isinstance(submission_data, dict):
+            return jsonify({"error": "No submission data received."}), 400
 
-    submission_data = request.json
-    if not submission_data:
-        return jsonify({"error": "No submission data received."}), 400
+        test_result_id, error_message = test_op.save_test_submission(email, username, test_key, submission_data)
 
-    test_result_id, error_message = test_op.save_test_submission(email, username, test_key, submission_data)
-
-    if error_message:
-        return jsonify({"error": error_message}), 500
+        if error_message:
+            return jsonify({"error": error_message}), 409 if error_message == test_op.REJECTED else 500
 
     session.pop('test_token', None)
     session.pop('current_test_attempt_number', None)
@@ -137,6 +181,7 @@ def submit_test_action(section_id, test_key, course_code, unique_code):
     return jsonify({"error": "An unexpected error occurred."}), 500
 
 @users_bp.route('/test-heartbeat/<test_key>', methods=['POST'])
+@limiter.exempt
 def test_heartbeat(test_key):
     email, _, _ = get_user_session()
     token = session.get('test_token')
@@ -157,6 +202,7 @@ def test_heartbeat(test_key):
         return jsonify({"error": "Server error processing heartbeat."}), 500
 
 @users_bp.route('/release-test-window/<test_key>', methods=['POST'])
+@limiter.exempt
 def release_test_window(test_key):
     email, _, _ = get_user_session()
     if not email:
@@ -175,7 +221,8 @@ def release_test_window(test_key):
     session.pop('current_test_attempt_number', None)
     session[f"terminated:{email}:{test_key}"] = True
     session.modified = True
-    logger.info(f"WINDOW RELEASE: [{email}] closed test window for {test_key}, attempt {attempt_number}")
+    detail = (request.get_data(as_text=True) or '')[:600]
+    logger.info(f"WINDOW RELEASE: [{email}] closed test window for {test_key}, attempt {attempt_number} how={detail}")
     return jsonify({"success": True, "reason": "released"}), 200
 
 

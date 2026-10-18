@@ -93,39 +93,19 @@ def payment_success(course_code, unique_code):
         logger.warning(f"Unique code validation failed for user {email}, course {course_code}.")
         return redirect(url_for('users.course_shop', course_code=course_code, unique_code=unique_code))
 
-    cart_courses = pending.get('cart')
-    if not cart_courses:
-        flash("Your payment session is incomplete. Please contact support with your payment ID.", "payment_error")
-        logger.critical(f"SECURITY: pending purchase without cart snapshot for user {email}, payment_id: {payment_id}.")
+    from routes.courses_platform.payment.purchased_payment.payment_orders import content_order, fulfil_content_order
+    order = content_order(order_id)
+    if not order or order['email'] != email:
+        flash("Payment session mismatch. Please contact support with your payment ID.", "payment_error")
+        logger.critical(f"SECURITY: no stored order for {order_id} ({email}), payment {payment_id}")
+        return redirect(url_for('users.course_shop', course_code=course_code, unique_code=unique_code))
+    if paid_amount != int(order.get('amount_paise') or -1):
+        flash("Payment amount could not be verified. Please contact support with your payment ID.", "payment_error")
+        logger.critical(f"SECURITY: stored order amount mismatch for {email}. paid={paid_amount} order={order.get('amount_paise')} payment_id={payment_id}")
         return redirect(url_for('users.course_shop', course_code=course_code, unique_code=unique_code))
 
-    discount = float(pending.get('discount', 0))
-    total_price, discount_amount, final_amount = calculate_final_price(cart_courses, discount)
-
-    if int(round(final_amount * 100)) != paid_amount:
-        flash("Payment amount mismatch. Please contact support with your payment ID.", "payment_error")
-        logger.critical(
-            f"SECURITY: snapshot/paid amount mismatch for {email}. "
-            f"paid={paid_amount} recomputed={int(round(final_amount * 100))} "
-            f"payment_id={payment_id} items={len(cart_courses)}"
-        )
-        return redirect(url_for('users.course_shop', course_code=course_code, unique_code=unique_code))
-
-    purchases_to_add = process_cart_purchases(
-        cart_courses=cart_courses,
-        email=email,
-        username=username,
-        phone=phone,
-        payment_id=payment_id,
-        course_code=course_code,
-        amount_paid=final_amount,
-        discount_percent=discount,
-        payment_mode=payment_method,
-        status='Paid',
-        original_price=total_price
-    )
-
-    if not user_op.add_purchase_transactional(purchases_to_add):
+    ok, purchases = fulfil_content_order(order, payment_id, payment_method, 'browser', email_receipt=False)
+    if not ok:
         flash("A critical error occurred while saving your purchase. Please contact support immediately with your payment ID.", "payment_error")
         logger.error(f"Transactional purchase save failed for user {email}, payment_id: {payment_id}.")
         return redirect(url_for('users.course_shop', course_code=course_code, unique_code=unique_code))
@@ -134,52 +114,18 @@ def payment_success(course_code, unique_code):
     clear_payment_session(user_cart_key)
     session.pop('pending_purchase', None)
     session.modified = True
-
     logger.info(f"Payment successful and purchases saved for user {email}, payment_id: {payment_id}.")
 
-    purchases = user_op.get_purchase_by_payment_id(email, payment_id)
-    if purchases:
-        purchaser = purchases[0]
-        pdf = generate_pdf_receipt(
-            username=purchaser['username'],
-            email=purchaser['email'],
-            phone=purchaser['phone'],
-            payment_id=payment_id,
-            purchases=purchases,
-            discount=discount,
-            original_price=total_price,
-            final_amount=final_amount,
-            payment_mode=payment_method,
-            status=purchaser['status'],
-            purchase_date=purchaser.get('payment_date')
-        )
-
-        items_html = "".join(
-            f"<tr><td style='padding:6px 0;color:#5c1a15;font-size:14px;'>{escape(p['title'])}</td>"
-            f"<td style='padding:6px 0;color:#111827;font-size:14px;font-weight:600;text-align:right;'>₹{float(p['final_price']):.2f}</td></tr>"
-            for p in purchases
-        )
-        body = (
-            f"<p>Hi {escape(purchaser['username'])},</p>"
-            f"<p>Thank you for your purchase! Your payment was successful and your content is now unlocked. "
-            f"Your itemised receipt is attached as a PDF.</p>"
-            f"<table role='presentation' width='100%' style='margin:16px 0;border-top:1px solid #e2e8f0;'>{items_html}"
-            f"<tr><td style='padding:10px 0 0;border-top:1px solid #e2e8f0;font-weight:700;color:#111827;'>Total paid</td>"
-            f"<td style='padding:10px 0 0;border-top:1px solid #e2e8f0;font-weight:700;color:#111827;text-align:right;'>₹{final_amount:.2f}</td></tr></table>"
-            f"<p style='color:#992c25;font-size:13px;'>Payment ID: {escape(payment_id)}</p>"
-        )
-        html = render_email("Payment successful ✅", body,
-                            cta_text="View my purchases",
-                            cta_url=url_for('users.purchase_dashboard', course_code=course_code, unique_code=unique_code, _external=True),
-                            preheader="Your receipt is attached")
-        sent = send_email(
-            "Your payment receipt", purchaser['email'], html,
-            attachments=[("receipt.pdf", "application/pdf", pdf.getvalue())]
-        )
-        if sent:
-            flash("Payment successful! A receipt has been sent to your email.", "purchase_notification")
-        else:
-            flash("Payment successful, but we couldn't send the receipt email. You can download it from your dashboard.", "purchase_notification")
+    from routes.courses_platform.payment.purchased_payment.payment_orders import send_content_receipt
+    try:
+        sent = send_content_receipt(order, purchases, payment_id, payment_method)
+    except Exception:
+        logger.exception(f"Receipt email failed for {payment_id}")
+        sent = False
+    if sent:
+        flash("Payment successful! A receipt has been sent to your email.", "purchase_notification")
+    else:
+        flash("Payment successful, but we couldn't send the receipt email. You can download it from your dashboard.", "purchase_notification")
 
     return redirect(url_for('users.purchase_dashboard', course_code=course_code, unique_code=unique_code))
 

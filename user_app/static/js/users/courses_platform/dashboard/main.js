@@ -2,7 +2,6 @@
   "use strict";
 
   var currentTab = "all";
-  var modalInstance = null;
 
   function getEl(id) {
     var el = document.getElementById(id);
@@ -50,54 +49,6 @@
       if (e.key === "Escape" && sidebar.classList.contains("open")) {
         closeSidebar();
       }
-    });
-  }
-
-  function setupModal() {
-    var modalEl = getEl("detailsModal");
-    if (!modalEl) return;
-
-    try {
-      modalInstance = new bootstrap.Modal(modalEl);
-    } catch (err) {
-      console.error("[Dashboard] Bootstrap Modal init failed:", err);
-      modalInstance = null;
-    }
-  }
-
-  function showDetails(title, details) {
-    var titleEl = getEl("modalTitle");
-    var detailsEl = getEl("modalDetails");
-
-    if (!titleEl || !detailsEl) return;
-
-    titleEl.textContent = title || "Details";
-    if (details && details.trim().length > 0) {
-      detailsEl.innerHTML = details;
-    } else {
-      detailsEl.textContent = "No additional details provided for this module.";
-    }
-
-    if (modalInstance) {
-      try {
-        modalInstance.show();
-      } catch (err) {
-        console.error("[Dashboard] Modal show failed:", err);
-      }
-    }
-  }
-
-  function setupInfoButtons() {
-    var buttons = document.querySelectorAll(".js-info-btn");
-    if (!buttons.length) return;
-
-    buttons.forEach(function (btn) {
-      btn.addEventListener("click", function (e) {
-        e.stopPropagation();
-        var title = btn.getAttribute("data-title") || "";
-        var details = btn.getAttribute("data-details") || "";
-        showDetails(title, details);
-      });
     });
   }
 
@@ -191,23 +142,37 @@
     });
   }
 
-  function setupSearch() {
+  function bindClearButton() {
     var input = getEl("searchInput");
     var clearBtn = getEl("clearSearchBtn");
+    if (!input || !clearBtn || clearBtn.dataset.bound) return;
+    clearBtn.dataset.bound = "1";
+    clearBtn.addEventListener("click", function () {
+      input.value = "";
+      runFilter("");
+    });
+  }
 
+  function setupSearch() {
+    var input = getEl("searchInput");
     if (!input) return;
 
     input.addEventListener("input", function () {
       runFilter(input.value);
     });
-
-    if (clearBtn) {
-      clearBtn.addEventListener("click", function () {
-        input.value = "";
-        runFilter("");
-      });
-    }
+    bindClearButton();
   }
+
+  // The content area can be replaced in place when the course changes in the
+  // database (see content_freshness.js). Everything bound inside it is bound
+  // again here, and the reader's current tab and search are kept.
+  window.sppDashboardRebind = function () {
+    try { setupMoreCards(); } catch (err) { console.error("[Dashboard] rebind cards:", err); }
+    try { applyIconColors(); } catch (err) { console.error("[Dashboard] rebind icons:", err); }
+    try { bindClearButton(); } catch (err) { console.error("[Dashboard] rebind clear:", err); }
+    var input = getEl("searchInput");
+    try { runFilter(input ? input.value : ""); } catch (err) { console.error("[Dashboard] rebind filter:", err); }
+  };
 
   function runFilter(rawQuery) {
     var query = (rawQuery || "").toLowerCase().trim();
@@ -251,18 +216,6 @@
       setupSidebar();
     } catch (err) {
       console.error("[Dashboard] setupSidebar error:", err);
-    }
-
-    try {
-      setupModal();
-    } catch (err) {
-      console.error("[Dashboard] setupModal error:", err);
-    }
-
-    try {
-      setupInfoButtons();
-    } catch (err) {
-      console.error("[Dashboard] setupInfoButtons error:", err);
     }
 
     try {

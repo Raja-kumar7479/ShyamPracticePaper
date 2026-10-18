@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Practice Coding Bank</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/brand-bootstrap.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-utils.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-shell.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/manage_mock_test/coding_question.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/manage_practice_coding/practice_coding.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token is defined else '' }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-csrf.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-toast.css') }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-toast.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-confirm.css') }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-confirm.js') }}"></script>
+</head>
+<body>
+
+{% with page_key = 'practice_coding' %}
+    {% include 'admin/_sidebar.html' %}
+{% endwith %}
+
+<div class="as-main">
+    <header class="as-topbar">
+        <button class="as-toggle" type="button" onclick="asToggle()" aria-label="Toggle menu"><i class="fas fa-bars"></i></button>
+        <h1 class="as-title">Practice Coding Bank</h1>
+        <span class="as-chip">{{ stats.total or 0 }} questions &middot; {{ stats.free or 0 }} free &middot; {{ stats.paid or 0 }} paid</span>
+    </header>
+
+    <div class="as-page">
+        <div class="ct-hint" style="display:flex;gap:14px;align-items:flex-start;padding:16px 20px;margin-bottom:22px;border:1px solid #e6d7c9;border-left:4px solid #6b1d2b;border-radius:10px;background:#fdf8f3">
+            <i class="fas fa-info-circle" style="margin-top:3px;color:#6b1d2b;font-size:18px"></i>
+            <div>
+                <strong>Practice questions are a flat bank, not a test</strong>
+                <p style="margin:4px 0 0;color:#5c5148;font-size:13.5px;line-height:1.6">
+                    Students browse them LeetCode-style, grouped by subject. Each question is
+                    <strong>Free</strong> (anyone can solve it) or <strong>Paid</strong> (needs the premium
+                    subscription - students see a lock and a Subscribe page). The subject and difficulty you
+                    set here are exactly what the student list filters on.
+                </p>
+            </div>
+        </div>
+
+        <section class="cd-card" style="padding:20px 26px;margin-bottom:26px;border:1px solid #e8e2db;border-radius:12px;background:#fff">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <h2 style="display:flex;align-items:center;gap:10px;margin:0 0 6px;font-size:17px;font-weight:700">
+                        <i class="fas fa-file-arrow-up" style="color:#6b1d2b"></i> Bulk upload (CSV or Excel)
+                    </h2>
+                    <small class="cdp-help">Download the template, fill one question per row
+                        (write \n for a line break inside a cell), then upload as CSV or Excel (.xlsx).
+                        You can add image URLs, per-language starter code, and as many
+                        tc/hidden test-case columns as you need. The whole file is checked first -
+                        nothing imports until every row is valid.</small>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                    <a class="btn btn-outline-primary btn-sm" href="/api/practice-coding/bulk/template">
+                        <i class="fas fa-download me-1"></i> CSV template
+                    </a>
+                    <a class="btn btn-outline-primary btn-sm" href="/api/practice-coding/bulk/template?fmt=xlsx">
+                        <i class="fas fa-file-excel me-1"></i> Excel template
+                    </a>
+                    <label class="btn btn-primary btn-sm mb-0">
+                        <i class="fas fa-upload me-1"></i> Upload CSV / Excel
+                        <input type="file" id="pcqBulkFile" accept=".csv,.xlsx" hidden>
+                    </label>
+                </div>
+            </div>
+            <div id="pcqBulkResult" class="mt-2"></div>
+        </section>
+
+        <section class="cd-card" style="padding:24px 26px;margin-bottom:26px;border:1px solid #e8e2db;border-radius:12px;background:#fff">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h2 style="display:flex;align-items:center;gap:10px;margin:0;font-size:18px;font-weight:700" id="pcqEditorTitle">
+                    <i class="fas fa-plus-circle" style="color:#6b1d2b"></i> Add a question
+                </h2>
+                <button type="button" class="btn btn-sm btn-outline-secondary is-hidden" id="pcqCancelEdit">
+                    <i class="fas fa-times me-1"></i> Cancel edit
+                </button>
+            </div>
+
+            <input type="hidden" id="pcqId">
+
+            <div class="row g-2">
+                <div class="col-lg-4"><label class="form-label">Title <span class="cdp-req">*</span></label>
+                    <input type="text" class="form-control" id="pcqTitle" placeholder="e.g. Two Sum"></div>
+                <div class="col-lg-2"><label class="form-label">Difficulty</label>
+                    <select class="form-select" id="pcqDifficulty">
+                        {% for d in difficulties %}<option>{{ d }}</option>{% endfor %}
+                    </select></div>
+                <div class="col-lg-3"><label class="form-label">Subject <span class="cdp-req">*</span></label>
+                    <input type="text" class="form-control" id="pcqSubject" list="pcqSubjects" placeholder="String">
+                    <datalist id="pcqSubjects">
+                        {% for s in subjects %}<option value="{{ s }}">{% endfor %}
+                    </datalist></div>
+                <div class="col-lg-3"><label class="form-label">Access</label>
+                    <div class="pcq-tier" id="pcqTier">
+                        <label class="pcq-tier__opt is-active" data-tier="free">
+                            <input type="radio" name="pcqTier" value="free" checked>
+                            <i class="fas fa-unlock"></i> Free
+                        </label>
+                        <label class="pcq-tier__opt" data-tier="paid">
+                            <input type="radio" name="pcqTier" value="paid">
+                            <i class="fas fa-crown"></i> Paid
+                        </label>
+                    </div></div>
+            </div>
+
+            <div class="row g-2 mt-1">
+                <div class="col-lg-7"><label class="form-label">Companies
+                        <small class="cdp-help" style="display:inline">comma separated - e.g. Google, Amazon</small></label>
+                    <input type="text" class="form-control" id="pcqCompanies"
+                           placeholder="Google, Amazon, TCS">
+                </div>
+                <div class="col-lg-2"><label class="form-label">Order</label>
+                    <input type="number" class="form-control" id="pcqPosition" value="0" min="0" max="100000">
+                </div>
+                <div class="col-lg-3 d-flex align-items-end">
+                    <small class="cdp-help">Companies become clickable banks on the student page.
+                        Lower order shows first.</small>
+                </div>
+            </div>
+
+            <div class="cdp-part" data-part="statement">
+                <div class="cdp-part__head">
+                    <h6>1. Question <span class="cdp-req">*</span></h6>
+                    <div class="cdp-modes">
+                        <button type="button" class="cdp-mode is-active" data-mode="text"><i class="fas fa-keyboard"></i> Type</button>
+                        <button type="button" class="cdp-mode" data-mode="image"><i class="fas fa-image"></i> Image</button>
+                    </div>
+                </div>
+                <div class="cdp-body" data-mode="text">
+                    <textarea class="form-control cdp-mono" id="pcqStatement" rows="5"
+                              placeholder="Describe the problem exactly as the student should read it."></textarea>
+                </div>
+                <div class="cdp-body is-hidden" data-mode="image">
+                    <input type="file" class="form-control pcq-pick" accept="image/*" data-slot="statement_image">
+                    <div class="cdp-preview" data-slot="statement_image"></div>
+                </div>
+            </div>
+
+            <div class="cdp-part" data-part="input">
+                <div class="cdp-part__head">
+                    <h6>2. Input format</h6>
+                    <div class="cdp-modes">
+                        <button type="button" class="cdp-mode is-active" data-mode="text"><i class="fas fa-keyboard"></i> Type</button>
+                        <button type="button" class="cdp-mode" data-mode="image"><i class="fas fa-image"></i> Image</button>
+                    </div>
+                </div>
+                <div class="cdp-body" data-mode="text">
+                    <textarea class="form-control cdp-mono" id="pcqInputSpec" rows="3"
+                              placeholder="First line: n. Second line: n space-separated integers."></textarea>
+                </div>
+                <div class="cdp-body is-hidden" data-mode="image">
+                    <input type="file" class="form-control pcq-pick" accept="image/*" data-slot="input_image">
+                    <div class="cdp-preview" data-slot="input_image"></div>
+                </div>
+            </div>
+
+            <div class="cdp-part" data-part="example">
+                <div class="cdp-part__head">
+                    <h6>3. Example</h6>
+                    <div class="cdp-modes">
+                        <button type="button" class="cdp-mode is-active" data-mode="text"><i class="fas fa-keyboard"></i> Type</button>
+                        <button type="button" class="cdp-mode" data-mode="image"><i class="fas fa-image"></i> Image</button>
+                    </div>
+                </div>
+                <div class="cdp-body" data-mode="text">
+                    <textarea class="form-control cdp-mono" id="pcqExample" rows="4"
+                              placeholder="Input:&#10;5&#10;1 2 3 4 5&#10;&#10;Output:&#10;4"></textarea>
+                </div>
+                <div class="cdp-body is-hidden" data-mode="image">
+                    <input type="file" class="form-control pcq-pick" accept="image/*" data-slot="example_image">
+                    <div class="cdp-preview" data-slot="example_image"></div>
+                </div>
+            </div>
+
+            <div class="cdp-part">
+                <div class="cdp-part__head"><h6>Languages &amp; limits</h6></div>
+                <div class="cdp-langs" id="pcqLangs">
+                    {% for lang in languages %}
+                    <label class="cdp-chip"><input type="checkbox" value="{{ lang }}" checked> {{ lang }}</label>
+                    {% endfor %}
+                </div>
+                <div class="row g-2 mt-2">
+                    <div class="col-md-4"><label class="form-label">Time limit (sec/run)</label>
+                        <input type="number" class="form-control" id="pcqTimeLimit" value="10" min="1" max="300"></div>
+                    <div class="col-md-4"><label class="form-label">Memory limit</label>
+                        <input type="text" class="form-control" id="pcqMemory" value="512m" placeholder="256m, 512m or 1g" title="A number with a unit: 256m, 512m or 1g"></div>
+                    <div class="col-md-4"><label class="form-label">Output format</label>
+                        <input type="text" class="form-control" id="pcqOutputSpec" placeholder="A single integer"></div>
+                </div>
+                <div class="row g-2 mt-2">
+                    <div class="col-md-4"><label class="form-label">Answer comparison</label>
+                        <select class="form-select" id="pcqCompareMode">
+                            <option value="exact">Exact match (default)</option>
+                            <option value="float">Float - numbers within tolerance</option>
+                            <option value="unordered">Unordered - lines in any order</option>
+                        </select></div>
+                    <div class="col-md-4" id="pcqFloatTolBox" style="display:none"><label class="form-label">Float tolerance</label>
+                        <input type="text" class="form-control" id="pcqFloatTol" placeholder="0.000001"></div>
+                    <div class="col-md-4 d-flex align-items-end"><small class="text-muted" id="pcqCompareHint">Output is matched exactly (whitespace-trimmed).</small></div>
+                </div>
+            </div>
+
+            <div class="cdp-part">
+                <div class="cdp-part__head">
+                    <h6>Starter code <small class="cdp-help">optional</small></h6>
+                    <div class="cdp-tabs" id="pcqTplTabs">
+                        {% for lang in languages %}
+                        <button type="button" class="cdp-tab{{ ' is-active' if loop.first }}" data-lang="{{ lang }}">{{ lang }}</button>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% for lang in languages %}
+                <textarea class="form-control cdp-mono pcq-tpl{{ '' if loop.first else ' is-hidden' }}"
+                          data-lang="{{ lang }}" rows="6"></textarea>
+                {% endfor %}
+            </div>
+
+            <div class="cdp-part">
+                <div class="cdp-part__head">
+                    <h6>Test cases <span class="cdp-req">*</span></h6>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="pcqAddTestcase">
+                        <i class="fas fa-plus me-1"></i>Add test case
+                    </button>
+                </div>
+                <small class="cdp-help">Visible cases are shown to the student; hidden ones only count on submit -
+                    always add at least one hidden case so answers cannot be hard-coded.</small>
+                <div id="pcqTestcases" class="cdp-rows mt-2"></div>
+            </div>
+
+            <div class="d-flex gap-2 justify-content-end mt-3">
+                <button type="button" class="btn btn-primary btn-lg" id="pcqSaveBtn">
+                    <i class="fas fa-save me-1"></i><span id="pcqSaveLabel">Save question</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="cd-card" style="padding:24px 26px;border:1px solid #e8e2db;border-radius:12px;background:#fff">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h2 style="display:flex;align-items:center;gap:10px;margin:0;font-size:18px;font-weight:700">
+                    <i class="fas fa-list-ol" style="color:#6b1d2b"></i> Question bank
+                </h2>
+                <div class="d-flex gap-2">
+                    <select class="form-select form-select-sm" id="pcqFilterSubject" style="width:auto">
+                        <option value="">All subjects</option>
+                    </select>
+                    <select class="form-select form-select-sm" id="pcqFilterTier" style="width:auto">
+                        <option value="">Free + Paid</option>
+                        <option value="free">Free only</option>
+                        <option value="paid">Paid only</option>
+                    </select>
+                    <select class="form-select form-select-sm" id="pcqFilterStatus" style="width:auto">
+                        <option value="">Active</option>
+                        <option value="removed">Removed</option>
+                    </select>
+                </div>
+            </div>
+            <div id="pcqList" class="cd-qlist"></div>
+        </section>
+
+        <section class="cd-card" style="padding:24px 26px;margin-top:26px;border:1px solid #e8e2db;border-radius:12px;background:#fff">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <h2 style="display:flex;align-items:center;gap:10px;margin:0;font-size:18px;font-weight:700">
+                    <i class="fas fa-book-open" style="color:#6b1d2b"></i> Editorial solutions
+                </h2>
+                <select class="form-select form-select-sm" id="pcqEdQuestion" style="width:auto;min-width:260px">
+                    <option value="">Choose a question…</option>
+                </select>
+            </div>
+
+            <p class="text-muted" style="font-size:13px">
+                Add one block per approach (Brute Force, Better, Optimal…). Each carries an
+                explanation, the solution in as many languages as you want, a closing note and
+                its complexity. Students see them in order on the Editorial tab.
+            </p>
+
+            <div id="pcqEdList" class="cd-qlist mb-3"></div>
+
+            <form id="pcqEdForm" class="cdp-row" style="display:none">
+                <input type="hidden" id="pcqEdId">
+                <div class="row g-2">
+                    <div class="col-md-8">
+                        <label class="form-label">Approach title <span class="cdp-req">*</span></label>
+                        <input type="text" class="form-control" id="pcqEdTitle" placeholder="e.g. Brute Force" maxlength="255">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Order</label>
+                        <input type="number" class="form-control" id="pcqEdPos" value="1" min="0" max="99">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <label class="cdp-chip"><input type="checkbox" id="pcqEdPublished" checked> Published</label>
+                    </div>
+                </div>
+
+                <div class="mt-2">
+                    <label class="form-label">Explanation before the code</label>
+                    <textarea class="form-control" id="pcqEdIntro" rows="3"
+                              placeholder="HTML allowed. e.g. &lt;p&gt;Loop through each element…&lt;/p&gt;"></textarea>
+                </div>
+
+                <div class="mt-3">
+                    <label class="form-label">Solution code per language</label>
+                    <div class="d-flex gap-1 flex-wrap mb-2" id="pcqEdLangTabs"></div>
+                    <textarea class="form-control cdp-mono" id="pcqEdCode" rows="10"
+                              placeholder="Paste the solution for the selected language. Leave blank to skip that language."></textarea>
+                    <div class="form-text">Switch language tabs to add more. Only languages with code are saved.</div>
+                </div>
+
+                <div class="mt-3">
+                    <label class="form-label">Note after the code</label>
+                    <textarea class="form-control" id="pcqEdOutro" rows="2"
+                              placeholder="HTML allowed. e.g. &lt;p&gt;Each lookup is O(1)…&lt;/p&gt;"></textarea>
+                </div>
+
+                <div class="row g-2 mt-1">
+                    <div class="col-md-6">
+                        <label class="form-label">Time complexity</label>
+                        <input type="text" class="form-control" id="pcqEdTime" placeholder="O(n^2)" maxlength="120">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Space complexity</label>
+                        <input type="text" class="form-control" id="pcqEdSpace" placeholder="O(1)" maxlength="120">
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2 mt-3">
+                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save approach</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="pcqEdCancel">Cancel</button>
+                </div>
+            </form>
+
+            <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="pcqEdNew" style="display:none">
+                <i class="fas fa-plus"></i> Add an approach
+            </button>
+        </section>
+    </div>
+</div>
+
+<template id="pcqTestcaseTpl">
+    <div class="cdp-row">
+        <div class="row g-2">
+            <div class="col-md-6"><label class="form-label">Input</label>
+                <textarea class="form-control cdp-mono pcq-tc-in" rows="3" placeholder="stdin for this case"></textarea></div>
+            <div class="col-md-6"><label class="form-label">Expected output <span class="cdp-req">*</span></label>
+                <textarea class="form-control cdp-mono pcq-tc-out" rows="3" placeholder="exact expected stdout"></textarea></div>
+        </div>
+        <div class="d-flex align-items-center gap-3 mt-2">
+            <label class="cdp-chip"><input type="checkbox" class="pcq-tc-hidden"> Hidden from student</label>
+            <button type="button" class="btn btn-sm btn-outline-danger ms-auto pcq-row-del"><i class="fas fa-trash"></i></button>
+        </div>
+    </div>
+</template>
+
+<script src="{{ url_for('static', filename='js/admin/admin-shell.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/manage_practice_coding/practice_coding.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/manage_practice_coding/practice_editorial.js') }}"></script>
+</body>
+</html>

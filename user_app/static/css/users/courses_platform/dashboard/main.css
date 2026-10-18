@@ -890,6 +890,7 @@ h1,h2,h3,h4,h5,h6 { font-family: 'Sora', sans-serif; }
 .badge-free { background: #fdf3e3; color: #7a231d; }
 .badge-hot { background: var(--danger); color: white; }
 .badge-new { background: var(--primary); color: white; }
+.badge-kept { background: #1f5f3f; color: white; }
 
 @media (max-width: 1200px) {
   .search-wrap { width: 260px; }
@@ -951,3 +952,94 @@ h1,h2,h3,h4,h5,h6 { font-family: 'Sora', sans-serif; }
   text-decoration: none;
   min-width: 0;
 }
+
+/* Cover image uploaded with the content; the gradient banner stays the
+   fallback for cards that have no image. */
+.card-banner-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-expiry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -0.7rem 0 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #9a6a00;
+}
+
+/* Formatted description the admin wrote in the editor */
+#modalDetails img { max-width: 100%; height: auto; border-radius: 8px; }
+#modalDetails table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+#modalDetails table td, #modalDetails table th { border: 1px solid #d7dee7; padding: 6px 8px; }
+#modalDetails .ql-align-center { text-align: center; }
+#modalDetails .ql-align-right { text-align: right; }
+#modalDetails .ql-align-justify { text-align: justify; }
+
+/* Content added in the last few days, alongside the Free / Paid label */
+.card-top-badge { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.badge-new i { font-size: 0.62rem; margin-right: 2px; }
+
+/* Premium strip under the stats: what the admin's Premium Catalog says for this course */
+.pm-strip { display: flex; align-items: center; gap: 14px; margin: 0 0 1.25rem; padding: 14px 18px; border-radius: 14px;
+            text-decoration: none; color: inherit; border: 1px solid #ecd9b4; background: linear-gradient(135deg, #fff8ec, #fdf0d8); }
+.pm-strip--offer:hover { border-color: #d9b56b; box-shadow: 0 8px 22px rgba(184, 134, 11, .14); color: inherit; }
+.pm-strip--active { background: linear-gradient(135deg, #eefaf3, #e3f5ea); border-color: #b7e2c8; }
+.pm-strip__icon { display: inline-flex; align-items: center; justify-content: center; width: 42px; height: 42px; flex: 0 0 42px;
+                  border-radius: 12px; background: linear-gradient(135deg, #ffd9a0, #ff9d5c); color: #6b3b00; font-size: 18px; }
+.pm-strip--active .pm-strip__icon { background: #1f9254; color: #fff; }
+.pm-strip__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.pm-strip__text strong { font-size: 1rem; color: #1b1b1b; }
+.pm-strip__text span { font-size: .9rem; color: #5a5148; }
+.pm-strip__text b { color: #1b1b1b; font-size: 1rem; }
+.pm-strip__off, .pm-strip__ends { font-style: normal; margin-left: 8px; padding: 2px 9px; border-radius: 999px; font-size: .76rem; font-weight: 700; }
+.pm-strip__off { background: #1f9254; color: #fff; }
+.pm-strip__ends { background: #fff; color: #a4302a; border: 1px solid #f2bcbc; }
+.pm-strip__go, .pm-strip__tag { white-space: nowrap; font-weight: 700; font-size: .9rem; color: #8a5a00; }
+.pm-strip__tag { padding: 5px 12px; border-radius: 999px; background: #fff; color: #17703f; border: 1px solid #b7e2c8; }
+@media (max-width: 640px) { .pm-strip { flex-wrap: wrap; } .pm-strip__go, .pm-strip__tag { width: 100%; text-align: right; } }
+
+.pm-strip--soon { background: linear-gradient(135deg, #fff1ee, #fde4df); border-color: #f2bcbc; }
+.pm-strip--soon .pm-strip__icon { background: #a4302a; color: #fff; }
+.pm-strip--soon .pm-strip__go { color: #a4302a; }
+
+.plan-badge { display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; padding: 2px 9px; border-radius: 999px; font-size: .68rem; font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
+.plan-badge--premium { background: linear-gradient(135deg, #ffd166, #f0ae06); color: #3b2300; }
+.plan-badge--free { background: rgba(255, 255, 255, .16); color: rgba(255, 255, 255, .85); }
+.topbar-plan { display: inline-flex; align-items: center; gap: 7px; margin-left: 12px; padding: 6px 13px; border-radius: 999px; font-size: .78rem; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.topbar-plan--premium { background: linear-gradient(135deg, #ffd166, #f0ae06); color: #3b2300; box-shadow: 0 3px 10px rgba(240, 174, 6, .3); }
+.topbar-plan--free { background: #f1eee9; color: #6b6259; border: 1px solid #e2dcd3; }
+.topbar-plan--free:hover { background: #e9e4dc; color: #3b332c; }
+@media (max-width: 575px) {
+  .topbar-plan { margin-left: 8px; padding: 5px 9px; }
+  .topbar-plan__text { display: none; }
+}
+
+.section-title-icon.gold { background: #fff4d6; color: #b7791f; }
+.section-count { margin-left: 8px; font-size: 0.75rem; font-weight: 700; background: #fff4d6; color: #7a231d; border-radius: 999px; padding: 2px 9px; }
+.view-section--paid { margin-top: 2.25rem; padding-top: 1.5rem; border-top: 1px dashed #e7d9c6; }
+.resource-card--paid { border-color: #ead9b5; background: linear-gradient(180deg, #fffdf8 0%, #ffffff 60%); }
+.resource-card--paid:hover { border-color: #b7791f; }
+.resource-card--paid.is-owned { border-color: #cfe9d8; background: linear-gradient(180deg, #f6fcf8 0%, #ffffff 60%); }
+.resource-card--paid.is-owned:hover { border-color: #1f8a4c; }
+.banner-paid { background: linear-gradient(135deg, #2b1a14 0%, #7a231d 55%, #b7791f 100%); }
+.resource-card--paid.is-owned .banner-paid { background: linear-gradient(135deg, #14382a 0%, #1f8a4c 60%, #7fd0a0 100%); }
+.card-icon-paid { position: absolute; right: 14px; bottom: -18px; width: 44px; height: 44px; border-radius: 12px; background: #fff; color: #b7791f; display: grid; place-items: center; box-shadow: 0 6px 16px rgba(43, 26, 20, 0.18); font-size: 1.05rem; }
+.resource-card--paid.is-owned .card-icon-paid { color: #1f8a4c; }
+.badge-paid { background: #2b1a14; color: #ffd98a; }
+.badge-active { background: #1f8a4c; color: #fff; }
+.card-price { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; margin: 0.35rem 0 0.9rem; min-height: 1.6rem; }
+.card-price__was { font-size: 0.85rem; color: #9a8b83; text-decoration: line-through; }
+.card-price__now { font-size: 1.15rem; font-weight: 800; color: #7a231d; }
+.card-price__off { font-size: 0.72rem; font-weight: 700; color: #b7791f; background: #fff4d6; border-radius: 999px; padding: 2px 8px; }
+.card-price__owned { font-size: 0.82rem; font-weight: 600; color: #1f8a4c; }
+.card-price__owned i { margin-right: 4px; }
+.action-buy { background: linear-gradient(135deg, #7a231d 0%, #b7791f 100%); color: #fff; box-shadow: 0 4px 14px rgba(122, 35, 29, 0.28); }
+.action-buy:hover { color: #fff; transform: translateY(-1px); box-shadow: 0 8px 20px rgba(122, 35, 29, 0.35); }
+.action-owned { background: #eaf7ef; color: #1f6b3d; border: 1.5px solid #cfe9d8; }
+.action-owned:hover { background: #1f8a4c; color: #fff; border-color: #1f8a4c; }

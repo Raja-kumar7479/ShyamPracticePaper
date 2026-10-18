@@ -1,14 +1,8 @@
-"""
-SQL section execution.
-
-Each question owns a sandbox database seeded from its DDL. Candidate queries
-run as a low-privilege, SELECT-only user inside a transaction that is always
-rolled back, so a submitted query can neither mutate data nor read anything
-outside its own sandbox.
-"""
 import hashlib
 import re
 import logging
+import threading
+import time
 from decimal import Decimal
 from datetime import date, datetime, timedelta
 
@@ -18,19 +12,38 @@ from config import Config
 
 logger = logging.getLogger(__name__)
 
-# Only single read statements are accepted. Belt-and-braces alongside the
-# GRANT: the sandbox user cannot write even if this misses something.
 _ALLOWED_START = re.compile(r"^\s*(SELECT|WITH)\b", re.IGNORECASE)
 
 _FORBIDDEN = re.compile(
     r"\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|GRANT|REVOKE|"
-    r"REPLACE|RENAME|LOAD_FILE|INTO\s+OUTFILE|INTO\s+DUMPFILE|"
-    r"INFORMATION_SCHEMA|MYSQL\.|PERFORMANCE_SCHEMA|SLEEP|BENCHMARK)\b",
+    r"REPLACE\s+INTO|RENAME|LOAD_FILE|INTO\s+OUTFILE|INTO\s+DUMPFILE|"
+    r"INFORMATION_SCHEMA|PERFORMANCE_SCHEMA|SLEEP|BENCHMARK|"
+    r"GET_LOCK|RELEASE_LOCK|RELEASE_ALL_LOCKS|IS_FREE_LOCK|IS_USED_LOCK)\b"
+    r"|((?:`\s*)?\bMYSQL\b(?:\s*`)?\s*\.)",
     re.IGNORECASE,
 )
 
+BUSY_MESSAGE = "The SQL judge is busy. Please try again in a moment."
+DOWN_MESSAGE = "The SQL judge is not available right now. Please try again in a moment."
+BROKEN_TABLES = "The tables for this question could not be prepared. Please tell the invigilator."
+BROKEN_REFERENCE = "The reference answer for this question could not be run. Please tell the invigilator."
+BUILD_LOCK_WAIT = 15
+EXPECTED_TTL = 60
+
+_ready = {}
+_expected = {}
+_slots = threading.BoundedSemaphore(max(1, int(Config.SQL_SANDBOX_PARALLEL)))
+
 
 class SqlError(Exception):
+    pass
+
+
+class SqlUnavailable(SqlError):
+    pass
+
+
+class SqlQuestionBroken(SqlUnavailable):
     pass
 
 
@@ -42,7 +55,7 @@ def _admin_conn(database=None):
     return mysql.connector.connect(
         host=Config.DB_HOST, port=Config.DB_PORT,
         user=Config.DB_USER, password=Config.DB_PASS,
-        database=database, autocommit=True,
+        database=database, autocommit=True, connection_timeout=10, use_pure=True,
     )
 
 
@@ -50,128 +63,142 @@ def _fingerprint(schema_sql: str) -> str:
     return hashlib.sha256((schema_sql or "").encode("utf-8")).hexdigest()
 
 
-def _built_fingerprint(question_id: int):
-    """The schema this question's sandbox was last built from, or None."""
-    conn = _admin_conn(database=Config.DB_NAME)
+def _built_fingerprint(cur, question_id: int):
     try:
-        cur = conn.cursor()
-        cur.execute("SELECT fingerprint FROM cp_sql_sandboxes WHERE question_id = %s",
-                    (int(question_id),))
+        cur.execute(
+            f"SELECT fingerprint FROM `{Config.DB_NAME}`.cp_sql_sandboxes WHERE question_id = %s",
+            (int(question_id),))
         row = cur.fetchone()
-        cur.close()
         return row[0] if row else None
     except mysql.connector.Error:
-        # Missing bookkeeping must not take the SQL section down; the worst case
-        # is the old behaviour of leaving an existing sandbox alone.
         logger.exception("SQL SANDBOX: could not read fingerprint for q%s", question_id)
         return None
-    finally:
-        conn.close()
 
 
-def _record_fingerprint(question_id: int, fingerprint: str):
-    conn = _admin_conn(database=Config.DB_NAME)
+def _record_fingerprint(cur, question_id: int, fingerprint: str):
     try:
-        cur = conn.cursor()
         cur.execute(
-            "INSERT INTO cp_sql_sandboxes (question_id, fingerprint) VALUES (%s, %s) "
+            f"INSERT INTO `{Config.DB_NAME}`.cp_sql_sandboxes (question_id, fingerprint) VALUES (%s, %s) "
             "ON DUPLICATE KEY UPDATE fingerprint = VALUES(fingerprint)",
             (int(question_id), fingerprint),
         )
-        cur.close()
     except mysql.connector.Error:
         logger.exception("SQL SANDBOX: could not record fingerprint for q%s", question_id)
+
+
+def _seed(db_name: str, schema_sql: str):
+    seeded = _admin_conn(database=db_name)
+    try:
+        c2 = seeded.cursor()
+        c2.execute("SHOW TABLES")
+        has_tables = bool(c2.fetchall())
+        if not has_tables and schema_sql:
+            for result in c2.execute(schema_sql, multi=True):
+                if result.with_rows:
+                    result.fetchall()
+        c2.close()
+    finally:
+        seeded.close()
+
+
+def _sandbox_pattern() -> str:
+    prefix = Config.SQL_SANDBOX_PREFIX
+    if not re.fullmatch(r"[A-Za-z0-9_]+", prefix or ""):
+        raise SqlUnavailable(DOWN_MESSAGE)
+    return prefix.replace("_", "\\_") + "%"
+
+
+def _grant_readonly(cur):
+    user = Config.SQL_SANDBOX_USER
+    if not re.fullmatch(r"[A-Za-z0-9_]+", user or ""):
+        logger.error("SQL SANDBOX: SQL_SANDBOX_USER must be letters, digits and underscores")
+        return
+    try:
+        cur.execute(
+            "CREATE USER IF NOT EXISTS %s@%s IDENTIFIED BY %s",
+            (user, "%", Config.SQL_SANDBOX_PASS),
+        )
+        cur.execute(
+            "ALTER USER %s@%s IDENTIFIED BY %s",
+            (user, "%", Config.SQL_SANDBOX_PASS),
+        )
+        cur.execute(f"GRANT SELECT ON `{_sandbox_pattern()}`.* TO '{user}'@'%'")
+    except mysql.connector.Error as e:
+        logger.warning("Could not provision sandbox user: %s", e)
+
+
+def _build(question_id: int, db_name: str, schema_sql: str, fingerprint: str, force: bool):
+    lock_name = f"spp_sbx_{int(question_id)}"
+    conn = _admin_conn()
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT GET_LOCK(%s, %s)", (lock_name, BUILD_LOCK_WAIT))
+        if not (cur.fetchone() or [0])[0]:
+            raise SqlUnavailable(BUSY_MESSAGE)
+        try:
+            if not force and _built_fingerprint(cur, question_id) != fingerprint:
+                force = True
+            if force:
+                cur.execute(f"DROP DATABASE IF EXISTS `{db_name}`")
+            cur.execute(
+                f"CREATE DATABASE IF NOT EXISTS `{db_name}` "
+                "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+            )
+            try:
+                _seed(db_name, schema_sql)
+            except mysql.connector.Error as e:
+                logger.error("SQL SANDBOX: tables for q%s could not be created: %s", question_id, e)
+                raise SqlQuestionBroken(BROKEN_TABLES)
+            _grant_readonly(cur)
+            _record_fingerprint(cur, question_id, fingerprint)
+        finally:
+            cur.execute("SELECT RELEASE_LOCK(%s)", (lock_name,))
+            cur.fetchall()
+        cur.close()
     finally:
         conn.close()
 
 
 def ensure_sandbox(question_id: int, schema_sql: str, force=False) -> str:
-    """
-    Create and seed the sandbox database for a question.
-
-    Rebuilt whenever the question's DDL has changed since the sandbox was last
-    built, so editing a SQL question in the admin app takes effect on the next
-    run. Previously an existing sandbox was left alone unless the caller passed
-    force=True, and the only caller that did was the coding portal's own
-    authoring screen -- which no longer exists.
-    """
     db_name = sandbox_db_name(question_id)
     fingerprint = _fingerprint(schema_sql)
-    if not force and _built_fingerprint(question_id) != fingerprint:
-        force = True
-
-    conn = _admin_conn()
-    try:
-        cur = conn.cursor()
-        if force:
-            cur.execute(f"DROP DATABASE IF EXISTS `{db_name}`")
-        cur.execute(
-            f"CREATE DATABASE IF NOT EXISTS `{db_name}` "
-            "CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
-        )
-        cur.close()
-
-        seeded = _admin_conn(database=db_name)
-        try:
-            c2 = seeded.cursor()
-            c2.execute("SHOW TABLES")
-            has_tables = bool(c2.fetchall())
-            if not has_tables and schema_sql:
-                for result in c2.execute(schema_sql, multi=True):
-                    if result.with_rows:
-                        result.fetchall()
-            c2.close()
-        finally:
-            seeded.close()
-
-        _grant_readonly(db_name)
-        _record_fingerprint(question_id, fingerprint)
+    if not force and _ready.get(int(question_id)) == fingerprint:
         return db_name
-    finally:
-        conn.close()
-
-
-def _grant_readonly(db_name: str):
-    """Create the sandbox user if needed and grant SELECT on this DB only."""
-    conn = _admin_conn()
     try:
-        cur = conn.cursor()
-        cur.execute(
-            "CREATE USER IF NOT EXISTS %s@'%%' IDENTIFIED BY %s",
-            (Config.SQL_SANDBOX_USER, Config.SQL_SANDBOX_PASS),
-        )
-        cur.execute(
-            f"GRANT SELECT ON `{db_name}`.* TO %s@'%%'",
-            (Config.SQL_SANDBOX_USER,),
-        )
-        cur.execute("FLUSH PRIVILEGES")
-        cur.close()
-    except mysql.connector.Error as e:
-        # Managed MySQL may forbid user creation; fall back to the app user.
-        logger.warning("Could not provision sandbox user: %s", e)
-    finally:
-        conn.close()
+        _build(question_id, db_name, schema_sql, fingerprint, force)
+    except SqlError:
+        raise
+    except Exception as e:
+        logger.error("SQL SANDBOX: could not prepare q%s: %s", question_id, e)
+        raise SqlUnavailable(DOWN_MESSAGE)
+    _ready[int(question_id)] = fingerprint
+    return db_name
 
 
 def _sandbox_conn(db_name: str):
-    """Connect as the restricted user, falling back to the app user."""
+    return mysql.connector.connect(
+        host=Config.DB_HOST, port=Config.DB_PORT,
+        user=Config.SQL_SANDBOX_USER, password=Config.SQL_SANDBOX_PASS,
+        database=db_name, autocommit=False, connection_timeout=10, use_pure=True,
+    )
+
+
+def _open(question_id: int, schema_sql: str):
+    db_name = ensure_sandbox(question_id, schema_sql)
     try:
-        return mysql.connector.connect(
-            host=Config.DB_HOST, port=Config.DB_PORT,
-            user=Config.SQL_SANDBOX_USER, password=Config.SQL_SANDBOX_PASS,
-            database=db_name, autocommit=False,
-        )
+        return _sandbox_conn(db_name)
     except mysql.connector.Error:
-        logger.warning("Sandbox user unavailable; using app credentials")
-        return mysql.connector.connect(
-            host=Config.DB_HOST, port=Config.DB_PORT,
-            user=Config.DB_USER, password=Config.DB_PASS,
-            database=db_name, autocommit=False,
-        )
+        _ready.pop(int(question_id), None)
+    db_name = ensure_sandbox(question_id, schema_sql)
+    try:
+        return _sandbox_conn(db_name)
+    except mysql.connector.Error as e:
+        _ready.pop(int(question_id), None)
+        logger.error("SQL SANDBOX: read-only account cannot open %s: %s", db_name, e)
+        raise SqlUnavailable(DOWN_MESSAGE)
 
 
 def validate(query: str):
-    """Reject anything that is not a single read-only statement."""
     if not query or not query.strip():
         raise SqlError("Query is empty.")
 
@@ -181,13 +208,12 @@ def validate(query: str):
     if not _ALLOWED_START.match(stripped):
         raise SqlError("Only SELECT queries are allowed.")
 
-    # Strip string literals before scanning so a legitimate value such as
-    # 'admin@delete.com' cannot trip the keyword check.
     without_literals = re.sub(r"'(?:[^'\\]|\\.)*'", "''", stripped)
     without_literals = re.sub(r'"(?:[^"\\]|\\.)*"', '""', without_literals)
     match = _FORBIDDEN.search(without_literals)
     if match:
-        raise SqlError(f"'{match.group(1)}' is not permitted in this query.")
+        token = (match.group(1) or match.group(2) or "").strip("`. ")
+        raise SqlError(f"'{token}' is not permitted in this query.")
     return stripped
 
 
@@ -204,25 +230,16 @@ def _jsonable(value):
     return value
 
 
-def run_query(question_id: int, schema_sql: str, query: str):
-    """
-    Execute a candidate query against the question's sandbox.
-
-    Returns {columns, rows, row_count, truncated}. Always rolls back.
-    """
-    stripped = validate(query)
-    db_name = ensure_sandbox(question_id, schema_sql)
-
-    conn = _sandbox_conn(db_name)
+def _execute(question_id: int, schema_sql: str, stripped: str):
+    conn = _open(question_id, schema_sql)
     try:
         cur = conn.cursor()
-        # Server-side ceiling so a heavy query cannot pin a connection.
         try:
             cur.execute(
                 f"SET SESSION MAX_EXECUTION_TIME={int(Config.SQL_QUERY_TIMEOUT_MS)}"
             )
         except mysql.connector.Error:
-            pass  # MariaDB and older MySQL lack this; the read-only txn still applies.
+            pass
 
         cur.execute(stripped)
         columns = [d[0] for d in (cur.description or [])]
@@ -230,7 +247,6 @@ def run_query(question_id: int, schema_sql: str, query: str):
         truncated = len(raw) > Config.SQL_MAX_ROWS
         raw = raw[:Config.SQL_MAX_ROWS]
         rows = [[_jsonable(v) for v in row] for row in raw]
-        cur.close()
         return {
             "columns": columns,
             "rows": rows,
@@ -238,14 +254,26 @@ def run_query(question_id: int, schema_sql: str, query: str):
             "truncated": truncated,
         }
     except mysql.connector.Error as e:
+        code = e.errno if isinstance(e.errno, int) else -1
+        if code < 0 or 2000 <= code < 3000 or code in (1040, 1053, 1203, 1226):
+            logger.error("SQL SANDBOX: database not reachable for q%s: %s", question_id, e)
+            raise SqlUnavailable(DOWN_MESSAGE)
         raise SqlError(str(e))
     finally:
-        # Candidate SQL never commits.
         try:
-            conn.rollback()
+            conn.close()
         except Exception:
             pass
-        conn.close()
+
+
+def run_query(question_id: int, schema_sql: str, query: str):
+    stripped = validate(query)
+    if not _slots.acquire(timeout=max(1, int(Config.SQL_SANDBOX_WAIT))):
+        raise SqlUnavailable(BUSY_MESSAGE)
+    try:
+        return _execute(question_id, schema_sql, stripped)
+    finally:
+        _slots.release()
 
 
 def _comparable(result, ordered):
@@ -253,16 +281,29 @@ def _comparable(result, ordered):
     return rows if ordered else sorted(rows)
 
 
+def _expected_result(question_id: int, schema_sql: str, solution_query: str):
+    key = (int(question_id), _fingerprint(schema_sql), _fingerprint(solution_query))
+    hit = _expected.get(key)
+    now = time.monotonic()
+    if hit and now - hit[0] < EXPECTED_TTL:
+        return hit[1]
+    try:
+        expected = run_query(question_id, schema_sql, solution_query)
+    except SqlUnavailable:
+        raise
+    except SqlError as e:
+        logger.error("SQL SANDBOX: reference solution for q%s failed: %s", question_id, e)
+        raise SqlQuestionBroken(BROKEN_REFERENCE)
+    if len(_expected) > 500:
+        _expected.clear()
+    _expected[key] = (now, expected)
+    return expected
+
+
 def check_query(question_id: int, schema_sql: str, candidate_query: str,
                 solution_query: str, ordered=False):
-    """
-    Grade a candidate query by running it and the reference side by side.
-
-    Comparing result sets (rather than query text) means any correct
-    formulation passes.
-    """
     actual = run_query(question_id, schema_sql, candidate_query)
-    expected = run_query(question_id, schema_sql, solution_query)
+    expected = _expected_result(question_id, schema_sql, solution_query)
 
     col_match = ([c.lower() for c in actual["columns"]] ==
                  [c.lower() for c in expected["columns"]])
@@ -287,22 +328,17 @@ def check_query(question_id: int, schema_sql: str, candidate_query: str,
 
 def drop_sandbox(question_id: int):
     db_name = sandbox_db_name(question_id)
+    _ready.pop(int(question_id), None)
     conn = _admin_conn()
     try:
         cur = conn.cursor()
         cur.execute(f"DROP DATABASE IF EXISTS `{db_name}`")
+        try:
+            cur.execute(
+                f"DELETE FROM `{Config.DB_NAME}`.cp_sql_sandboxes WHERE question_id = %s",
+                (int(question_id),))
+        except mysql.connector.Error:
+            logger.exception("SQL SANDBOX: could not clear fingerprint for q%s", question_id)
         cur.close()
     finally:
         conn.close()
-
-    # Forget the fingerprint too, so the next run rebuilds from scratch rather
-    # than believing a sandbox that no longer exists is already current.
-    meta = _admin_conn(database=Config.DB_NAME)
-    try:
-        cur = meta.cursor()
-        cur.execute("DELETE FROM cp_sql_sandboxes WHERE question_id = %s", (int(question_id),))
-        cur.close()
-    except mysql.connector.Error:
-        logger.exception("SQL SANDBOX: could not clear fingerprint for q%s", question_id)
-    finally:
-        meta.close()

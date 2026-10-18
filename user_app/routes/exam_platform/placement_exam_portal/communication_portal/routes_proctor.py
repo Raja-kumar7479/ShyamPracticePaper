@@ -18,7 +18,7 @@ except ImportError:
 from routes.exam_platform.placement_exam_portal.communication_portal.databases.proctor_db import ProctorDB
 from routes.exam_platform.placement_exam_portal.communication_portal.utils.utils_token import get_user_session, comm_login_required
 from routes.exam_platform.placement_exam_portal.communication_portal.utils.utils_secure_code  import secure_access_required
-from routes import users_bp 
+from routes import users_bp
 
 logger = logging.getLogger(__name__)
 db_ops = ProctorDB()
@@ -27,19 +27,13 @@ from config import Config
 UPLOAD_FOLDER_AUDIO = os.path.join(Config.UPLOAD_BASE, 'user_responses')
 UPLOAD_FOLDER_VERIFY = os.path.join(Config.UPLOAD_BASE, 'verification')
 
-# Proctor snapshots: a per-file ceiling, since the only other limit was the
-# global 32 MB request cap.
 MAX_SNAPSHOT_BYTES = 3 * 1024 * 1024
 MAX_AUDIO_BYTES = 15 * 1024 * 1024
 
 
 def _safe_path_part(value):
-    """Reduce a value to characters that cannot steer a filesystem path."""
     import re as _re
     cleaned = _re.sub(r'[^A-Za-z0-9._-]', '_', str(value or 'unknown'))
-    # Leading dots are stripped as well: "../../x" survives sanitising as
-    # "..__x", which is harmless as a path but makes a hidden file that a
-    # plain listing of the upload folder skips over.
     cleaned = cleaned.lstrip('.')
     return cleaned[:60] or 'unknown'
 os.makedirs(UPLOAD_FOLDER_AUDIO, exist_ok=True)
@@ -144,14 +138,14 @@ def _comm_premium_block(email, test_key):
     from routes.exam_platform.subscription_access import has_platform_subscription
     conn = db_ops.get_conn(); cursor = conn.cursor(dictionary=True)
     try:
-        cursor.execute("SELECT COALESCE(access_label,'inherit') AS a FROM comm_description WHERE test_key=%s", (test_key,))
+        cursor.execute("SELECT COALESCE(access_label,'inherit') AS a, test_id, code FROM comm_description WHERE test_key=%s", (test_key,))
         row = cursor.fetchone()
     finally:
         cursor.close(); conn.close()
-    if row and row['a'] == 'paid' and not has_platform_subscription(email):
+    if row and row['a'] == 'paid' and not has_platform_subscription(email, row.get('code')):
         logger.warning(f"COMM PREMIUM BLOCKED: [{email}] test {test_key} without subscription")
-        return True
-    return False
+        return True, row.get('test_id')
+    return False, (row or {}).get('test_id')
 
 @users_bp.route('/<round_name>/assessment_system_info/<test_key>/<course_code>/<unique_code>')
 @comm_login_required
@@ -159,17 +153,19 @@ def _comm_premium_block(email, test_key):
 def assessment_system_info(test_key, round_name, course_code, unique_code):
     email, username, _ = get_user_session()
 
-    if _comm_premium_block(email, test_key):
-        from routes.exam_platform.subscription_access import PREMIUM_ENDPOINT
+    blocked, block_section = _comm_premium_block(email, test_key)
+    if blocked:
+        from routes.exam_platform.subscription_access import premium_url
         flash('This is a premium assessment. Subscribe to unlock all tests.', 'test_error')
-        return redirect(url_for(PREMIUM_ENDPOINT))
+        return redirect(premium_url(course_code, unique_code, block_section))
 
     from routes.exam_platform.active_test_lock import active_test_redirect, blocked_message
     running = active_test_redirect(email, ignore_test_key=test_key)
     if running:
         logger.warning(f"COMM SYSINFO BLOCKED: [{email}] another test is running")
         flash(blocked_message(), 'test_error')
-        return redirect(running)
+        return redirect(url_for('users.round_assessments', round_name=round_name,
+                                course_code=course_code, unique_code=unique_code))
 
     actual_round = db_ops.get_round_for_test_key(test_key)
     if actual_round and actual_round != round_name:
@@ -180,18 +176,11 @@ def assessment_system_info(test_key, round_name, course_code, unique_code):
         status_row = cursor.fetchone()
 
     if status_row and status_row['status'] == 'completed':
-        return render_template('users/exam_platform/placement_exam_portal/communication_portal/test_completed.html', 
+        return render_template('users/exam_platform/placement_exam_portal/communication_portal/test_completed.html',
                                message="This test has already been submitted. You cannot restart it.")
 
-    meta = db_ops.get_assessment_meta(test_key)
-    target_url = url_for('users.assessment_intro', test_key=test_key, round_name=round_name, 
-                         course_code=course_code, unique_code=unique_code, _external=True)
-
-    return render_template('users/exam_platform/placement_exam_portal/communication_portal/system_info.html', 
-                           data=meta, seb_launch_link=target_url, 
-                           username=username, test_key=test_key, round_name=round_name, 
-                           course_code=course_code, unique_code=unique_code, 
-                           section_count=meta['total_sections'])
+    return redirect(url_for('users.assessment_intro', test_key=test_key, round_name=round_name,
+                            course_code=course_code, unique_code=unique_code))
 
 @users_bp.route('/<round_name>/assessment_intro/<test_key>/<course_code>/<unique_code>')
 @comm_login_required
@@ -199,21 +188,22 @@ def assessment_intro(test_key, round_name, course_code, unique_code):
     try:
         email, username, _ = get_user_session()
 
-        if _comm_premium_block(email, test_key):
-            from routes.exam_platform.subscription_access import PREMIUM_ENDPOINT
+        blocked, block_section = _comm_premium_block(email, test_key)
+        if blocked:
+            from routes.exam_platform.subscription_access import premium_url
             flash('This is a premium assessment. Subscribe to unlock all tests.', 'test_error')
-            return redirect(url_for(PREMIUM_ENDPOINT))
+            return redirect(premium_url(course_code, unique_code, block_section))
 
         meta = db_ops.get_assessment_meta(test_key)
         session['course_code'] = course_code
         session['unique_code'] = unique_code
-        
+
         with _db(dictionary=True) as (conn, cursor):
             cursor.execute("SELECT status FROM comm_user_log WHERE email=%s AND test_key=%s", (email, test_key))
             row = cursor.fetchone()
 
         if row and row['status'] == 'completed':
-             return render_template('users/exam_platform/placement_exam_portal/communication_portal/test_completed.html', 
+             return render_template('users/exam_platform/placement_exam_portal/communication_portal/test_completed.html',
                                    message="Test Terminated: This assessment is already completed.")
 
         from routes.exam_platform.active_test_lock import active_test_redirect, blocked_message
@@ -221,11 +211,12 @@ def assessment_intro(test_key, round_name, course_code, unique_code):
         if running:
             logger.warning(f"COMM INTRO BLOCKED: [{email}] another test is running")
             flash(blocked_message(), 'test_error')
-            return redirect(running)
+            return redirect(url_for('users.round_assessments', round_name=round_name,
+                                    course_code=course_code, unique_code=unique_code))
 
         token = db_ops.generate_session_token(email, test_key, course_code, unique_code)
         if not token:
-             return render_template('users/exam_platform/placement_exam_portal/communication_portal/test_completed.html', 
+             return render_template('users/exam_platform/placement_exam_portal/communication_portal/test_completed.html',
                                    message="Test Terminated: Unable to generate secure session.")
 
         wiped = db_ops.clear_attempt_details(email, test_key)
@@ -233,12 +224,8 @@ def assessment_intro(test_key, round_name, course_code, unique_code):
             logger.info(f"COMM FRESH SITTING: [{email}] {test_key} cleared {wiped} previous answer(s)")
 
         session['active_test_token'] = token
-        
-        # The camera / microphone / screen-share permission step was removed:
-        # the assessment needs none of them up front (the microphone is asked
-        # for by the browser itself when a speaking question starts recording),
-        # so the flow goes straight to candidate verification.
-        return redirect(url_for('users.assessment_verification', test_key=test_key,
+
+        return redirect(url_for('users.assessment_lobby', test_key=test_key,
                                 round_name=round_name, course_code=course_code,
                                 unique_code=unique_code))
     except Exception as e:
@@ -249,20 +236,8 @@ def assessment_intro(test_key, round_name, course_code, unique_code):
 @comm_login_required
 @secure_access_required(('course_code', 'unique_code'))
 def assessment_verification(test_key, round_name, course_code, unique_code):
-    email, username, _ = get_user_session()
-
-    if not validate_active_session_or_abort(test_key, email):
-        return render_template('users/exam_platform/placement_exam_portal/communication_portal/test_completed.html',
-                               message="Invalid Access: Session token invalid or test open in another window.")
-
-    meta = db_ops.get_assessment_meta(test_key)
-    current_token = session.get('active_test_token')
-
-    return render_template('users/exam_platform/placement_exam_portal/communication_portal/candidate_verify.html', 
-                           data=meta, email=email, username=username, test_key=test_key, 
-                           round_name=round_name, course_code=course_code, unique_code=unique_code, 
-                           section_count=meta['total_sections'],
-                           active_token=current_token)
+    return redirect(url_for('users.assessment_lobby', test_key=test_key, round_name=round_name,
+                            course_code=course_code, unique_code=unique_code))
 
 @users_bp.route('/<round_name>/assessment_lobby/<test_key>/<course_code>/<unique_code>')
 @comm_login_required
@@ -276,9 +251,9 @@ def assessment_lobby(test_key, round_name, course_code, unique_code):
 
         meta = db_ops.get_assessment_meta(test_key)
         sections = db_ops.get_assessment_sections(test_key)
-        return render_template('users/exam_platform/placement_exam_portal/communication_portal/exam_lobby.html', 
+        return render_template('users/exam_platform/placement_exam_portal/communication_portal/exam_lobby.html',
                                data=meta, sections=sections, section_count=len(sections),
-                               username=username, test_key=test_key, round_name=round_name, 
+                               username=username, email=email, test_key=test_key, round_name=round_name,
                                course_code=course_code, unique_code=unique_code)
     except Exception as e:
         logger.error(f"Lobby Error: {e}")
@@ -295,7 +270,7 @@ def start_proctored_test(test_key, course_code, unique_code):
 @comm_login_required
 def start_test_window(test_key, round_name, course_code, unique_code):
     email, username, _ = get_user_session()
-    
+
     token = session.get('active_test_token')
 
     if not token or not db_ops.validate_token(email, test_key, token):
@@ -310,7 +285,7 @@ def start_test_window(test_key, round_name, course_code, unique_code):
                                 course_code=course_code, unique_code=unique_code))
 
     meta = db_ops.get_assessment_meta(test_key)
-    return render_template('users/exam_platform/placement_exam_portal/communication_portal/test_window.html', 
+    return render_template('users/exam_platform/placement_exam_portal/communication_portal/test_window.html',
                            test_key=test_key, email=email, username=username,
                            round_name=round_name, course_code=course_code, unique_code=unique_code,
                            overall_time=meta['total_duration'] if meta else 3600,
@@ -323,16 +298,16 @@ def get_submit_answer():
     try:
         email, _, _ = get_user_session()
         test_key = request.form.get('test_key')
-        
+
         req_token = request.form.get('session_token')
-        
+
         if not req_token or not db_ops.validate_token(email, test_key, req_token):
              return jsonify({"status": "error", "message": "Multiple windows detected. Session invalidated."}), 403
 
         q_id = request.form.get('question_id')
         ans_type = request.form.get('type')
         db_path, sel_opt, txt_res = None, None, None
-        
+
         if ans_type == 'audio':
             if 'file' in request.files:
                 file = request.files['file']
@@ -347,7 +322,7 @@ def get_submit_answer():
                 filename = f"q{_safe_path_part(q_id)}_{uuid.uuid4().hex[:8]}.webm"
                 file.save(os.path.join(folder, filename))
                 db_path = f"static/uploads/{rel_folder}/{filename}"
-                
+
         elif ans_type == 'mcq':
             sel_opt = request.form.get('value')
         elif ans_type in ['text', 'writing', 'fill_blank']:
@@ -368,13 +343,13 @@ def get_submit_answer():
         data = {
             'email': email, 'test_key': test_key, 'question_id': q_id,
             'section_name': request.form.get('section_name'),
-            'selected_option': sel_opt, 
+            'selected_option': sel_opt,
             'text_response': txt_res,
             'audio_path': db_path, 'transcription': request.form.get('transcription', ''),
             'score': score,
             'rec_time': float(request.form.get('rec_time', 0))
         }
-        
+
         success = db_ops.submit_attempt(data)
         if success: return jsonify({"status": "success"})
         else: return jsonify({"status": "error"}), 500
@@ -395,10 +370,10 @@ def finish_test():
              return jsonify({'status': 'error', 'message': 'Invalid session'}), 403
         db_ops.finish_test_session(email, test_key)
         session.pop('active_test_token', None)
-        return jsonify({'redirect': url_for('users.get_test_feedback', 
-                                            test_key=test_key, 
-                                            round_name=data.get('round_name'), 
-                                            course_code=data.get('course_code'), 
+        return jsonify({'redirect': url_for('users.get_test_feedback',
+                                            test_key=test_key,
+                                            round_name=data.get('round_name'),
+                                            course_code=data.get('course_code'),
                                             unique_code=data.get('unique_code'))})
     except Exception as e:
         logger.error(f"Finish Error: {e}")
@@ -441,7 +416,7 @@ def get_test_data(test_key):
         for a in saved_attempts:
             if a['selected_option']: answers_map[str(a['question_id'])] = a['selected_option']
             elif a['text_response']: answers_map[str(a['question_id'])] = a['text_response']
-        return jsonify({"sections": sections, "questions": final_qs, "answers": answers_map}) 
+        return jsonify({"sections": sections, "questions": final_qs, "answers": answers_map})
     except Exception:
         logger.exception("GET TEST DATA FAILED")
         return jsonify({"error": "Could not load the test. Please refresh."}), 500
@@ -455,10 +430,11 @@ def get_test_feedback(test_key, round_name, course_code, unique_code):
 @comm_login_required
 def get_submit_feedback():
     try:
-        test_key = request.form.get('test_key'); email, _, _ = get_user_session()
-        db_ops.save_feedback(email, test_key, request.form.get('rating'), request.form.get('comments'))
-        # After feedback the student goes back to the round dashboard; the
-        # result is opened from there (View Result) when they choose to look.
+        test_key = (request.form.get('test_key') or '').strip(); email, _, _ = get_user_session()
+        if not test_key:
+            return jsonify({'status': 'error', 'message': 'test_key is required.'}), 400
+        if not db_ops.save_feedback(email, test_key, request.form.get('rating'), request.form.get('comments')):
+            return jsonify({'status': 'error', 'message': 'Your feedback could not be saved. Please try again.'}), 500
         round_name = request.form.get('round_name') or db_ops.get_round_for_test_key(test_key) or 'Communication'
         course_code = request.form.get('course_code') or session.get('course_code')
         unique_code = request.form.get('unique_code') or session.get('unique_code')
@@ -513,8 +489,6 @@ def get_test_result(test_key, round_name, course_code, unique_code):
         email, _, authenticated = get_user_session()
         if not authenticated or not email:
             return redirect(url_for('users.user_login'))
-        # A score is shown only after the assessment is genuinely completed, so
-        # a candidate cannot open the result page mid-test to peek at answers.
         if db_ops.get_user_test_status(email, test_key) != 'completed':
             logger.warning(f"COMM RESULT BLOCKED: [{email}] {test_key} not completed")
             return redirect(url_for('users.round_assessments', round_name=round_name,
@@ -568,7 +542,10 @@ def result_section(test_key, round_name, index, course_code, unique_code):
 @comm_login_required
 def expire_result():
     try:
-        data = request.json; email = data.get('email'); test_key = data.get('test_key'); session_email, _, _ = get_user_session()
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict) or not data.get('test_key'):
+            return jsonify({'status': 'error', 'message': 'Send email and test_key as JSON.'}), 400
+        email = data.get('email'); test_key = data.get('test_key'); session_email, _, _ = get_user_session()
         if session_email != email: return jsonify({'status': 'error', 'message': 'Unauthorized'}), 403
         db_ops.cleanup_user_data(email, test_key); return jsonify({"status": "deleted"})
     except Exception:
@@ -655,12 +632,6 @@ def comm_tab_release(test_key):
 
 @users_bp.route('/api/comm-window-closed/<test_key>', methods=['POST'])
 def comm_window_closed(test_key):
-    """The exam window was genuinely closed (not internal navigation).
-
-    The attempt stays 'started' so the dashboard still offers Resume, but the
-    heartbeat is aged so any other test can be opened immediately and the tab
-    claim is dropped.
-    """
     try:
         email, _, _ = get_user_session()
         if not email:

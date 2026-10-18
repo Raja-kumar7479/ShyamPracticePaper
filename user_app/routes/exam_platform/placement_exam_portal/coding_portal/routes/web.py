@@ -1,4 +1,3 @@
-"""Web section: run checks and submit HTML/CSS/JS."""
 import logging
 
 from flask import Blueprint, request, jsonify, abort
@@ -45,7 +44,6 @@ def _evaluate(question, payload, reveal_hidden):
     visible = assertions if reveal_hidden else [
         a for a in assertions if not a["is_hidden"]
     ]
-    # Running checks grades only visible assertions; submitting grades all.
     target = assertions if reveal_hidden else visible
 
     results, passed, total = web_evaluator.evaluate(
@@ -104,7 +102,6 @@ def submit(attempt_id):
         for r in results
     ])
 
-    # Hidden check details stay hidden in the response.
     shaped = [
         {"message": r["message"] if not r["is_hidden"] else "Hidden check",
          "status": r["status"],

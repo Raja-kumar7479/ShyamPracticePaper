@@ -1,0 +1,10 @@
+[mysqld]
+max_connections = 600
+innodb_buffer_pool_size = 8G
+innodb_flush_log_at_trx_commit = 1
+transaction_isolation = READ-COMMITTED
+slow_query_log = 1
+long_query_time = 1
+wait_timeout = 600
+thread_cache_size = 100
+log_bin_trust_function_creators = 1

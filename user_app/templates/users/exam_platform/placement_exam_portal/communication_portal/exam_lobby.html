@@ -57,6 +57,11 @@
 
         <div class="note-text">* Untimed: These sections do not have a specific time limit. Total Time of Untimed Sections = Total time of test - Total time of Timed sections</div>
 
+        <div class="form-check my-3" id="consentWrap">
+            <input class="form-check-input" type="checkbox" id="consentCheck">
+            <label class="form-check-label small" for="consentCheck">I am {{ username }} ({{ email }}). I have read the section details above and agree to the Terms and Privacy Notice for this proctored assessment.</label>
+        </div>
+
         <div class="start-area">
             <a href="{{ url_for('users.start_proctored_test', test_key=test_key, course_code=course_code, unique_code=unique_code) }}" class="text-decoration-none" id="startLink">
                 <button id="btnStart" class="btn-start" disabled>Start Test</button>
@@ -67,5 +72,6 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/users/exam_platform/exam_inplace_launch.js') }}"></script>
 <script src="{{ url_for('static', filename='js/users/exam_platform/placement_exam_portal/communication_portal/exam_lobby.js') }}"></script>
 {% endblock %}

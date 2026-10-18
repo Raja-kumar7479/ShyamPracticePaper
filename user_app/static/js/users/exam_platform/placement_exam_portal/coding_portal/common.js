@@ -22,7 +22,7 @@
     });
 
     if (res.status === 401) {
-      window.location.href = "/login";
+      window.location.href = "/user_login";
       throw new Error("Session expired");
     }
 
@@ -74,7 +74,7 @@
     if (!host) {
       host = CJ.el("div", { id: "cj-toasts" });
       host.style.cssText =
-        "position:fixed;right:18px;bottom:18px;z-index:200;display:flex;" +
+        "position:fixed;left:18px;top:18px;z-index:200;display:flex;" +
         "flex-direction:column;gap:8px;max-width:340px";
       document.body.appendChild(host);
     }
@@ -89,7 +89,7 @@
     setTimeout(function () {
       node.style.opacity = "0";
       setTimeout(() => node.remove(), 220);
-    }, 3600);
+    }, 3000);
   };
 
   CJ.initTabs = function (barSel, panelsSel, onSwitch) {

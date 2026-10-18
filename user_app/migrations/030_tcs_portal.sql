@@ -33,7 +33,3 @@ INSERT INTO content_sections (section_key, label, help_text, portal, editor, is_
 ON DUPLICATE KEY UPDATE
   label = VALUES(label), help_text = VALUES(help_text), portal = VALUES(portal),
   editor = VALUES(editor), is_available = VALUES(is_available);
-
-INSERT INTO course_group_sections (group_name, section_key, position) VALUES
-  ('PLACEMENT', 'tcs_test', 3)
-ON DUPLICATE KEY UPDATE position = VALUES(position);

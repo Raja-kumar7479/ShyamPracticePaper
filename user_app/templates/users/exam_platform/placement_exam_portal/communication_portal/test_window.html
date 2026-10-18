@@ -23,6 +23,7 @@
          data-confirm="0"
          data-confirm-text="Do you want to close the test? Your answers are saved - you can resume this assessment later from the dashboard."></div>
 
+    <div id="examSecure" hidden data-block-clipboard="1" data-watermark="{{ email }}"></div>
     <div id="examFullscreenGuard" hidden
          data-grace-seconds="20"
          data-terminate-url="{{ url_for('users.comm_terminate', test_key=test_key) }}"
@@ -192,5 +193,6 @@
 <script src="{{ url_for('static', filename='js/users/exam_platform/exam_exit_guard.js') }}"></script>
 <script src="{{ url_for('static', filename='js/users/exam_platform/exam_window_guard.js') }}"></script>
 <script src="{{ url_for('static', filename='js/users/exam_platform/exam_fullscreen_guard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/exam_secure.js') }}"></script>
 </body>
 </html>

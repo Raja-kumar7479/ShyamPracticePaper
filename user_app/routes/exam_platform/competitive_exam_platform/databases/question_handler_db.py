@@ -53,7 +53,8 @@ class ContentOperation:
 
     def get_note_course_and_label(self, file_path):
         query = """
-            SELECT cc.code, cc.label, cc.section_id
+            SELECT cc.code, cc.label, cc.section_id,
+                   COALESCE(nc.access_label, 'free') AS access_label
             FROM notes_content nc
             JOIN course_content cc ON nc.test_id = cc.section_id
             WHERE nc.file_path = %s
@@ -84,7 +85,10 @@ class ContentOperation:
                 utl.attempt_number
             FROM course_content c
             JOIN test_description td_desc ON c.section_id = td_desc.test_id
-            LEFT JOIN user_test_log utl ON td_desc.test_key = utl.test_key AND utl.email = %s
+            LEFT JOIN user_test_log utl ON utl.id = (
+                SELECT latest.id FROM user_test_log latest
+                WHERE latest.test_key = td_desc.test_key AND latest.email = %s
+                ORDER BY (latest.status = 'completed') DESC, latest.attempt_number DESC LIMIT 1)
             WHERE c.section_id = %s AND c.code = %s AND c.label = 'Paid'
             ORDER BY td_desc.id
         """
@@ -104,7 +108,10 @@ class ContentOperation:
                 utl.attempt_number
             FROM course_content c
             JOIN test_description td_desc ON c.section_id = td_desc.test_id
-            LEFT JOIN user_test_log utl ON td_desc.test_key = utl.test_key AND utl.email = %s
+            LEFT JOIN user_test_log utl ON utl.id = (
+                SELECT latest.id FROM user_test_log latest
+                WHERE latest.test_key = td_desc.test_key AND latest.email = %s
+                ORDER BY (latest.status = 'completed') DESC, latest.attempt_number DESC LIMIT 1)
             WHERE c.section_id = %s AND c.code = %s AND c.label = 'Free'
             ORDER BY td_desc.id
         """
@@ -182,6 +189,16 @@ class ContentOperation:
         query = "SELECT label FROM course_content WHERE section_id = %s"
         result = self.fetch_one(query, (section_id,))
         return result['label'] if result else None
+
+    def is_section_purchased(self, email, section_id):
+        query = """
+            SELECT 1 FROM purchase p
+            JOIN course_content cc ON cc.section_id = %s
+            WHERE p.email = %s AND p.status = 'Paid'
+              AND (p.section_id = cc.section_id OR (p.course_code = cc.code AND p.title = cc.title))
+            LIMIT 1
+        """
+        return self.fetch_one(query, (section_id, email)) is not None
 
     def get_locked_paid_mock_sections(self, course_code, email):
         conn = None

@@ -15,6 +15,9 @@ def process_readiness(section_id, test_key, course_code, unique_code):
         flash('You must acknowledge the instructions before proceeding.', 'test_error')
         return redirect(url_for('users.paper_instruction', section_id=section_id, test_key=test_key, course_code=course_code, unique_code=unique_code))
 
-    user_op.store_user_test_start(email, test_key, username, is_checkbox_checked=True, ready_to_begin=True)
+    attempt_number = user_op.store_user_test_start(email, test_key, username, is_checkbox_checked=True, ready_to_begin=True)
+    if not attempt_number:
+        flash('Test already completed. You cannot retake it.', 'test_warning')
+        return redirect(url_for('users.open_mock_test_section', section_id=section_id, course_code=course_code, unique_code=unique_code))
     flash('You are now ready to begin the test.', 'test_success')
     return redirect(url_for('users.start_test', section_id=section_id, test_key=test_key, course_code=course_code, unique_code=unique_code))

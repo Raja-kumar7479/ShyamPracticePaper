@@ -37,7 +37,6 @@
         return div.innerHTML;
     }
 
-    // ---------------- render one question ----------------
     function render() {
         if (index > maxSeen) maxSeen = index;
         var q = questions[index];
@@ -128,7 +127,6 @@
         }
     }
 
-    // ---------------- interactions ----------------
     el('qzOptions').addEventListener('click', function (e) {
         var btn = e.target.closest('.qz-opt');
         if (!btn || btn.disabled) return;

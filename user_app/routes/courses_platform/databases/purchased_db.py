@@ -1,4 +1,5 @@
 import mysql.connector
+from routes.db_pool import get_connection
 from mysql.connector import Error
 from config import Config
 import logging
@@ -9,12 +10,7 @@ logger = logging.getLogger(__name__)
 class UserOperation:
     def connection(self):
         try:
-            conn = mysql.connector.connect(
-                host=Config.DATABASE_HOST,
-                user=Config.DATABASE_USER,
-                password=Config.DATABASE_PASSWORD,
-                database=Config.DATABASE_NAME
-            )
+            conn = get_connection()
             return conn
         except Error as e:
             logger.critical(f"DATABASE CONNECTION ERROR: {e}")

@@ -1,21 +1,11 @@
-"""Data access for tests, sections, questions, attempts and submissions."""
 from .db import query_all, query_one, execute, get_cursor
 
 LANGUAGES = ["python", "java", "c", "cpp", "csharp", "javascript"]
 SECTION_TYPES = ["coding", "sql", "web"]
 
 
-# --- tests / sections ---
-
 def list_published_tests(course_code=None, test_id=None):
-    """Published coding tests, scoped to the course the student came from.
-
-    Without a scope this listed every coding test on the platform, so a student
-    opening one course's coding round saw other courses' tests too. test_id
-    narrows it further to a single content block when the caller knows which
-    one was clicked.
-    """
-    sql = ("SELECT id, slug, title, description, total_duration_min "
+    sql = ("SELECT id, slug, title, description, total_duration_min, access_label, code, test_id "
            "FROM cp_tests WHERE is_published = TRUE")
     params = []
     if test_id:
@@ -44,8 +34,6 @@ def get_test(test_id):
 
 
 def get_sections(test_id):
-    # question_count is carried here so the lobby can show what each section
-    # holds without a second query per row.
     return query_all(
         "SELECT s.id, s.title, s.section_type, s.duration_min, s.position, "
         "       (SELECT COUNT(*) FROM cp_questions q WHERE q.section_id = s.id) AS question_count "
@@ -54,11 +42,20 @@ def get_sections(test_id):
     )
 
 
+def get_section_totals(test_id):
+    return query_all(
+        "SELECT s.id, s.title, s.section_type, COUNT(q.id) AS question_count, "
+        "       COALESCE(SUM(q.marks), 0) AS marks "
+        "FROM cp_sections s LEFT JOIN cp_questions q ON q.section_id = s.id "
+        "WHERE s.test_id = %s GROUP BY s.id, s.title, s.section_type, s.position "
+        "ORDER BY s.position, s.id",
+        (test_id,),
+    )
+
+
 def get_section(section_id):
     return query_one("SELECT * FROM cp_sections WHERE id = %s", (section_id,))
 
-
-# --- questions ---
 
 def get_questions(section_id):
     return query_all(
@@ -73,7 +70,6 @@ def get_question(question_id):
 
 
 def get_question_full(question_id):
-    """Question plus the extras its section type needs."""
     q = get_question(question_id)
     if not q:
         return None
@@ -96,6 +92,8 @@ def get_question_full(question_id):
         if test_langs:
             narrowed = [l for l in q["languages"] if l in test_langs]
             q["languages"] = narrowed or test_langs
+        from .starter_templates import with_defaults
+        q["templates"] = with_defaults(q["templates"], q["languages"])
         q["sample_testcases"] = query_all(
             "SELECT id, input_text, expected_output FROM cp_testcases "
             "WHERE question_id = %s AND is_hidden = FALSE ORDER BY position, id",
@@ -126,8 +124,6 @@ def get_web_assertions(question_id):
         "ORDER BY position, id", (question_id,),
     )
 
-
-# --- attempts ---
 
 def get_or_create_attempt(test_id, user_id):
     row = query_one(
@@ -164,17 +160,22 @@ def submit_attempt(attempt_id):
 
 
 def mark_resumed(attempt_id):
-    """Start (or continue) the active-time segment when the exam is on screen."""
     execute(
-        "UPDATE cp_attempts SET resumed_at = NOW() "
-        "WHERE id = %s AND resumed_at IS NULL AND status = 'in_progress'",
+        "UPDATE cp_attempts SET resumed_at = IFNULL(resumed_at, NOW()), last_seen = NOW() "
+        "WHERE id = %s AND status = 'in_progress'",
         (attempt_id,),
     )
 
 
+def touch_attempt(attempt_id, user_id):
+    execute(
+        "UPDATE cp_attempts SET last_seen = NOW() "
+        "WHERE id = %s AND user_id = %s AND status = 'in_progress'",
+        (attempt_id, user_id),
+    )
+
+
 def pause_clock(attempt_id):
-    """Fold the running segment into elapsed_seconds; the timer stops while
-    the candidate is away and continues when they resume."""
     execute(
         "UPDATE cp_attempts SET "
         "  elapsed_seconds = elapsed_seconds + "
@@ -185,8 +186,6 @@ def pause_clock(attempt_id):
 
 
 def active_seconds(attempt_id):
-    """Time actually spent in the exam, computed entirely in DB time so the
-    application clock can never skew the timer."""
     row = query_one(
         "SELECT elapsed_seconds + "
         "       IFNULL(TIMESTAMPDIFF(SECOND, resumed_at, NOW()), 0) AS secs "
@@ -195,16 +194,8 @@ def active_seconds(attempt_id):
     return int(row["secs"] or 0) if row else 0
 
 
-# --- answers (autosave) ---
-
 def save_answer(attempt_id, question_id, *, language=None, code=None,
                 code_html=None, code_css=None, code_js=None, attempted=None):
-    """
-    Upsert a draft answer.
-
-    COALESCE on update keeps columns the caller did not send -- a coding
-    autosave must not blank the web editors and vice versa.
-    """
     execute(
         """
         INSERT INTO cp_answers (attempt_id, question_id, language, code,
@@ -230,17 +221,51 @@ def get_answer(attempt_id, question_id):
     )
 
 
-def get_attempted_map(attempt_id, section_id):
-    rows = query_all(
-        "SELECT a.question_id, a.is_attempted FROM cp_answers a "
-        "JOIN cp_questions q ON q.id = a.question_id "
-        "WHERE a.attempt_id = %s AND q.section_id = %s",
-        (attempt_id, section_id),
+def set_review(attempt_id, question_id, review):
+    execute(
+        """
+        INSERT INTO cp_answers (attempt_id, question_id, is_attempted, is_review)
+        VALUES (%s, %s, 0, %s)
+        ON DUPLICATE KEY UPDATE is_review = VALUES(is_review)
+        """,
+        (attempt_id, question_id, 1 if review else 0),
     )
-    return {r["question_id"]: bool(r["is_attempted"]) for r in rows}
 
 
-# --- submissions ---
+def get_answer_flags(attempt_id, section_id):
+    rows = query_all(
+        "SELECT q.id AS question_id, "
+        "       EXISTS(SELECT 1 FROM cp_submissions sub "
+        "               WHERE sub.attempt_id = %s AND sub.question_id = q.id) AS submitted, "
+        "       COALESCE((SELECT a.is_review FROM cp_answers a "
+        "                  WHERE a.attempt_id = %s AND a.question_id = q.id), 0) AS is_review "
+        "FROM cp_questions q WHERE q.section_id = %s",
+        (attempt_id, attempt_id, section_id),
+    )
+    return {r["question_id"]: {"attempted": bool(r["submitted"]), "review": bool(r["is_review"])}
+            for r in rows}
+
+
+def get_attempted_map(attempt_id, section_id):
+    return {qid: flags["attempted"] for qid, flags in get_answer_flags(attempt_id, section_id).items()}
+
+
+def reset_attempt(attempt_id):
+    with get_cursor(commit=True) as cur:
+        cur.execute("SELECT status FROM cp_attempts WHERE id = %s FOR UPDATE", (attempt_id,))
+        row = cur.fetchone()
+        if not row or row["status"] == "submitted":
+            return None
+        cur.execute("DELETE FROM cp_submissions WHERE attempt_id = %s", (attempt_id,))
+        cleared = cur.rowcount
+        cur.execute("DELETE FROM cp_answers WHERE attempt_id = %s", (attempt_id,))
+        cleared += cur.rowcount
+        cur.execute(
+            "UPDATE cp_attempts SET status = 'in_progress', submitted_at = NULL, progress_idx = 0, "
+            "       elapsed_seconds = 0, resumed_at = NULL, last_seen = NULL, started_at = NOW() "
+            "WHERE id = %s", (attempt_id,))
+        return cleared
+
 
 def store_submission(attempt_id, question_id, *, language, code, verdict,
                      passed, total, score, execution_time, error_message):
@@ -270,8 +295,6 @@ def store_submission_cases(submission_id, cases):
 
 
 def ensure_share_code(attempt_id):
-    """The attempt's public certificate code, minted on first use. Random and
-    unguessable, so the certificate URL can be public without exposing ids."""
     import secrets
     row = query_one("SELECT share_code FROM cp_attempts WHERE id = %s", (attempt_id,))
     if not row:
@@ -286,8 +309,6 @@ def ensure_share_code(attempt_id):
 
 
 def get_attempt_by_share_code(code):
-    """Certificate lookup: the submitted attempt plus what the public page may
-    show - the student's display name, never their email."""
     return query_one(
         """
         SELECT a.id, a.status, a.submitted_at, a.share_code,
@@ -303,23 +324,45 @@ def get_attempt_by_share_code(code):
 
 
 def unsubmitted_saved_answers(attempt_id):
-    """Coding answers the candidate wrote (autosaved) but never ran through
-    Submit Code. Finish grades these so written work is never scored as
-    'not attempted'."""
     return query_all(
         """
-        SELECT a.question_id, a.language, a.code
+        SELECT a.question_id, a.language, a.code, s.section_type
           FROM cp_answers a
           JOIN cp_questions q ON q.id = a.question_id
           JOIN cp_sections s ON s.id = q.section_id
          WHERE a.attempt_id = %s
-           AND s.section_type = 'coding'
+           AND s.section_type IN ('coding', 'sql')
            AND a.code IS NOT NULL AND a.code <> ''
            AND NOT EXISTS (SELECT 1 FROM cp_submissions sub
                             WHERE sub.attempt_id = a.attempt_id
                               AND sub.question_id = a.question_id)
         """,
         (attempt_id,),
+    )
+
+
+def pending_auto_grades(limit=20):
+    return query_all(
+        """
+        SELECT a.attempt_id, a.question_id, a.language, a.code, s.section_type, u.email
+          FROM cp_answers a
+          JOIN cp_attempts t ON t.id = a.attempt_id
+          JOIN cp_questions q ON q.id = a.question_id
+          JOIN cp_sections s ON s.id = q.section_id
+          JOIN auth u ON u.id = t.user_id
+         WHERE t.status = 'submitted'
+           AND t.submitted_at > NOW() - INTERVAL 6 HOUR
+           AND a.code IS NOT NULL AND a.code <> ''
+           AND ((s.section_type = 'coding' AND a.language IS NOT NULL
+                 AND EXISTS (SELECT 1 FROM cp_testcases tc WHERE tc.question_id = q.id))
+             OR (s.section_type = 'sql' AND q.solution_query IS NOT NULL AND q.solution_query <> ''))
+           AND NOT EXISTS (SELECT 1 FROM cp_submissions sub
+                            WHERE sub.attempt_id = a.attempt_id
+                              AND sub.question_id = a.question_id)
+         ORDER BY t.submitted_at, a.attempt_id, a.question_id
+         LIMIT %s
+        """,
+        (int(limit),),
     )
 
 

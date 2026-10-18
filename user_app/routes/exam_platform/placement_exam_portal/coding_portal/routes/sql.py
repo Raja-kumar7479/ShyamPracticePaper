@@ -1,4 +1,3 @@
-"""SQL section: Run Query (preview) and Check Query (grade)."""
 import logging
 
 from flask import Blueprint, request, jsonify, abort
@@ -7,7 +6,7 @@ from .. import models
 from ..auth_bridge import login_required, current_user, csrf_protect
 from ..extensions import limiter
 from ..services import sql_executor
-from ..services.sql_executor import SqlError
+from ..services.sql_executor import SqlError, SqlUnavailable
 
 logger = logging.getLogger(__name__)
 bp = Blueprint("coding_sql", __name__, url_prefix="/api/coding-portal/sql")
@@ -53,6 +52,8 @@ def run_query(attempt_id):
     try:
         result = sql_executor.run_query(
             question["id"], question["sandbox_schema_sql"], payload.get("query"))
+    except SqlUnavailable as e:
+        return jsonify({"error": str(e), "busy": True}), 503
     except SqlError as e:
         return jsonify({"error": str(e)}), 400
 
@@ -79,6 +80,8 @@ def check_query(attempt_id):
             question["solution_query"],
             ordered=bool(question.get("ordered_comparison")),
         )
+    except SqlUnavailable as e:
+        return jsonify({"error": str(e), "busy": True}), 503
     except SqlError as e:
         return jsonify({"error": str(e)}), 400
 

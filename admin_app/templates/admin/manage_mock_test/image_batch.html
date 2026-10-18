@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Bulk Image Questions - ShyamPracticePaper Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token is defined else '' }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-csrf.js') }}"></script>
+    <style>
+        :root { --brand: #833d17; --brand-dark: #6b3213; --gold: #f0ae06; }
+        body { background: #f6f2ee; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+        .ib-topbar { background: var(--brand); color: #fff; padding: 12px 24px; display: flex; align-items: center; gap: 14px; }
+        .ib-topbar a { color: #ffe9b0; text-decoration: none; }
+        .ib-wrap { max-width: 1500px; margin: 24px auto; padding: 0 20px 60px; }
+        .ib-card { background: #fff; border: 1px solid #e8ddd4; border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,.06); padding: 24px 28px; margin-bottom: 24px; }
+        .ib-card h5 { color: var(--brand); font-weight: 700; margin-bottom: 16px; }
+        .ib-step-num { display: inline-flex; width: 30px; height: 30px; border-radius: 50%; background: var(--brand); color: #fff; align-items: center; justify-content: center; font-weight: 700; margin-right: 10px; }
+        .ib-muted { color: #7a6a5f; font-size: .9rem; }
+        .form-label { font-weight: 600; }
+        .ib-canvas {
+            border: 2px dashed #e0d2c6; border-radius: 10px; background: #fffdf9;
+            max-height: 74vh; min-height: 420px; overflow: auto; padding: 12px;
+        }
+        .ib-stage { position: relative; display: block; width: fit-content; line-height: 0; margin: 0 auto; touch-action: none; }
+        .ib-stage img { display: block; max-width: 100%; max-height: calc(74vh - 30px); width: auto; height: auto; cursor: crosshair; user-select: none; }
+        .ib-region { position: absolute; border: 2px solid var(--brand); background: rgba(131,61,23,.12); border-radius: 4px; pointer-events: none; }
+        .ib-region--draft { border-style: dashed; }
+        .ib-region__tag { position: absolute; top: -11px; left: -11px; background: var(--brand); color: #fff; font-size: 11px; font-weight: 700; padding: 4px 7px; border-radius: 50%; line-height: 1; }
+        .ib-region__del { pointer-events: auto; position: absolute; top: -11px; right: -11px; width: 22px; height: 22px; border: none; border-radius: 50%; background: #dc3545; color: #fff; font-size: 13px; line-height: 1; cursor: pointer; }
+        .ib-nav { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 18px; }
+        .ib-progress-chip { font-size: .95rem; }
+        .ib-thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+        .ib-thumb { width: 40px; height: 40px; border-radius: 8px; border: 2px solid #d8c9bc; display: flex; align-items: center; justify-content: center; font-weight: 700; cursor: pointer; background: #fff; }
+        .ib-thumb.done { border-color: #198754; background: #eaf7f0; color: #198754; }
+        .ib-thumb.current { border-color: var(--brand); background: var(--brand); color: #fff; }
+        .ib-letter-group .btn { min-width: 56px; }
+        .btn-brand { background: var(--brand); border-color: var(--brand); color: #fff; }
+        .btn-brand:hover { background: var(--brand-dark); border-color: var(--brand-dark); color: #fff; }
+        .ib-guide h6 { color: var(--brand); font-weight: 700; }
+        .ib-guide code { background: #f6efe9; color: var(--brand-dark); padding: 1px 6px; border-radius: 4px; }
+        .ib-guide li { margin-bottom: .35rem; }
+        #ibSaveLog { max-height: 220px; overflow-y: auto; font-size: .85rem; }
+    </style>
+</head>
+<body>
+<div class="ib-topbar">
+    <i class="fas fa-images fa-lg"></i>
+    <strong>Bulk Image Questions</strong> <span class="opacity-75">- upload an Excel sheet + all images, then mark options one by one</span>
+    <a class="ms-auto" href="/manage-tests"><i class="fas fa-arrow-left me-1"></i>Back to Manage Tests</a>
+</div>
+
+<div class="ib-wrap">
+
+    <div class="ib-card">
+        <h5><span class="ib-step-num">1</span>Choose where the questions go</h5>
+        <div class="row g-3">
+            <div class="col-lg-4 col-md-6">
+                <label class="form-label">Mock Test (course content)</label>
+                <select class="form-select" id="ibTest"><option value="">Loading…</option></select>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <label class="form-label">Test Description</label>
+                <select class="form-select" id="ibDesc"><option value="">Select a test first</option></select>
+            </div>
+            <div class="col-lg-4 col-md-12">
+                <label class="form-label">Section</label>
+                <select class="form-select" id="ibSection"><option value="">Select a description first</option></select>
+            </div>
+            <div class="col-12 d-none" id="ibNewSection">
+                <div class="row g-2">
+                    <div class="col-md-4"><label class="form-label">New section ID</label>
+                        <input type="text" class="form-control" id="ibSectionId" maxlength="50" placeholder="e.g. SEC1"></div>
+                    <div class="col-md-8"><label class="form-label">New section name</label>
+                        <input type="text" class="form-control" id="ibSectionName" maxlength="100" placeholder="e.g. Physics"></div>
+                </div>
+            </div>
+        </div>
+        <p class="ib-muted mt-2 mb-0"><i class="fas fa-info-circle me-1"></i>Only competitive (mock test) descriptions support image questions. Communication tests use their own manual / sheet upload.</p>
+    </div>
+
+    <div class="ib-card">
+        <h5><span class="ib-step-num">2</span>Upload the Excel sheet and all question images</h5>
+        <div class="row g-3 align-items-end">
+            <div class="col-lg-4 col-md-6">
+                <label class="form-label">Excel / CSV sheet (one row per question)</label>
+                <input type="file" class="form-control" id="ibSheet" accept=".xlsx,.csv">
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <label class="form-label">Question images (select all at once)</label>
+                <input type="file" class="form-control" id="ibImages" accept="image/*" multiple>
+            </div>
+            <div class="col-lg-4 col-md-12 d-flex gap-2">
+                <button class="btn btn-brand" id="ibLoadBtn"><i class="fas fa-upload me-1"></i>Load batch</button>
+                <a class="btn btn-outline-secondary" id="ibTemplateBtn" href="#"><i class="fas fa-file-excel me-1"></i>Sheet template</a>
+            </div>
+        </div>
+        <div id="ibLoadMsg" class="alert mt-3 d-none"></div>
+    </div>
+
+    <div class="ib-card d-none" id="ibMarkerCard">
+        <h5><span class="ib-step-num">3</span>Mark each question’s options, then save all</h5>
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="mb-2"><span class="badge bg-secondary ib-progress-chip" id="ibProgress">Question 1 of 1</span>
+                    <span class="badge bg-light text-dark border ib-progress-chip" id="ibFileName"></span></div>
+                <div class="row g-2">
+                    <div class="col-6"><label class="form-label">Question Type</label>
+                        <select class="form-select" id="ibQType"><option>MCQ</option><option>MSQ</option></select></div>
+                    <div class="col-6"><label class="form-label">Level</label>
+                        <select class="form-select" id="ibQLevel"><option>Medium</option><option>Easy</option><option>Tough</option></select></div>
+                    <div class="col-6"><label class="form-label">Correct Marks</label>
+                        <input type="number" step="0.01" class="form-control" id="ibQMarks"></div>
+                    <div class="col-6"><label class="form-label">Negative Marks</label>
+                        <input type="text" class="form-control" id="ibQNegative" placeholder="0.33 or 1/3"></div>
+                    <div class="col-12"><label class="form-label">Correct Answer</label>
+                        <input type="text" class="form-control" id="ibQAnswer" placeholder="MCQ: b | MSQ: ac"></div>
+                </div>
+                <label class="form-label mt-3">Mark area for option:</label>
+                <div class="btn-group w-100 ib-letter-group" role="group" id="ibLetterGroup">
+                    <button type="button" class="btn btn-outline-dark active" data-letter="a">A</button>
+                    <button type="button" class="btn btn-outline-dark" data-letter="b">B</button>
+                    <button type="button" class="btn btn-outline-dark" data-letter="c">C</button>
+                    <button type="button" class="btn btn-outline-dark" data-letter="d">D</button>
+                </div>
+                <ul class="list-group mt-3" id="ibStatus"></ul>
+                <button type="button" class="btn btn-outline-secondary btn-sm w-100 mt-2" id="ibClearBtn"><i class="fas fa-eraser me-1"></i>Clear areas on this question</button>
+                <div class="ib-thumbs" id="ibThumbs"></div>
+            </div>
+            <div class="col-lg-8">
+                <div class="ib-canvas" id="ibCanvas">
+                    <div class="ib-stage" id="ibStage"><img id="ibImage" alt="Question image"></div>
+                </div>
+                <div class="ib-nav">
+                    <button class="btn btn-outline-dark btn-lg" id="ibPrevBtn"><i class="fas fa-arrow-left me-1"></i>Previous</button>
+                    <button class="btn btn-brand btn-lg px-5" id="ibSaveAllBtn"><i class="fas fa-save me-1"></i>Save all questions</button>
+                    <button class="btn btn-outline-dark btn-lg" id="ibNextBtn">Next<i class="fas fa-arrow-right ms-1"></i></button>
+                </div>
+                <div id="ibSaveMsg" class="alert mt-3 d-none"></div>
+                <div id="ibSaveLog" class="mt-2"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ib-card ib-guide">
+        <h5><i class="fas fa-book-open me-2"></i>Guidelines</h5>
+        <div class="accordion" id="ibGuideAcc">
+            <div class="accordion-item">
+                <h2 class="accordion-header"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#g1">How the bulk image upload works</button></h2>
+                <div id="g1" class="accordion-collapse collapse show" data-bs-parent="#ibGuideAcc"><div class="accordion-body">
+                    <ol>
+                        <li>Pick the <strong>test, description and section</strong> the questions belong to.</li>
+                        <li>Fill the <strong>sheet</strong> - one row per question with columns:
+                            <code>image_filename</code> (must exactly match an image file you upload),
+                            <code>question_type</code> (MCQ or MSQ), <code>correct_option</code> (b, or ac for MSQ),
+                            <code>correct_marks</code>, <code>negative_marks</code> (number or 1/3), <code>question_level</code> (Easy/Medium/Tough).</li>
+                        <li>Select <strong>all images at once</strong> and click <strong>Load batch</strong> - you’ll see “All images matched successfully”.</li>
+                        <li>For each question: the sheet data is pre-filled on the left; on the right <strong>drag a rectangle over each option’s row</strong> on the image (A, then B, C, D - the letter advances automatically). Use ⬅ ➡ to move between questions; green thumbnails are complete.</li>
+                        <li>Click <strong>Save all questions</strong> - every completed question uploads and stores in the database; a per-question log shows the result.</li>
+                    </ol>
+                    <p class="mb-0">Students see the full image with a clickable circle in front of each marked option - the circle sits in a clean margin, never covering the paper.</p>
+                </div></div>
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#g2">Mock test fields explained (manual &amp; sheet upload)</button></h2>
+                <div id="g2" class="accordion-collapse collapse" data-bs-parent="#ibGuideAcc"><div class="accordion-body">
+                    <ul>
+                        <li><strong>Test Description</strong> - one exam paper: title, total questions, total marks, duration. The question limit is enforced from here.</li>
+                        <li><strong>Section</strong> - a named group inside the paper (e.g. <code>SEC1</code> / Physics). Reuse the same Section ID to append questions.</li>
+                        <li><strong>question_type</strong> - <code>MCQ</code> one correct option; <code>MSQ</code> multiple correct (answer like <code>AC</code>); <code>NAT</code> numeric answer typed by the student.</li>
+                        <li><strong>correct_option</strong> - MCQ: one letter. MSQ: letters joined. NAT: the number itself.</li>
+                        <li><strong>correct_marks / negative_marks</strong> - marks awarded / penalty. Negative accepts fractions like <code>1/3</code>.</li>
+                        <li><strong>answer_text / answer_link</strong> - optional explanation shown after the test.</li>
+                    </ul>
+                </div></div>
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#g3">Communication questions - how to upload</button></h2>
+                <div id="g3" class="accordion-collapse collapse" data-bs-parent="#ibGuideAcc"><div class="accordion-body">
+                    <ol>
+                        <li>Create the description under a <strong>PLACEMENT</strong> course - loading its questions opens the <strong>Communication panel</strong> automatically.</li>
+                        <li>Add <strong>sections</strong> first (Speaking, Grammar, Listening, Writing…): title, instruction shown to the student, and duration in seconds. Names <code>SECTION_A/B/C…</code> are assigned automatically.</li>
+                        <li>Add questions <strong>manually</strong> or by <strong>sheet</strong>. The form changes per type:</li>
+                    </ol>
+                    <ul>
+                        <li><code>MCQ</code> - options A-D + correct option (grammar/vocabulary).</li>
+                        <li><code>SPEAK</code> - student reads the question text aloud; set <em>recording time</em> (default 45s).</li>
+                        <li><code>THINK_SPEAK</code> - topic speech; set <em>thinking time</em> (30s) + <em>recording time</em> (60s).</li>
+                        <li><code>COMPREHENSION</code> - listening MCQs; put the <em>audio URL on the first question only</em>, leave it empty on the rest (the same clip covers the section).</li>
+                        <li><code>WRITING</code> - email/essay prompt with a <em>word limit</em>.</li>
+                    </ul>
+                    <p class="mb-0">Download the comm sheet template from the panel - it contains one sample row of every type. Images are <strong>not</strong> used for communication questions.</p>
+                </div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="{{ url_for('static', filename='js/admin/manage_mock_test/image_batch.js') }}"></script>
+</body>
+</html>

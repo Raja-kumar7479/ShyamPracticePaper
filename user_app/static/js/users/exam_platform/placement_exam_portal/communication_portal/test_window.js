@@ -1,7 +1,7 @@
 history.pushState(null,null,location.href); window.onpopstate=()=>history.go(1);
         document.oncontextmenu=()=>false;
 
-        let failCount = 0; const FAIL_THRESHOLD = 5; let isOverlayShown = false;
+        let failCount = 0; const FAIL_THRESHOLD = 3; let isOverlayShown = false;
         function updateUI(status) {
             const icon = document.getElementById('wifiIcon'); const overlay = document.getElementById('offlineOverlay');
             icon.classList.remove('wifi-good', 'wifi-low', 'wifi-bad');
@@ -18,7 +18,7 @@ history.pushState(null,null,location.href); window.onpopstate=()=>history.go(1);
         }
         window.addEventListener('offline', () => { failCount = FAIL_THRESHOLD + 1; updateUI('offline'); });
         window.addEventListener('online', () => { checkConnection(); });
-        setInterval(checkConnection, 4000); checkConnection();
+        setInterval(checkConnection, 8000); checkConnection();
 
         let quill=null, recognition=null, transcript="", data={}, curSec=0, curQ=0, qs=[], submIds=[], revIds=[], secStatus=[];
         let sTime=0, gTime=0, recTime=0, sInt, gInt, rInt, rSec=0, mRec, chunks=[], thinkInt, recTimer;

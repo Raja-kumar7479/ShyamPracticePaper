@@ -33,13 +33,13 @@
           question_id: cfg.questionId,
           language: language,
           code: editor.getValue(),
-          attempted: true,
+          attempted: editor.getValue().trim().length > 0,
         };
       },
     });
 
     const COMPILER_LABEL = {
-      python: "Python 3.11", java: "Java - 21", c: "GCC 12",
+      python: "Python 3.11", java: "Java - 17", c: "GCC 12",
       cpp: "G++ 12", csharp: "Mono C# 6.8", javascript: "Node 18",
     };
 
@@ -328,9 +328,7 @@
             : "Submitted: " + data.passed + "/" + data.total + " passed",
           data.verdict === "AC" ? "ok" : "warn"
         );
-        CJ.$$('.qnav-btn[data-qid="' + cfg.questionId + '"], ' +
-              '.qgrid-item[data-qid="' + cfg.questionId + '"]')
-          .forEach(function (el) { el.classList.add("is-attempted"); });
+        CJ.markSubmitted(cfg.questionId);
         if (after) after();
       } catch (e) {
         CJ.toast(e.message, "error");

@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Question Upload</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.3/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/brand-bootstrap.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-light.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/manage_mock_test/test_details_insert.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/manage_mock_test/coding_question.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-utils.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-shell.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token is defined else '' }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-csrf.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-toast.css') }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-toast.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-confirm.css') }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-confirm.js') }}"></script>
+</head>
+<body>
+
+{% with page_key = 'tests' %}
+    {% include 'admin/_sidebar.html' %}
+{% endwith %}
+
+<div class="as-main">
+    <header class="as-topbar">
+        <button class="as-toggle" type="button" onclick="asToggle()" aria-label="Toggle menu">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h1 class="as-title">Test Question Upload</h1>
+        <span class="as-chip" id="mtSelectedTest">No test selected</span>
+    </header>
+    <div class="as-page">
+
+
+<div class="mt-content">
+
+
+            <div class="mb-4" id="mtPickerWrap">
+                <select id="testIdSelect" class="form-select is-hidden" aria-hidden="true" tabindex="-1"><option value="">-- Select a Test --</option></select>
+
+                <div id="mtPickedBar" class="mt-picked is-hidden">
+                    <span class="mt-badge mt-badge--course" id="mtPickedCourse"></span>
+                    <div class="mt-picked__text">
+                        <span class="mt-picked__path" id="mtPickedPath"></span>
+                        <strong id="mtPickedTitle"></strong>
+                        <code class="mt-id" id="mtPickedId"></code>
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm ms-auto" id="mtChangeTestBtn">
+                        <i class="fas fa-sync-alt me-1"></i> Change Test
+                    </button>
+                </div>
+
+                <div id="mtPicker" class="mt-picker">
+                    <ol class="mt-steps" id="mtSteps">
+                        <li class="mt-step is-active" data-stage="group"><span class="mt-step__num">1</span><span class="mt-step__text">Course group</span></li>
+                        <li class="mt-step" data-stage="course"><span class="mt-step__num">2</span><span class="mt-step__text">Course</span></li>
+                        <li class="mt-step" data-stage="content"><span class="mt-step__num">3</span><span class="mt-step__text">Test content</span></li>
+                    </ol>
+                    <div class="mt-picker__tools">
+                        <p class="mt-picker__lead" id="mtPickerLead">Choose the course group, for example GATE.</p>
+                        <div class="input-group mt-picker__search">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="search" id="mtPickerSearch" class="form-control" placeholder="Or search any test content by title, section ID or course...">
+                        </div>
+                    </div>
+                    <div class="mt-picker__grid" id="mtPickerGrid">
+                        <div class="mt-picker__loading"><div class="spinner-border spinner-border-sm"></div> Loading tests...</div>
+                    </div>
+                    <p class="mt-picker__count" id="mtPickerCount"></p>
+                </div>
+            </div>
+
+            <div id="mtNoTest" class="mt-hint">
+                <i class="fas fa-hand-pointer"></i>
+                <p>Choose the course group, then the course, then the test content. After that, add a test description and upload its questions.</p>
+            </div>
+
+            <div id="managementArea" class="is-hidden">
+
+                <section class="mt-view is-active" id="mtView-existing">
+                    <div class="mt-desc-head">
+                        <h3 class="mb-0">Test Descriptions</h3>
+                        <button type="button" class="btn btn-primary" id="mtAddToggle"><i class="fas fa-plus me-1"></i>Add new description</button>
+                    </div>
+                    <p class="text-muted small mb-3" id="mtDescLead">A test description is one paper: its key, title, question count, marks and duration. Open one with <i class="fas fa-tasks"></i> to upload its questions.</p>
+                    <p class="text-muted small mb-3 is-hidden" id="mtDescLeadTcs">Each row here is one TCS exam. Adding a description creates its aptitude paper and its coding part together. Upload the aptitude questions with <i class="fas fa-tasks"></i>, the coding problems with <i class="fas fa-code"></i>, then press <strong>Publish</strong> to show it to students.</p>
+                    <div id="addTestDescriptionContainer" class="form-section mt-addpanel is-hidden">
+                        <h3>Add New Test Description</h3>
+                        <form id="addTestDescriptionForm">
+                            <input type="hidden" id="addTestDescriptionTestId">
+                            <p class="text-muted small mb-2" id="descUsage"></p>
+                            <div class="mt-note mt-note--warn" id="descLimitNote" style="display:none">
+                                <i class="fas fa-ban me-1"></i> <span id="descLimitText">Limit reached.</span>
+                            </div>
+                            <div class="row" id="addAccessRow">
+                                <div class="col-md-6 mb-3" id="addAccessWrap">
+                                    <label class="form-label" for="addAccessLabel"><strong>1. Test Access</strong></label>
+                                    <select class="form-select" id="addAccessLabel">
+                                        <option value="" selected disabled>Choose Free or Premium first</option>
+                                        <option value="free">Free for everyone</option>
+                                        <option value="paid">Premium (subscription required)</option>
+                                    </select>
+                                    <small class="text-muted" id="addAccessHelp">Set this first: the Test Key is generated from it (<code>free_…</code> or <code>prem_…</code>). Premium tests show a lock and unlock with the course's Premium plan - so <strong>Premium is only accepted once the course has a plan in Premium Catalog</strong>; until then choose Free.</small>
+                                    <div class="mt-note mt-note--info mt-2" id="addAccessPaidNote" style="display:none">
+                                        <i class="fas fa-lock me-1"></i> This content is <strong>Paid</strong>: buying it unlocks every test inside, so there is no per-test premium setting.
+                                    </div>
+                                </div>
+                            </div>
+                            <fieldset id="addTestFields">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="addTestKey" class="form-label">2. Test Key</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="addTestKey" required readonly>
+                                        <button class="btn btn-outline-secondary" type="button" id="generateTestKeyBtn">Generate Key</button>
+                                    </div>
+                                    <small class="text-muted" id="addKeyHelp">Generated automatically from the access; press Generate for another one.</small>
+                                </div>
+                                <div class="col-md-6 mb-3"><label for="addSubjectTitle" class="form-label">Subject Title</label><input type="text" class="form-control" id="addSubjectTitle" required></div>
+                                <div class="col-md-6 mb-3"><label for="addSubjectSubtitle" class="form-label">Subject Subtitle</label><input type="text" class="form-control" id="addSubjectSubtitle" required></div>
+                                <div class="col-md-6 mb-3"><label for="addTotalQuestions" class="form-label">Total Questions</label><input type="number" class="form-control" id="addTotalQuestions" required></div>
+                                <div class="col-md-6 mb-3"><label for="addTotalMarks" class="form-label">Total Marks</label><input type="number" step="0.01" class="form-control" id="addTotalMarks" required></div>
+                                <div class="col-md-6 mb-3"><label for="addTotalDurationMinutes" class="form-label">Duration (Minutes)</label><input type="number" class="form-control" id="addTotalDurationMinutes" required></div>
+                                <div class="col-md-6 mb-3" id="addCalcWrap">
+                                    <label class="form-label">On-screen Calculator</label>
+                                    <div class="form-check form-switch mt-2">
+                                        <input class="form-check-input" type="checkbox" role="switch" id="addShowCalculator" checked>
+                                        <label class="form-check-label" for="addShowCalculator" id="addCalcLabel">Visible in the test window</label>
+                                    </div>
+                                    <small class="text-muted">Turn off to hide the calculator icon for this test.</small>
+                                </div>
+                            </div>
+                            </fieldset>
+                            <button type="submit" class="btn btn-primary" id="addDescriptionSubmit">Add Description</button>
+                        </form>
+                        <div id="addTestDescriptionMessage" class="alert mt-3 is-hidden"></div>
+                    </div>
+                    <div id="main-message-area"></div>
+                    <div class="table-responsive">
+                        <table id="testDescriptionsTable" class="table table-striped table-bordered w-full">
+                            <thead><tr><th>ID</th><th>Test Key</th><th>Subject</th><th>Questions</th><th>Marks</th><th>Duration</th><th>Actions</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+
+                    <div id="structurePanel" class="structure-panel is-hidden"></div>
+                    <div id="flaggedPanel" class="fq-panel"></div>
+
+                    <div id="questionManagementContainer" class="form-section is-hidden">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                            <h4 id="questionManagementHeader" class="mb-0">Manage Questions</h4>
+                            <button class="btn btn-outline-warning btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#guidelinesModal"><i class="fas fa-book-open me-1"></i> Guidelines</button>
+                        </div>
+                        <div id="questionActionMessage" class="alert is-hidden"></div>
+
+                        <div class="comm-card" id="sectionEntryContainer">
+                            <h5 class="comm-card__title"><span class="comm-step">1</span>Choose a section</h5>
+                            <p class="comm-hint">Every section of this test is listed here with its ID and name - you never need to remember them. Click a section to open it.</p>
+                            <div class="qm-sections" id="qmSectionList"><p class="text-muted mb-0">Loading sections...</p></div>
+                            <div class="qm-new" id="qmNewSection">
+                                <h6 class="qm-new__title"><i class="fas fa-folder-plus me-1"></i>Create a new section</h6>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-4"><label for="sectionIdInput" class="form-label">Section ID</label><input type="text" class="form-control" id="sectionIdInput" maxlength="50" placeholder="e.g. SEC1"></div>
+                                    <div class="col-md-5"><label for="sectionNameInput" class="form-label">Section Name</label><input type="text" class="form-control" id="sectionNameInput" maxlength="100" placeholder="e.g. Physics"></div>
+                                    <div class="col-md-3 d-grid"><button class="btn btn-primary" type="button" id="loadQuestionsForSectionBtn"><i class="fas fa-folder-open me-1"></i>Create &amp; open</button></div>
+                                </div>
+                                <small class="text-muted">A short ID (letters, numbers, - or _) and a readable name. The section appears in the list above once it has a question.</small>
+                            </div>
+                        </div>
+
+                        <div id="questionControls" class="is-hidden">
+                            <div class="qm-current">
+                                <span class="qm-current__label"><i class="fas fa-folder-open"></i> Section</span>
+                                <strong id="currentSectionBadge"></strong>
+                                <code id="qmCurrentId"></code>
+                                <button type="button" class="btn btn-link btn-sm p-0 qm-rename" id="qmRenameSection" title="Rename this section"><i class="fas fa-pen"></i></button>
+                                <span class="badge bg-info text-dark" id="questionCountBadge">Questions: 0 / 0</span>
+                                <div class="dropdown ms-auto">
+                                    <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" id="changeSectionBtn" data-bs-toggle="dropdown" aria-expanded="false"><i class="fas fa-right-left me-1"></i>Switch section</button>
+                                    <ul class="dropdown-menu dropdown-menu-end qm-switch" id="qmSwitchMenu"></ul>
+                                </div>
+                            </div>
+
+                            <div class="comm-card">
+                                <h5 class="comm-card__title"><span class="comm-step">2</span>Add questions to this section</h5>
+                                <div class="qm-note"><i class="fas fa-circle-info"></i><span>Store questions with an <strong>Excel sheet</strong> (many at once) or <strong>Manual entry</strong> (one at a time). Use the image options only when a question exists only as a picture.</span></div>
+                                <div class="qm-methods">
+                                    <button type="button" class="qm-method qm-method--primary" data-method="excel" data-bs-toggle="modal" data-bs-target="#uploadQuestionsCsvModal">
+                                        <span class="qm-method__badge">Recommended</span>
+                                        <span class="qm-method__icon"><i class="fas fa-file-excel"></i></span>
+                                        <strong>Excel / CSV sheet</strong>
+                                        <span class="qm-method__desc">Many questions at once. Download the template, fill it, upload it.</span>
+                                    </button>
+                                    <button type="button" class="qm-method" data-method="manual" data-bs-toggle="modal" data-bs-target="#addQuestionModal">
+                                        <span class="qm-method__icon"><i class="fas fa-keyboard"></i></span>
+                                        <strong>Manual entry</strong>
+                                        <span class="qm-method__desc">One question with the editor - text, options, formulas, code.</span>
+                                    </button>
+                                    <button type="button" class="qm-method qm-method--muted" data-method="image" data-bs-toggle="modal" data-bs-target="#imageQuestionModal">
+                                        <span class="qm-method__icon"><i class="fas fa-image"></i></span>
+                                        <strong>Image question</strong>
+                                        <span class="qm-method__desc">One screenshot per question - crop it and mark A-D on it.</span>
+                                    </button>
+                                    <a class="qm-method qm-method--muted" data-method="batch" id="qmBatchLink" href="/manage-tests/image-batch" target="_blank" rel="noopener">
+                                        <span class="qm-method__icon"><i class="fas fa-images"></i></span>
+                                        <strong>Bulk image upload</strong>
+                                        <span class="qm-method__desc">Excel sheet plus many question images, marked one by one.</span>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div class="comm-card">
+                                <h5 class="comm-card__title"><span class="comm-step">3</span>Questions in this section</h5>
+                                <div class="qm-bulkbar">
+                                    <label class="qm-check"><input type="checkbox" id="qmSelectAll"> Select all</label>
+                                    <span class="text-muted small" id="qmSelectedCount">0 selected</span>
+                                    <div class="input-group input-group-sm qm-find">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                        <input type="search" class="form-control" id="qmFind" placeholder="Find in this section...">
+                                    </div>
+                                    <button class="btn btn-outline-primary btn-sm" type="button" id="qmMarksSelected" disabled><i class="fas fa-star-half-stroke me-1"></i>Set marks</button>
+                                    <button class="btn btn-outline-primary btn-sm" type="button" id="qmMoveSelected" disabled><i class="fas fa-folder-tree me-1"></i>Move to...</button>
+                                    <button class="btn btn-danger btn-sm" type="button" id="qmDeleteSelected" disabled><i class="fas fa-trash me-1"></i>Delete selected</button>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle qm-table mb-0" id="qmQuestionTable">
+                                        <thead><tr><th class="qm-col-check"></th><th>#</th><th>Question</th><th>Type</th><th>Marks</th><th>Answer</th><th class="text-end">Actions</th></tr></thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                                <div id="noQuestionsMessage" class="mt-note mt-note--info is-hidden mt-2">No questions found for this section.</div>
+                                <div id="questionsDisplayArea" class="mt-3"></div>
+                                <div id="questionNavigation" class="navigation-buttons d-flex align-items-center flex-wrap gap-2 mt-3 is-hidden">
+                                    <button class="btn btn-secondary" type="button" id="prevQuestionBtn">Previous</button>
+                                    <button class="btn btn-primary" type="button" id="nextQuestionBtn">Next</button>
+                                    <div class="input-group ms-auto mw-240">
+                                        <span class="input-group-text">Go to Q#</span>
+                                        <input type="number" min="1" class="form-control" id="jumpToQuestionInput" placeholder="e.g. 12">
+                                        <button class="btn btn-outline-primary" type="button" id="jumpToQuestionBtn">Go</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="commManagementContainer" class="form-section is-hidden">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                            <h4 id="commManagementHeader" class="mb-0"><i class="fas fa-comments me-1"></i> Communication Questions</h4>
+                            <button class="btn btn-outline-warning btn-sm" data-bs-toggle="modal" data-bs-target="#guidelinesModal"><i class="fas fa-book-open me-1"></i> Guidelines</button>
+                        </div>
+                        <div id="commMessage" class="alert is-hidden"></div>
+
+                        <div class="comm-card">
+                            <h5 class="comm-card__title"><span class="comm-step">1</span>Sections</h5>
+                            <p class="comm-hint">A section groups questions of one activity (Speaking, Grammar, Listening, Writing…). Names <code>SECTION_A/B/C…</code> are assigned automatically in order.</p>
+                            <div class="table-responsive mb-3">
+                                <table class="table table-sm table-bordered align-middle mb-0" id="commSectionsTable">
+                                    <thead><tr><th>#</th><th>Name</th><th>Title</th><th>Instruction</th><th>Duration (sec)</th><th>Questions</th><th></th></tr></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                            <div class="row g-3 align-items-end">
+                                <div class="col-lg-4 col-md-6"><label class="form-label">Section Title</label><input type="text" class="form-control" id="commSecTitle" placeholder="e.g. Speaking (Read Aloud)"></div>
+                                <div class="col-lg-4 col-md-6"><label class="form-label">Instruction (shown to student)</label><input type="text" class="form-control" id="commSecInstruction" placeholder="Read the sentences aloud clearly..."></div>
+                                <div class="col-lg-2 col-md-6"><label class="form-label">Duration (seconds)</label><input type="number" class="form-control" id="commSecDuration" placeholder="600"></div>
+                                <div class="col-lg-2 col-md-6"><button class="btn btn-primary w-100" id="commAddSectionBtn"><i class="fas fa-plus me-1"></i>Add Section</button></div>
+                            </div>
+                        </div>
+
+                        <div class="comm-card">
+                            <h5 class="comm-card__title"><span class="comm-step">2</span>Add questions
+                                <span class="badge bg-info text-dark ms-2" id="commCountBadge">0 / 0</span></h5>
+                            <div class="qm-note"><i class="fas fa-circle-info"></i><span>Store questions with an <strong>Excel sheet</strong> (many at once) or <strong>Manual entry</strong> (one at a time). Pick one below.</span></div>
+                            <div class="qm-methods qm-methods--two" id="commMethods">
+                                <button type="button" class="qm-method qm-method--primary" data-comm-method="excel">
+                                    <span class="qm-method__badge">Recommended</span>
+                                    <span class="qm-method__icon"><i class="fas fa-file-excel"></i></span>
+                                    <strong>Excel / CSV sheet</strong>
+                                    <span class="qm-method__desc">Many questions at once. Download the template, fill it, upload it.</span>
+                                </button>
+                                <button type="button" class="qm-method" data-comm-method="manual">
+                                    <span class="qm-method__icon"><i class="fas fa-keyboard"></i></span>
+                                    <strong>Manual entry</strong>
+                                    <span class="qm-method__desc">One question at a time - the form changes with the question type.</span>
+                                </button>
+                            </div>
+
+                            <div class="qm-panel is-hidden" id="commExcelPanel">
+                                <h6 class="qm-panel__title"><i class="fas fa-file-excel me-1"></i>Excel / CSV upload</h6>
+                            <p class="comm-hint">Download a template (one sample row of every type), fill it, and upload. The <code>section_name</code> column must match a section from step 1 (SECTION_A, SECTION_B...). Every row is checked first - if any row has a problem nothing is saved, so you can fix the file and upload it again.</p>
+                            <div class="row g-3 align-items-end">
+                                <div class="col-lg-3 col-md-6 d-grid"><a class="btn btn-outline-primary" href="/api/comm-questions/csv-template?fmt=xlsx" download><i class="fas fa-file-excel me-1"></i>Excel template</a></div>
+                                <div class="col-lg-3 col-md-6 d-grid"><a class="btn btn-outline-secondary" href="/api/comm-questions/csv-template?fmt=csv" download><i class="fas fa-file-csv me-1"></i>CSV template</a></div>
+                                <div class="col-lg-4 col-md-6"><input type="file" class="form-control" id="commCsvFile" accept=".csv,.xlsx"></div>
+                                <div class="col-lg-2 col-md-6 d-grid"><button class="btn btn-info" id="commCsvUploadBtn"><i class="fas fa-upload me-1"></i>Upload</button></div>
+                            </div>
+                            <ul class="list-group mt-3 is-hidden" id="commCsvErrors"></ul>
+                            </div>
+
+                            <div class="qm-panel is-hidden" id="commManualPanel">
+                                <h6 class="qm-panel__title"><i class="fas fa-keyboard me-1"></i><span id="commManualTitle">Manual entry</span></h6>
+                                <input type="hidden" id="commEditId">
+                            <div class="row g-3 mb-1">
+                                <div class="col-lg-5 col-md-6"><label class="form-label">Section</label><select class="form-select" id="commQSection"></select></div>
+                                <div class="col-lg-4 col-md-6"><label class="form-label">Question Type</label>
+                                    <select class="form-select" id="commQType">
+                                        <option value="MCQ">MCQ - options on screen</option>
+                                        <option value="SPEAK">SPEAK - read aloud &amp; record</option>
+                                        <option value="THINK_SPEAK">THINK_SPEAK - topic speech</option>
+                                        <option value="WRITING">WRITING - typed answer</option>
+                                        <option value="COMPREHENSION">COMPREHENSION - listening MCQ</option>
+                                    </select></div>
+                                <div class="col-lg-3 col-md-6"><label class="form-label">Level</label>
+                                    <select class="form-select" id="commQLevel"><option>Medium</option><option>Easy</option><option>Tough</option></select></div>
+                            </div>
+                            <div class="row g-3 mb-1">
+                                <div class="col-lg-3 col-md-6 col-6"><label class="form-label">Marks</label><input type="number" step="0.01" class="form-control" id="commQMarks" value="5"></div>
+                                <div class="col-lg-3 col-md-6 col-6"><label class="form-label">Negative Marks</label><input type="text" class="form-control" id="commQNegative" value="0" placeholder="0.33 or 1/3"></div>
+                                <div class="col-lg-3 col-md-6 col-6 comm-grp" id="commGrpRec"><label class="form-label">Recording time (sec)</label><input type="number" class="form-control" id="commQRecTime" value="45"></div>
+                                <div class="col-lg-3 col-md-6 col-6 comm-grp" id="commGrpThink"><label class="form-label">Thinking time (sec)</label><input type="number" class="form-control" id="commQThinkTime" value="30"></div>
+                                <div class="col-lg-3 col-md-6 col-6 comm-grp" id="commGrpWord"><label class="form-label">Word limit</label><input type="number" class="form-control" id="commQWordLimit" value="150"></div>
+                            </div>
+                            <div class="row g-3 mb-1">
+                                <div class="col-lg-4"><label class="form-label">Instruction (short label)</label><input type="text" class="form-control" id="commQInstruction" placeholder="e.g. Read Aloud / Grammar"></div>
+                                <div class="col-lg-8"><label class="form-label">Question Text <span class="text-danger">*</span></label><textarea class="form-control" id="commQText" rows="3" placeholder="The sentence / topic / prompt shown to the student"></textarea></div>
+                            </div>
+
+                            <div class="comm-subcard comm-grp mt-3" id="commGrpMcq">
+                                <h6 class="comm-subcard__title"><i class="fas fa-list-check me-1"></i>Options &amp; correct answer</h6>
+                                <div class="row g-3 mb-1">
+                                    <div class="col-lg-6 comm-grp" id="commGrpMedia"><label class="form-label">Audio URL <span class="text-muted fw-normal">(first question of the section only)</span></label><input type="text" class="form-control" id="commQMedia" placeholder="/static/audio/clip.mp3"></div>
+                                    <div class="col-lg-3 col-md-6"><label class="form-label">Options Title</label><input type="text" class="form-control" id="commQOptTitle" placeholder="Select Option"></div>
+                                    <div class="col-lg-3 col-md-6"><label class="form-label">Correct option <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="commQCorrect">
+                                            <option value="">Choose…</option>
+                                            <option value="a">A</option>
+                                            <option value="b">B</option>
+                                            <option value="c">C</option>
+                                            <option value="d">D</option>
+                                        </select></div>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-6"><label class="form-label">Option A <span class="text-danger">*</span></label><input type="text" class="form-control" id="commQOptA"></div>
+                                    <div class="col-md-6"><label class="form-label">Option B <span class="text-danger">*</span></label><input type="text" class="form-control" id="commQOptB"></div>
+                                    <div class="col-md-6"><label class="form-label">Option C</label><input type="text" class="form-control" id="commQOptC"></div>
+                                    <div class="col-md-6"><label class="form-label">Option D</label><input type="text" class="form-control" id="commQOptD"></div>
+                                </div>
+                            </div>
+
+                                <div class="d-flex justify-content-end gap-2 mt-4">
+                                    <button class="btn btn-outline-secondary is-hidden" type="button" id="commCancelEdit">Cancel edit</button>
+                                    <button class="btn btn-success btn-lg px-5" type="button" id="commAddQuestionBtn"><i class="fas fa-plus me-1"></i><span id="commSaveLabel">Add Question</span></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="comm-card">
+                            <h5 class="comm-card__title d-flex align-items-center flex-wrap gap-2"><span class="comm-step">3</span>Questions in section
+                                <select class="form-select w-auto" id="commViewSection"></select>
+                            </h5>
+                            <div class="qm-bulkbar">
+                                <label class="qm-check"><input type="checkbox" id="commSelectAll"> Select all</label>
+                                <span class="text-muted small" id="commSelectedCount">0 selected</span>
+                                <div class="input-group input-group-sm qm-find">
+                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    <input type="search" class="form-control" id="commFind" placeholder="Find in this section...">
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm" type="button" id="commMarksSelected" disabled><i class="fas fa-star-half-stroke me-1"></i>Set marks</button>
+                                <button class="btn btn-outline-primary btn-sm" type="button" id="commMoveSelected" disabled><i class="fas fa-folder-tree me-1"></i>Move to...</button>
+                                <button class="btn btn-danger btn-sm" type="button" id="commDeleteSelected" disabled><i class="fas fa-trash me-1"></i>Delete selected</button>
+                            </div>
+                            <div id="commQuestionsList" class="mt-2"></div>
+                        </div>
+                    </div>
+
+                    <div id="codingManagementContainer" class="form-section is-hidden">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                            <h4 id="codingManagementHeader" class="mb-0"><i class="fas fa-code me-1"></i> Coding Questions</h4>
+                            <button class="btn btn-outline-warning btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#codingGuideModal">
+                                <i class="fas fa-book-open me-1"></i> How to write these
+                            </button>
+                        </div>
+                        <div id="codingMessage" class="alert is-hidden"></div>
+
+                        <div class="comm-card">
+                            <h5 class="comm-card__title"><i class="fas fa-code me-1"></i>Languages allowed in this test</h5>
+                            <p class="comm-hint">
+                                Candidates only see these languages in the editor. Leave all unticked to allow every language.
+                                For a TCS style exam tick Java, Python and C++ only.
+                            </p>
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <div class="cdp-langs" id="cdpTestLangs">
+                                    <label class="cdp-chip"><input type="checkbox" value="java"> java</label>
+                                    <label class="cdp-chip"><input type="checkbox" value="python"> python</label>
+                                    <label class="cdp-chip"><input type="checkbox" value="cpp"> cpp</label>
+                                    <label class="cdp-chip"><input type="checkbox" value="c"> c</label>
+                                    <label class="cdp-chip"><input type="checkbox" value="csharp"> csharp</label>
+                                    <label class="cdp-chip"><input type="checkbox" value="javascript"> javascript</label>
+                                </div>
+                                <button class="btn btn-outline-primary btn-sm" type="button" id="cdpSaveTestLangs">
+                                    <i class="fas fa-save me-1"></i>Save languages
+                                </button>
+                                <span class="text-muted small" id="cdpTestLangsNote"></span>
+                            </div>
+                        </div>
+
+                        <div class="comm-card">
+                            <h5 class="comm-card__title"><span class="comm-step">1</span>Sections</h5>
+                            <p class="comm-hint">
+                                Pick the <strong>type</strong> first - it decides the whole editor below.
+                                <strong>Coding</strong> = write a program, graded by running test cases.
+                                <strong>SQL</strong> = write a query against a sandbox schema.
+                                <strong>Web</strong> = build a page, graded by checks on the rendered HTML.
+                                One test can hold several sections, so an aptitude + coding paper is just two sections.
+                            </p>
+                            <div class="cdp-typepick" id="cdpTypePick">
+                                <label class="cdp-type is-active">
+                                    <input type="radio" name="cdpSectionType" value="coding" checked>
+                                    <span class="cdp-type__icon"><i class="fas fa-terminal"></i></span>
+                                    <span class="cdp-type__name">Coding</span>
+                                    <span class="cdp-type__desc">Statement, input format, example, test cases, starter code.</span>
+                                </label>
+                                <label class="cdp-type">
+                                    <input type="radio" name="cdpSectionType" value="sql">
+                                    <span class="cdp-type__icon"><i class="fas fa-database"></i></span>
+                                    <span class="cdp-type__name">SQL</span>
+                                    <span class="cdp-type__desc">Sandbox schema, solution query, expected rows.</span>
+                                </label>
+                                <label class="cdp-type">
+                                    <input type="radio" name="cdpSectionType" value="web">
+                                    <span class="cdp-type__icon"><i class="fab fa-html5"></i></span>
+                                    <span class="cdp-type__name">Web</span>
+                                    <span class="cdp-type__desc">Starter HTML/CSS/JS and DOM checks.</span>
+                                </label>
+                            </div>
+                            <div class="row g-2 align-items-end mt-2">
+                                <div class="col-lg-5 col-md-6">
+                                    <label class="form-label">Section title</label>
+                                    <input type="text" class="form-control" id="cdpSecTitle" placeholder="e.g. Advanced Coding - 1 (shown as a section tab in the exam window)">
+                                </div>
+                                <div class="col-lg-3 col-md-6">
+                                    <label class="form-label">Duration (minutes)</label>
+                                    <input type="number" class="form-control" id="cdpSecDuration" value="30" min="1" max="1440">
+                                </div>
+                                <div class="col-lg-4 col-md-6">
+                                    <button class="btn btn-primary w-100" type="button" id="cdpAddSectionBtn">
+                                        <i class="fas fa-plus me-1"></i>Add Section
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="table-responsive mt-3">
+                                <table class="table table-sm table-bordered align-middle mb-0" id="cdpSectionsTable">
+                                    <thead><tr><th>#</th><th>Type</th><th>Title</th><th>Duration</th><th>Questions</th><th></th></tr></thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="comm-card">
+                            <h5 class="comm-card__title d-flex align-items-center flex-wrap gap-2">
+                                <span class="comm-step">2</span>Coding questions in section
+                                <select class="form-select w-auto" id="cdpViewSection"></select>
+                            </h5>
+                            <p class="comm-hint">Every coding question stored for this exam. <strong>View</strong> shows the full question, test cases and starter code; <strong>Edit</strong> loads it into the editor below.</p>
+                            <div class="qm-bulkbar">
+                                <label class="qm-check"><input type="checkbox" id="cdpSelectAll"> Select all</label>
+                                <span class="text-muted small" id="cdpSelectedCount">0 selected</span>
+                                <button class="btn btn-danger btn-sm ms-auto" type="button" id="cdpDeleteSelected" disabled><i class="fas fa-trash me-1"></i>Delete selected</button>
+                            </div>
+                            <div id="cdpQuestionsList" class="mt-2"></div>
+                        </div>
+
+                        <div class="comm-card">
+                            <h5 class="comm-card__title d-flex align-items-center flex-wrap gap-2">
+                                <span class="comm-step">3</span><span id="cdpEditorHeading">Add a question to</span>
+                                <select class="form-select w-auto" id="cdpTargetSection"></select>
+                            </h5>
+                            <p class="comm-hint" id="cdpEditorHint">Create a section first, then choose it here.</p>
+
+                            <div id="cdpBulkBox" class="is-hidden" style="border:1px solid #e8e2db;border-radius:10px;padding:14px 16px;margin-bottom:14px;background:#fbf7f2">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                    <div>
+                                        <strong><i class="fas fa-file-arrow-up me-1" style="color:#6b1d2b"></i>Bulk import coding questions</strong>
+                                        <div class="comm-hint mb-0">One question per row (CSV or Excel). Add image URLs, per-language starter code, and any number of tc/hidden test cases. The whole file is checked first - nothing imports until every row is valid.</div>
+                                    </div>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <a class="btn btn-outline-primary btn-sm" id="cdpBulkCsvTpl" href="#"><i class="fas fa-download me-1"></i>CSV template</a>
+                                        <a class="btn btn-outline-primary btn-sm" id="cdpBulkXlsxTpl" href="#"><i class="fas fa-file-excel me-1"></i>Excel template</a>
+                                        <label class="btn btn-primary btn-sm mb-0"><i class="fas fa-upload me-1"></i>Upload CSV / Excel
+                                            <input type="file" id="cdpBulkFile" accept=".csv,.xlsx" hidden>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div id="cdpBulkResult" class="mt-2"></div>
+                            </div>
+
+                            <div id="cdpEditor" class="is-hidden">
+                                <input type="hidden" id="cdpQuestionId">
+
+                                <div class="row g-2">
+                                    <div class="col-lg-6"><label class="form-label">Question title</label>
+                                        <input type="text" class="form-control" id="cdpTitle" placeholder="e.g. Second largest element"></div>
+                                    <div class="col-lg-3"><label class="form-label">Difficulty</label>
+                                        <select class="form-select" id="cdpDifficulty">
+                                            <option>Easy</option><option selected>Medium</option><option>Hard</option>
+                                        </select></div>
+                                    <div class="col-lg-3"><label class="form-label">Marks</label>
+                                        <input type="number" class="form-control" id="cdpMarks" value="10" min="1" max="1000"></div>
+                                </div>
+
+                                <div class="cdp-part" data-part="statement">
+                                    <div class="cdp-part__head">
+                                        <h6>1. Question <span class="cdp-req">*</span></h6>
+                                        <div class="cdp-modes">
+                                            <button type="button" class="cdp-mode is-active" data-mode="text"><i class="fas fa-keyboard"></i> Type</button>
+                                            <button type="button" class="cdp-mode" data-mode="image"><i class="fas fa-image"></i> Image</button>
+                                        </div>
+                                    </div>
+                                    <div class="cdp-body" data-mode="text">
+                                        <textarea class="form-control cdp-mono" id="cdpStatement" rows="5"
+                                                  placeholder="Describe the problem exactly as the candidate should read it."></textarea>
+                                    </div>
+                                    <div class="cdp-body is-hidden" data-mode="image">
+                                        <input type="file" class="form-control cdp-pick" accept="image/*" data-slot="statement_image">
+                                        <small class="cdp-help">Upload a photo or scan. You can crop it and hide any part before saving.</small>
+                                        <div class="cdp-preview" data-slot="statement_image"></div>
+                                    </div>
+                                </div>
+
+                                <div class="cdp-part" data-part="input">
+                                    <div class="cdp-part__head">
+                                        <h6>2. Input format</h6>
+                                        <div class="cdp-modes">
+                                            <button type="button" class="cdp-mode is-active" data-mode="text"><i class="fas fa-keyboard"></i> Type</button>
+                                            <button type="button" class="cdp-mode" data-mode="image"><i class="fas fa-image"></i> Image</button>
+                                        </div>
+                                    </div>
+                                    <div class="cdp-body" data-mode="text">
+                                        <textarea class="form-control cdp-mono" id="cdpInputSpec" rows="3"
+                                                  placeholder="First line: n. Second line: n space-separated integers."></textarea>
+                                    </div>
+                                    <div class="cdp-body is-hidden" data-mode="image">
+                                        <input type="file" class="form-control cdp-pick" accept="image/*" data-slot="input_image">
+                                        <div class="cdp-preview" data-slot="input_image"></div>
+                                    </div>
+                                </div>
+
+                                <div class="cdp-part" data-part="example">
+                                    <div class="cdp-part__head">
+                                        <h6>3. Example</h6>
+                                        <div class="cdp-modes">
+                                            <button type="button" class="cdp-mode is-active" data-mode="text"><i class="fas fa-keyboard"></i> Type</button>
+                                            <button type="button" class="cdp-mode" data-mode="image"><i class="fas fa-image"></i> Image</button>
+                                        </div>
+                                    </div>
+                                    <div class="cdp-body" data-mode="text">
+                                        <textarea class="form-control cdp-mono" id="cdpExample" rows="4"
+                                                  placeholder="Input:&#10;5&#10;1 2 3 4 5&#10;&#10;Output:&#10;4"></textarea>
+                                    </div>
+                                    <div class="cdp-body is-hidden" data-mode="image">
+                                        <input type="file" class="form-control cdp-pick" accept="image/*" data-slot="example_image">
+                                        <div class="cdp-preview" data-slot="example_image"></div>
+                                    </div>
+                                </div>
+
+                                <div class="cdp-only" data-only="coding">
+                                    <div class="cdp-part">
+                                        <div class="cdp-part__head"><h6>Languages &amp; limits</h6></div>
+                                        <label class="form-label">Allowed languages</label>
+                                        <div class="cdp-langs" id="cdpLangs">
+                                            <label class="cdp-chip"><input type="checkbox" value="python" checked> python</label>
+                                            <label class="cdp-chip"><input type="checkbox" value="java" checked> java</label>
+                                            <label class="cdp-chip"><input type="checkbox" value="c" checked> c</label>
+                                            <label class="cdp-chip"><input type="checkbox" value="cpp" checked> cpp</label>
+                                            <label class="cdp-chip"><input type="checkbox" value="csharp" checked> csharp</label>
+                                            <label class="cdp-chip"><input type="checkbox" value="javascript" checked> javascript</label>
+                                        </div>
+                                        <div class="row g-2 mt-2">
+                                            <div class="col-md-4"><label class="form-label">Time limit (sec/run)</label>
+                                                <input type="number" class="form-control" id="cdpTimeLimit" value="10" min="1" max="300"></div>
+                                            <div class="col-md-4"><label class="form-label">Memory limit</label>
+                                                <input type="text" class="form-control" id="cdpMemory" value="512m" placeholder="256m, 512m or 1g" pattern="^\d+\s*[kmgKMG]?[bB]?$" title="A number with a unit: 256m, 512m or 1g"></div>
+                                            <div class="col-md-4"><label class="form-label">Output format</label>
+                                                <input type="text" class="form-control" id="cdpOutputSpec" placeholder="A single integer"></div>
+                                        </div>
+                                        <div class="row g-2 mt-2">
+                                            <div class="col-md-4"><label class="form-label">Answer comparison</label>
+                                                <select class="form-select" id="cdpCompareMode">
+                                                    <option value="exact">Exact match (default)</option>
+                                                    <option value="float">Float - numbers within tolerance</option>
+                                                    <option value="unordered">Unordered - lines in any order</option>
+                                                </select></div>
+                                            <div class="col-md-4" id="cdpFloatTolBox" style="display:none"><label class="form-label">Float tolerance</label>
+                                                <input type="text" class="form-control" id="cdpFloatTol" placeholder="0.000001"></div>
+                                            <div class="col-md-4 d-flex align-items-end"><small class="text-muted" id="cdpCompareHint">Output is matched exactly (whitespace-trimmed).</small></div>
+                                        </div>
+                                    </div>
+                                    <div class="cdp-part">
+                                        <div class="cdp-part__head">
+                                            <h6>Starter code <small class="cdp-help">shown in the candidate's editor</small></h6>
+                                            <button type="button" class="btn btn-outline-primary btn-sm" id="cdpFillStarter"><i class="fas fa-wand-magic-sparkles me-1"></i>Fill TCS-style starter code</button>
+                                            <div class="cdp-tabs" id="cdpTplTabs">
+                                                <button type="button" class="cdp-tab is-active" data-lang="python">python</button>
+                                                <button type="button" class="cdp-tab" data-lang="java">java</button>
+                                                <button type="button" class="cdp-tab" data-lang="c">c</button>
+                                                <button type="button" class="cdp-tab" data-lang="cpp">cpp</button>
+                                                <button type="button" class="cdp-tab" data-lang="csharp">csharp</button>
+                                                <button type="button" class="cdp-tab" data-lang="javascript">javascript</button>
+                                            </div>
+                                        </div>
+                                        <small class="cdp-help d-block mb-2">Exactly this text opens in the candidate's editor for that language. Leave a language empty and the candidate gets the standard TCS-style skeleton (class <code>Main</code> for Java, <code>main()</code> for C / C++).</small>
+                                        <textarea class="form-control cdp-mono cdp-tpl" data-lang="python" rows="6"></textarea>
+                                        <textarea class="form-control cdp-mono cdp-tpl is-hidden" data-lang="java" rows="6"></textarea>
+                                        <textarea class="form-control cdp-mono cdp-tpl is-hidden" data-lang="c" rows="6"></textarea>
+                                        <textarea class="form-control cdp-mono cdp-tpl is-hidden" data-lang="cpp" rows="6"></textarea>
+                                        <textarea class="form-control cdp-mono cdp-tpl is-hidden" data-lang="csharp" rows="6"></textarea>
+                                        <textarea class="form-control cdp-mono cdp-tpl is-hidden" data-lang="javascript" rows="6"></textarea>
+                                    </div>
+                                </div>
+
+                                <div class="cdp-only is-hidden" data-only="sql">
+                                    <div class="cdp-part">
+                                        <div class="cdp-part__head"><h6>Sandbox schema <span class="cdp-req">*</span></h6></div>
+                                        <textarea class="form-control cdp-mono" id="cdpSandbox" rows="6"
+                                                  placeholder="CREATE TABLE employees (id INT, name VARCHAR(50), salary INT);&#10;INSERT INTO employees VALUES (1,'Asha',50000);"></textarea>
+                                        <small class="cdp-help">Runs before the candidate's query. Include CREATE TABLE and the seed rows.</small>
+                                    </div>
+                                    <div class="cdp-part">
+                                        <div class="cdp-part__head"><h6>Solution query <span class="cdp-req">*</span></h6></div>
+                                        <textarea class="form-control cdp-mono" id="cdpSolution" rows="4"
+                                                  placeholder="SELECT name FROM employees ORDER BY salary DESC;"></textarea>
+                                        <small class="cdp-help">The candidate's rows are compared against this query's rows.</small>
+                                        <label class="cdp-chip mt-2"><input type="checkbox" id="cdpOrdered"> Row order matters</label>
+                                        <label class="form-label mt-2">Schema diagram (optional)</label>
+                                        <input type="file" class="form-control cdp-pick" accept="image/*" data-slot="schema_image_path">
+                                        <div class="cdp-preview" data-slot="schema_image_path"></div>
+                                    </div>
+                                </div>
+
+                                <div class="cdp-only is-hidden" data-only="web">
+                                    <div class="cdp-part">
+                                        <div class="cdp-part__head">
+                                            <h6>Starter files</h6>
+                                            <div class="cdp-tabs" id="cdpWebTabs">
+                                                <button type="button" class="cdp-tab is-active" data-web="html">HTML</button>
+                                                <button type="button" class="cdp-tab" data-web="css">CSS</button>
+                                                <button type="button" class="cdp-tab" data-web="js">JS</button>
+                                            </div>
+                                        </div>
+                                        <textarea class="form-control cdp-mono cdp-web" data-web="html" rows="6"></textarea>
+                                        <textarea class="form-control cdp-mono cdp-web is-hidden" data-web="css" rows="6"></textarea>
+                                        <textarea class="form-control cdp-mono cdp-web is-hidden" data-web="js" rows="6"></textarea>
+                                    </div>
+                                    <div class="cdp-part">
+                                        <div class="cdp-part__head">
+                                            <h6>Checks <span class="cdp-req">*</span></h6>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" id="cdpAddAssertion">
+                                                <i class="fas fa-plus me-1"></i>Add check
+                                            </button>
+                                        </div>
+                                        <small class="cdp-help">Each check inspects the rendered page, e.g. "element exists" with selector <code>#app .card</code>.</small>
+                                        <div id="cdpAssertions" class="cdp-rows mt-2"></div>
+                                    </div>
+                                </div>
+
+                                <div class="cdp-only" data-only="coding sql">
+                                    <div class="cdp-part">
+                                        <div class="cdp-part__head">
+                                            <h6>Test cases</h6>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" id="cdpAddTestcase">
+                                                <i class="fas fa-plus me-1"></i>Add test case
+                                            </button>
+                                        </div>
+                                        <small class="cdp-help">Visible cases are shown to the candidate. Hidden ones only count at submission - add at least one hidden case so answers cannot be hard-coded.</small>
+                                        <div id="cdpTestcases" class="cdp-rows mt-2"></div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex gap-2 justify-content-end mt-3">
+                                    <button type="button" class="btn btn-outline-secondary is-hidden" id="cdpCancelEdit">
+                                        <i class="fas fa-times me-1"></i>Cancel edit
+                                    </button>
+                                    <button type="button" class="btn btn-primary" id="cdpSaveBtn">
+                                        <i class="fas fa-save me-1"></i><span id="cdpSaveLabel">Save question</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+
+            </div>
+        </div>
+
+<div class="modal fade" id="editTestDescriptionModal" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Edit Test Description</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <form id="editTestDescriptionForm">
+            <input type="hidden" id="editTestDescriptionId">
+            <div class="mb-3"><label for="editTestKey" class="form-label">Test Key</label><input type="text" class="form-control" id="editTestKey" required readonly></div>
+            <div class="mb-3"><label for="editSubjectTitle" class="form-label">Subject Title</label><input type="text" class="form-control" id="editSubjectTitle" required></div>
+            <div class="mb-3"><label for="editSubjectSubtitle" class="form-label">Subject Subtitle</label><input type="text" class="form-control" id="editSubjectSubtitle" required></div>
+            <div class="mb-3"><label for="editTotalQuestions" class="form-label">Total Questions</label><input type="number" class="form-control" id="editTotalQuestions" required></div>
+            <div class="mb-3"><label for="editTotalMarks" class="form-label">Total Marks</label><input type="number" step="0.01" class="form-control" id="editTotalMarks" required></div>
+            <div class="mb-3"><label for="editTotalDurationMinutes" class="form-label">Duration (Minutes)</label><input type="number" class="form-control" id="editTotalDurationMinutes" required></div>
+            <div id="editCalcWrap" class="mb-3">
+                <label class="form-label">On-screen Calculator</label>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="editShowCalculator">
+                    <label class="form-check-label" for="editShowCalculator">Visible in the test window</label>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="editAccessLabel" class="form-label">Test Access</label>
+                <select class="form-select" id="editAccessLabel">
+                    <option value="inherit" hidden>Unlocked by buying this content</option>
+                    <option value="free">Free for everyone</option>
+                    <option value="paid">Premium (subscription required)</option>
+                </select>
+                <small class="text-muted" id="editAccessNote">Premium tests show a lock and unlock with the course's Premium plan; the course must have a plan in Premium Catalog before a test can be Premium.</small>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
+        <div id="editTestDescriptionMessage" class="alert mt-3 is-hidden"></div>
+    </div>
+</div></div></div>
+
+<div class="modal fade" id="addQuestionModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Add New Question <span class="qm-target"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <form id="addQuestionForm">
+            <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label">Question Type</label><select class="form-select" id="addQuestionType" required><option value="">Select Type</option><option value="MCQ">MCQ</option><option value="MSQ">MSQ</option><option value="NAT">NAT</option></select></div>
+                <div class="col-md-6 mb-3"><label class="form-label">Question Level</label><select class="form-select" id="addQuestionLevel" required><option value="Medium">Medium</option><option value="Easy">Easy</option><option value="Tough">Tough</option></select></div>
+                <div class="col-md-6 mb-3"><label class="form-label">Correct Marks</label><input type="number" step="0.01" class="form-control" id="addCorrectMarks" required></div>
+                <div class="col-md-6 mb-3"><label class="form-label">Negative Marks</label><input type="text" class="form-control" id="addNegativeMarks" placeholder="e.g., 0.25 or 1/4"></div>
+            </div>
+            <div class="mb-3"><label class="form-label">Question Text</label><div id="addQuestionTextEditor" class="quill-editor"></div></div>
+            <div id="mcqMsqOptions">
+                <div class="mb-3"><label class="form-label">Option A</label><div id="addOptionAEditor" class="quill-editor"></div></div>
+                <div class="mb-3"><label class="form-label">Option B</label><div id="addOptionBEditor" class="quill-editor"></div></div>
+                <div class="mb-3"><label class="form-label">Option C</label><div id="addOptionCEditor" class="quill-editor"></div></div>
+                <div class="mb-3"><label class="form-label">Option D</label><div id="addOptionDEditor" class="quill-editor"></div></div>
+            </div>
+            <div class="mb-3"><label class="form-label">Correct Answer</label><input type="text" class="form-control" id="addCorrectOption" required placeholder="MCQ: A | MSQ: AB | NAT: 12.3"></div>
+            <div class="mb-3"><label class="form-label">Answer Explanation</label><div id="addAnswerTextEditor" class="quill-editor"></div></div>
+            <div class="mb-3"><label class="form-label">Explanation Link</label><input type="text" class="form-control" id="addAnswerLink" placeholder="Optional link"></div>
+            <div class="d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">Add Question</button>
+                <button type="submit" class="btn btn-outline-primary" id="addQuestionAnother" title="Saves this question and keeps type, marks and level for the next one"><i class="fas fa-plus me-1"></i>Save &amp; add another</button>
+            </div>
+        </form>
+        <div id="addQuestionMessage" class="alert mt-3 is-hidden"></div>
+    </div>
+</div></div></div>
+
+<div class="modal fade" id="editQuestionModal" tabindex="-1"><div class="modal-dialog modal-lg"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Edit Question</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <form id="editQuestionForm">
+            <input type="hidden" id="editQuestionId">
+            <div class="row">
+                <div class="col-md-6 mb-3"><label class="form-label">Question Type</label><select class="form-select" id="editQuestionType" required><option value="">Select Type</option><option value="MCQ">MCQ</option><option value="MSQ">MSQ</option><option value="NAT">NAT</option></select></div>
+                <div class="col-md-6 mb-3"><label class="form-label">Question Level</label><select class="form-select" id="editQuestionLevel" required><option value="Medium">Medium</option><option value="Easy">Easy</option><option value="Tough">Tough</option></select></div>
+                <div class="col-md-6 mb-3"><label class="form-label">Correct Marks</label><input type="number" step="0.01" class="form-control" id="editCorrectMarks" required></div>
+                <div class="col-md-6 mb-3"><label class="form-label">Negative Marks</label><input type="text" class="form-control" id="editNegativeMarks"></div>
+            </div>
+            <div class="mb-3"><label class="form-label">Question Text</label><div id="editQuestionTextEditor" class="quill-editor"></div></div>
+            <div id="editMcqMsqOptions">
+                <div class="mb-3"><label class="form-label">Option A</label><div id="editOptionAEditor" class="quill-editor"></div></div>
+                <div class="mb-3"><label class="form-label">Option B</label><div id="editOptionBEditor" class="quill-editor"></div></div>
+                <div class="mb-3"><label class="form-label">Option C</label><div id="editOptionCEditor" class="quill-editor"></div></div>
+                <div class="mb-3"><label class="form-label">Option D</label><div id="editOptionDEditor" class="quill-editor"></div></div>
+            </div>
+            <div class="mb-3"><label class="form-label">Correct Answer</label><input type="text" class="form-control" id="editCorrectOption" required></div>
+            <div class="mb-3"><label class="form-label">Answer Explanation</label><div id="editAnswerTextEditor" class="quill-editor"></div></div>
+            <div class="mb-3"><label class="form-label">Explanation Link</label><input type="text" class="form-control" id="editAnswerLink" placeholder="Optional link"></div>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
+        <div id="editQuestionMessage" class="alert mt-3 is-hidden"></div>
+    </div>
+</div></div></div>
+
+<div class="modal fade" id="guidelinesModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title"><i class="fas fa-book-open me-1"></i> How to upload questions</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body">
+        <p class="small mb-2"><strong>Store questions with an Excel sheet or Manual entry.</strong> Use the image options only when a question exists only as a picture.</p>
+        <h6 class="text-primary">Mock test (competitive) - 4 ways</h6>
+        <ol class="small">
+            <li><strong>Excel / CSV sheet (recommended)</strong> - download the template from the upload window; one row per question. Every row is checked first: if any row has a problem nothing is saved and each problem is listed, so you can fix the file and upload it again without duplicates.</li>
+            <li><strong>Manual entry</strong> - pick the type (<code>MCQ</code> one answer, <code>MSQ</code> letters joined like <code>AC</code>, <code>NAT</code> a number), fill the text and options with the rich editor, set correct marks and negative marks (accepts <code>1/3</code>).</li>
+            <li><strong>Image question</strong> - one screenshot per question: crop / hide / rotate, drag over each option's row, click the correct option. Undo reverses any step.</li>
+            <li><strong>Bulk image upload</strong> - an Excel sheet (filename, type, answer, marks) plus all images, marked one by one and saved together.</li>
+        </ol>
+        <h6 class="text-primary mt-3">Sections and deleting</h6>
+        <ul class="small">
+            <li>Every section of a test is listed with its ID and name when you open the test - click one to go in, or use <strong>Switch section</strong>.</li>
+            <li>Tick questions (or <strong>Select all</strong>) and press <strong>Delete selected</strong>. Every edit and delete asks for approval first.</li>
+        </ul>
+        <h6 class="text-primary mt-3">Key fields</h6>
+        <ul class="small">
+            <li><strong>Test Description</strong> - the paper: total questions (upload limit), marks, duration, calculator on/off.</li>
+            <li><strong>Section ID / Name</strong> - groups questions (e.g. <code>SEC1</code> / Physics). Pick it from the list; no need to remember it.</li>
+            <li><strong>correct_option</strong> - MCQ: <code>b</code> · MSQ: <code>ac</code> · NAT: the number itself.</li>
+        </ul>
+        <h6 class="text-primary mt-3">Communication (placement) - 2 ways only</h6>
+        <ul class="small">
+            <li>Create <strong>sections first</strong> (title, student instruction, duration in seconds) - names <code>SECTION_A/B/…</code> auto-assigned.</li>
+            <li><strong>Manual</strong> - the form adapts per type: <code>MCQ</code> options+answer · <code>SPEAK</code> recording time · <code>THINK_SPEAK</code> think + record time · <code>COMPREHENSION</code> listening MCQ (audio URL on the first question only) · <code>WRITING</code> word limit.</li>
+            <li><strong>Excel / CSV (recommended)</strong> - the template has a sample row of every type plus marks columns; section names must already exist. If any row has a problem nothing is saved.</li>
+            <li>No image questions for communication - the test window renders each type with its own UI (recorder, timer, editor).</li>
+        </ul>
+    </div>
+</div></div></div>
+
+<template id="cdpTestcaseTpl">
+    <div class="cdp-row">
+        <div class="row g-2">
+            <div class="col-md-6"><label class="form-label">Input</label>
+                <textarea class="form-control cdp-mono cdp-tc-in" rows="3" placeholder="stdin for this case"></textarea></div>
+            <div class="col-md-6"><label class="form-label">Expected output <span class="cdp-req">*</span></label>
+                <textarea class="form-control cdp-mono cdp-tc-out" rows="3" placeholder="exact expected stdout"></textarea></div>
+        </div>
+        <div class="d-flex align-items-center gap-3 mt-2">
+            <label class="cdp-chip"><input type="checkbox" class="cdp-tc-hidden"> Hidden from candidate</label>
+            <button type="button" class="btn btn-sm btn-outline-danger ms-auto cdp-row-del"><i class="fas fa-trash"></i></button>
+        </div>
+    </div>
+</template>
+
+<template id="cdpAssertionTpl">
+    <div class="cdp-row">
+        <div class="row g-2">
+            <div class="col-md-3"><label class="form-label">Check</label>
+                <select class="form-select cdp-as-kind">
+                    <option value="element_exists">element exists</option>
+                    <option value="text_equals">text equals</option>
+                    <option value="text_contains">text contains</option>
+                    <option value="attr_equals">attribute equals</option>
+                    <option value="css_property">css property</option>
+                    <option value="count_equals">count equals</option>
+                </select></div>
+            <div class="col-md-3"><label class="form-label">CSS selector</label>
+                <input type="text" class="form-control cdp-as-sel" placeholder="#app .title"></div>
+            <div class="col-md-3"><label class="form-label">Attribute / property</label>
+                <input type="text" class="form-control cdp-as-prop" placeholder="href, color, ..."></div>
+            <div class="col-md-3"><label class="form-label">Expected value</label>
+                <input type="text" class="form-control cdp-as-val" placeholder="expected text"></div>
+        </div>
+        <div class="d-flex align-items-center gap-2 mt-2">
+            <input type="text" class="form-control form-control-sm cdp-as-msg" placeholder="Message shown when this check fails (optional)">
+            <label class="cdp-chip"><input type="checkbox" class="cdp-as-hidden"> Hidden</label>
+            <button type="button" class="btn btn-sm btn-outline-danger cdp-row-del"><i class="fas fa-trash"></i></button>
+        </div>
+    </div>
+</template>
+
+<div class="modal fade" id="codingGuideModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title"><i class="fas fa-book-open me-2"></i>Writing a coding question</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body cdp-guide">
+      <h6>The order to work in</h6>
+      <ol>
+        <li>Add a <strong>section</strong> and pick its type. The type cannot be changed later.</li>
+        <li>Pick that section in step 2, then fill the question.</li>
+        <li>Save. Repeat for the next question.</li>
+      </ol>
+
+      <h6>Type it or photograph it</h6>
+      <p>The question, the input format and the example are three separate parts.
+         Each can be typed or uploaded as an image, and you can mix them - for example
+         upload a photo of a printed question but type the example yourself.
+         After choosing an image you can crop it and white-out anything that should not be shown.</p>
+
+      <h6>A worked coding example</h6>
+      <div class="cdp-example">
+        <p><strong>Title:</strong> Second largest element</p>
+        <p><strong>Question:</strong> Given n integers, print the second largest distinct value.
+           If it does not exist, print -1.</p>
+        <p><strong>Input format:</strong> First line: n. Second line: n space-separated integers.</p>
+        <p><strong>Example:</strong></p>
+        <pre>Input:
+5
+1 2 3 4 5
+
+Output:
+4</pre>
+        <p><strong>Test cases:</strong></p>
+        <pre>visible   in: "5\n1 2 3 4 5"   out: "4"
+hidden    in: "3\n7 7 7"         out: "-1"
+hidden    in: "2\n9 1"           out: "1"</pre>
+        <p class="cdp-tip">Always add a hidden case that covers the tricky path -
+           here, all-equal values. Without it a candidate can pass by printing a guess.</p>
+      </div>
+
+      <h6>A worked SQL example</h6>
+      <div class="cdp-example">
+        <p><strong>Sandbox schema:</strong></p>
+        <pre>CREATE TABLE employees (id INT, name VARCHAR(50), salary INT);
+INSERT INTO employees VALUES (1,'Asha',50000),(2,'Ravi',72000),(3,'Meera',72000);</pre>
+        <p><strong>Question:</strong> List the names of the highest paid employees.</p>
+        <p><strong>Solution query:</strong></p>
+        <pre>SELECT name FROM employees WHERE salary = (SELECT MAX(salary) FROM employees);</pre>
+        <p class="cdp-tip">Only tick <em>Row order matters</em> when the question actually asks
+           for an ORDER BY - otherwise a correct answer in a different order is marked wrong.</p>
+      </div>
+
+      <h6>A worked Web example</h6>
+      <div class="cdp-example">
+        <p><strong>Question:</strong> Build a card with the heading "Hello" inside <code>#app</code>.</p>
+        <p><strong>Checks:</strong></p>
+        <pre>element exists   selector: #app .card
+text equals      selector: #app .card h2    expected: Hello</pre>
+        <p class="cdp-tip">Write checks against what the page must contain, not how it is built,
+           so a candidate using different markup is not failed unfairly.</p>
+      </div>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div>
+  </div></div>
+</div>
+
+<div class="modal fade" id="cdpCropModal" tabindex="-1" data-bs-backdrop="static">
+  <div class="modal-dialog modal-xl modal-dialog-centered"><div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title"><i class="fas fa-crop me-2"></i>Adjust the image</h5>
+      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+      <p class="cdp-help mb-2">
+        Pick a tool, then drag on the image - it is applied when you let go.
+        <strong>Crop</strong> keeps only what you dragged over. <strong>Hide</strong> whites it out
+        (use it to remove an answer or a watermark). <strong>Undo</strong> reverses the last step. Only what you see here gets saved.
+      </p>
+      <div class="cdp-tools mb-2">
+        <div class="btn-group" role="group" id="cdpCropTools">
+          <button type="button" class="btn btn-outline-success active" data-tool="crop"><i class="fas fa-crop me-1"></i>Crop</button>
+          <button type="button" class="btn btn-outline-danger" data-tool="hide"><i class="fas fa-eye-slash me-1"></i>Hide</button>
+        </div>
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="cdpRotate"><i class="fas fa-rotate-right me-1"></i>Rotate</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="cdpUndo"><i class="fas fa-rotate-left me-1"></i>Undo</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" id="cdpResetImg"><i class="fas fa-arrows-rotate me-1"></i>Reset</button>
+      </div>
+      <div class="cdp-canvas-wrap"><canvas id="cdpCanvas"></canvas></div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-primary" id="cdpCropSave"><i class="fas fa-check me-1"></i>Use this image</button>
+    </div>
+  </div></div>
+</div>
+
+<div class="modal fade" id="imageQuestionModal" tabindex="-1" data-bs-backdrop="static"><div class="modal-dialog modal-fullscreen" id="iqDialog"><div class="modal-content">
+    <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-image me-1"></i> Image Question <span class="qm-target"></span></h5>
+        <button type="button" class="btn btn-sm btn-outline-light me-2 ms-auto" id="iqMinimizeBtn" title="Minimize"><i class="fas fa-compress"></i></button>
+        <button type="button" class="btn-close ms-0" data-bs-dismiss="modal" title="Close"></button>
+    </div>
+    <div class="modal-body">
+        <details class="iq-howto"><summary><i class="fas fa-circle-question me-1"></i>How to use this tool</summary>
+        <ol class="pp-howto">
+            <li><strong>Upload one or many images</strong> - each image is one full question (text, diagrams and options). They queue up and open one by one.</li>
+            <li>Use <strong>Crop</strong> to keep only the question area (removes blank margins), <strong>Hide</strong> to white-out any portion students must not see, then <strong>Mark Options</strong>: pick a letter and drag over that option's row.</li>
+            <li>Students see the image with a <strong>clickable circle in front of each marked option</strong> - no typing needed.</li>
+            <li><strong>Undo</strong> reverses the last crop, hide, rotate or option mark. Crop and rotate keep your marked areas in place.</li>
+        </ol>
+        </details>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Question Image(s)</label>
+                <input type="file" class="form-control" id="iqFile" accept="image/*" multiple>
+                <div class="row g-2 mt-2">
+                    <div class="col-6"><label class="form-label">Question Type</label>
+                        <select class="form-select" id="iqType"><option value="MCQ">MCQ</option><option value="MSQ">MSQ</option></select></div>
+                    <div class="col-6"><label class="form-label">Level</label>
+                        <select class="form-select" id="iqLevel"><option>Medium</option><option>Easy</option><option>Tough</option></select></div>
+                    <div class="col-6"><label class="form-label">Correct Marks</label>
+                        <input type="number" step="0.01" class="form-control" id="iqCorrect" value="1"></div>
+                    <div class="col-6"><label class="form-label">Negative Marks</label>
+                        <input type="text" class="form-control" id="iqNegative" placeholder="0.33 or 1/3"></div>
+                    <div class="col-12"><label class="form-label">Correct Answer</label>
+                        <input type="text" class="form-control" id="iqAnswer" placeholder="MCQ: A | MSQ: AC"></div>
+                </div>
+
+                <div class="iq-picker mt-3">
+                    <label class="form-label mb-1">Tool:</label>
+                    <div class="btn-group w-100 mb-2" role="group" id="iqToolGroup">
+                        <button type="button" class="btn btn-outline-dark active" data-tool="option" title="Drag over an option's row"><i class="fas fa-circle-dot me-1"></i>Mark Options</button>
+                        <button type="button" class="btn btn-outline-danger" data-tool="hide" title="Drag over any portion to white it out"><i class="fas fa-eye-slash me-1"></i>Hide</button>
+                        <button type="button" class="btn btn-outline-success" data-tool="crop" title="Drag over the area to KEEP"><i class="fas fa-crop me-1"></i>Crop</button>
+                    </div>
+                    <div class="btn-group w-100 mb-2" role="group">
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="iqAutoTrimBtn" title="Automatically crop away white margins"><i class="fas fa-wand-magic-sparkles me-1"></i>Auto-trim</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="iqRotateBtn" title="Rotate 90° clockwise"><i class="fas fa-rotate-right me-1"></i>Rotate</button>
+                        <button type="button" class="btn btn-outline-info btn-sm" id="iqPreviewBtn" title="See it exactly as students will"><i class="fas fa-eye me-1"></i>Preview</button>
+                    </div>
+                    <div class="btn-group w-100 mb-2" role="group">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="iqUndoBtn" title="Undo the last change (Ctrl+Z)"><i class="fas fa-rotate-left me-1"></i>Undo</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="iqResetBtn" title="Restore the original image"><i class="fas fa-arrows-rotate me-1"></i>Reset image</button>
+                    </div>
+                    <label class="form-label mb-1">Mark area for option:</label>
+                    <div class="btn-group w-100" role="group" id="iqLetterGroup">
+                        <button type="button" class="btn btn-outline-dark active" data-letter="a">A</button>
+                        <button type="button" class="btn btn-outline-dark" data-letter="b">B</button>
+                        <button type="button" class="btn btn-outline-dark" data-letter="c">C</button>
+                        <button type="button" class="btn btn-outline-dark" data-letter="d">D</button>
+                    </div>
+                    <ul class="iq-status mt-2" id="iqStatus"></ul>
+                    <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="iqClearRegions"><i class="fas fa-eraser me-1"></i> Clear all areas</button>
+                    <p class="iq-shortcuts mt-2 mb-0"><strong>Tip:</strong> click an option row above to make it the correct answer (the star shows it).<br>
+                    <strong>Shortcuts:</strong> A-D pick option &middot; 1/2/3 switch tool &middot; T auto-trim &middot; Ctrl+Z undo &middot; Ctrl+Enter save</p>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label class="form-label mb-0" id="iqToolHint">Drag on the image to mark the selected option's area</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-secondary" id="iqQueueBadge" hidden></span>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="iqSkipBtn" hidden><i class="fas fa-forward me-1"></i>Skip image</button>
+                    </div>
+                </div>
+                <div class="iq-canvas-wrap" id="iqCanvasWrap">
+                    <p class="iq-placeholder" id="iqPlaceholder">Click to upload, or drag &amp; drop question image(s) here</p>
+                    <div class="iq-stage" id="iqStage" hidden>
+                        <img id="iqImage" alt="Question image">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end mt-3">
+            <button type="button" class="btn btn-primary" id="iqSaveBtn"><i class="fas fa-save me-1"></i> Save Image Question</button>
+        </div>
+        <div id="iqMessage" class="alert mt-3 is-hidden"></div>
+    </div>
+</div></div></div>
+
+<div class="modal fade" id="uploadQuestionsCsvModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false"><div class="modal-dialog modal-lg"><div class="modal-content">
+    <div class="modal-header"><h5 class="modal-title">Upload Questions (CSV / Excel) <span class="qm-target"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal" id="csv-modal-close-btn"></button></div>
+    <div class="modal-body">
+        <ol class="pp-howto">
+            <li>Questions go into the section shown in the title above.</li>
+            <li><strong>Download a template</strong> and fill it. Question count must stay within the limit you declared in the test description.</li>
+            <li><strong>Upload.</strong> Every row is checked first. If any row has a problem, nothing is saved and each problem is listed below - fix the file and upload it again (no duplicates).</li>
+        </ol>
+        <div class="alert alert-info d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div>
+                <strong><i class="fas fa-file-arrow-up me-1"></i> New to the format?</strong>
+                Download a ready-made template - it contains every column plus example
+                MCQ, MSQ, NAT and coding questions you can copy. The Excel file also has a
+                <em>How&nbsp;to&nbsp;fill</em> sheet explaining each column.
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <a class="btn btn-success btn-sm" href="/api/test-questions/xlsx-template" download>
+                    <i class="fas fa-file-excel me-1"></i> Excel Template
+                </a>
+                <a class="btn btn-outline-success btn-sm" href="/api/test-questions/csv-template" download>
+                    <i class="fas fa-file-csv me-1"></i> CSV Template
+                </a>
+            </div>
+        </div>
+
+        <details class="csv-guide mb-3">
+            <summary><i class="fas fa-table-list me-1"></i> What each column means</summary>
+            <div class="table-responsive mt-2">
+                <table class="table table-sm table-bordered csv-guide-table">
+                    <thead><tr><th>Column</th><th>Required</th><th>What to put</th><th>Example</th></tr></thead>
+                    <tbody>
+                        <tr><td><code>question_type</code></td><td>Yes</td><td>MCQ, MSQ or NAT</td><td>MCQ</td></tr>
+                        <tr><td><code>question_text</code></td><td>Yes</td><td>The question. Plain text or HTML. For coding questions wrap the code in <code>&lt;pre class="ql-syntax"&gt;...&lt;/pre&gt;</code></td><td>&lt;p&gt;What is 2+2?&lt;/p&gt;</td></tr>
+                        <tr><td><code>option_a</code> - <code>option_d</code></td><td>MCQ/MSQ only</td><td>The four options. Leave empty for NAT</td><td>&lt;p&gt;4&lt;/p&gt;</td></tr>
+                        <tr><td><code>correct_option</code></td><td>Yes</td><td>MCQ: one letter (B). MSQ: letters joined (AC). NAT: the numeric answer (7 or 12.5)</td><td>B</td></tr>
+                        <tr><td><code>correct_marks</code></td><td>Yes</td><td>Marks for a correct answer</td><td>2</td></tr>
+                        <tr><td><code>negative_marks</code></td><td>No</td><td>Penalty as a number or fraction. Empty = 0</td><td>0.5 or 1/4</td></tr>
+                        <tr><td><code>question_level</code></td><td>No</td><td>Easy, Medium or Tough (default Medium)</td><td>Medium</td></tr>
+                        <tr><td><code>answer_text</code></td><td>No</td><td>Worked explanation shown after the test</td><td>&lt;p&gt;Because...&lt;/p&gt;</td></tr>
+                        <tr><td><code>answer_link</code></td><td>No</td><td>Optional URL to a video/page explanation</td><td>https://...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </details>
+
+        <form id="uploadQuestionsCsvForm">
+            <div class="mb-3"><label for="csvFile" class="form-label">Select a .csv or .xlsx file:</label><input type="file" class="form-control" id="csvFile" accept=".csv,.xlsx" required></div>
+            <button type="submit" class="btn btn-primary" id="uploadCsvSubmitBtn"><span class="spinner-border spinner-border-sm is-hidden" role="status" aria-hidden="true"></span> Upload Questions</button>
+        </form>
+        <div id="csvUploadMessage" class="alert mt-3 is-hidden"></div>
+        <div id="csvUploadErrors" class="mt-3 is-hidden"><h6 class="text-danger">Nothing was saved - fix these rows and upload the same file again:</h6><ul id="csvErrorList" class="list-group"></ul></div>
+    </div>
+</div></div></div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.3/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/contrib/auto-render.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="{{ url_for('static', filename='js/admin/manage_mock_test/qm_dialogs.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/manage_mock_test/test_details_insert.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/manage_mock_test/image_question.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/manage_mock_test/comm_question.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/manage_mock_test/coding_question.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/manage_mock_test/test_picker.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/manage_mock_test/test_details_sidebar.js') }}"></script>
+    </div>
+</div>
+</body>
+</html>

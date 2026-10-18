@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <title>Coding Submitted | ShyamPracticePaper</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/placement_exam_portal/tcs_portal/tcs.css') }}">
+</head>
+<body class="tcs-body">
+<main class="tcs-center">
+    <h1><i class="fas fa-circle-check"></i> Coding section submitted</h1>
+    <p>{{ exam.title }} - your code is saved and graded.</p>
+    {% if aptitude_open %}
+    <div class="tcs-note">
+        <i class="fas fa-list-check"></i>
+        Switch back to the aptitude sections using the tabs above and press <strong>Submit</strong> when you are done.
+        The exam closes when the aptitude part is submitted.
+    </div>
+    {% else %}
+    <a class="tcs-btn tcs-btn--ok" href="{{ result_url }}" target="_top"><i class="fas fa-chart-simple"></i> View Result</a>
+    {% endif %}
+</main>
+</body>
+</html>

@@ -5,10 +5,8 @@ from flask import flash, render_template, session, abort, redirect, request, url
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 try:
-    # The standalone package. This used to import pip's private vendored copy,
-    # which breaks whenever pip changes or is absent, as in a slim image.
     import cachecontrol
-except ImportError:  # pragma: no cover - last resort on older installs
+except ImportError:
     from pip._vendor import cachecontrol
 import google.auth.transport.requests
 import logging
@@ -24,9 +22,6 @@ auth_db = AuthOperation()
 mail = Mail()
 logger = logging.getLogger(__name__)
 
-# Allowing OAuth over plain HTTP is a local-development convenience. Forcing it
-# on unconditionally also relaxed it in production, so it is gated on the same
-# flag the rest of the app uses to detect a real deployment.
 from config import Config as _Config
 _IS_PRODUCTION = _Config.IS_PRODUCTION
 if not _IS_PRODUCTION:
@@ -34,9 +29,6 @@ if not _IS_PRODUCTION:
 
 client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret.json")
 
-# Both non-OpenID scopes were malformed - "https.googleapis.com/..." has no
-# "://" and "https://googleapis.com/..." is missing the www host - so Google
-# rejected the request and sign-in always failed.
 GOOGLE_SCOPES = [
     "openid",
     "https://www.googleapis.com/auth/userinfo.profile",
@@ -110,6 +102,11 @@ def callback():
             except Exception:
                 pass
                 
+        from routes.session_guard import running_test_elsewhere
+        if existing_user and running_test_elsewhere(user_email):
+            flash("This account has a test open in another window. Finish or close that test first, "
+                  "then sign in again. It can take up to a minute to free up.", 'login_error')
+            return redirect(url_for('users.user_login'))
         establish_user_session(user_email, user_name)
         from routes.auth.utils.utils_login import rebuild_session_at_login
         rebuild_session_at_login()

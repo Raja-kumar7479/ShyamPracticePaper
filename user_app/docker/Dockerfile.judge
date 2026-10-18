@@ -1,0 +1,13 @@
+FROM debian:bookworm-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        python3 gcc g++ libc6-dev openjdk-17-jdk-headless nodejs mono-mcs mono-runtime coreutils \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin runner
+
+WORKDIR /sandbox
+
+USER runner

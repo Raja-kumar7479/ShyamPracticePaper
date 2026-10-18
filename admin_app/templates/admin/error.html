@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ error_code }} · Admin Portal</title>
+    <style>
+        :root { color-scheme: light dark; }
+        body { margin: 0; min-height: 100vh; display: flex; align-items: center;
+               justify-content: center; font-family: 'Poppins', system-ui, sans-serif;
+               background: #0f172a; color: #e2e8f0; }
+        .card { max-width: 460px; padding: 40px; text-align: center; }
+        .code { font-size: 64px; font-weight: 600; margin: 0; color: #f8fafc; }
+        .title { font-size: 20px; margin: 8px 0 12px; color: #cbd5e1; }
+        .msg { font-size: 15px; color: #94a3b8; margin-bottom: 24px; }
+        a { display: inline-block; padding: 10px 20px; border-radius: 8px;
+            background: #6366f1; color: #fff; text-decoration: none; font-size: 14px; }
+        a:hover { background: #4f46e5; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <p class="code">{{ error_code }}</p>
+        <p class="title">{{ error_title }}</p>
+        <p class="msg">{{ error_message }}</p>
+        <a href="{{ url_for('admin.admin_login') }}">Back to Admin Login</a>
+    </div>
+</body>
+</html>

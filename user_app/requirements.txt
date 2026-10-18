@@ -16,7 +16,8 @@ Flask-SocketIO==5.6.1
 # ---- Realtime / async transport ----
 python-socketio==5.16.3
 python-engineio==4.13.3
-eventlet==0.41.1
+gevent==26.9.0
+gevent-websocket==0.10.1
 
 # ---- Database ----
 mysql-connector-python==8.0.33

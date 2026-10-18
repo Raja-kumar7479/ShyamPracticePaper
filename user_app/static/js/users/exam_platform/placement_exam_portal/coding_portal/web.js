@@ -178,8 +178,7 @@
                   : "Submitted: " + data.passed + "/" + data.total + " checks passed",
                 data.passed === data.total ? "ok" : "warn"
               );
-              const btn = CJ.$('.qnav-btn[data-qid="' + cfg.questionId + '"]');
-              if (btn) btn.classList.add("is-attempted");
+              CJ.markSubmitted(cfg.questionId);
             }
           }, "Submit");
       });

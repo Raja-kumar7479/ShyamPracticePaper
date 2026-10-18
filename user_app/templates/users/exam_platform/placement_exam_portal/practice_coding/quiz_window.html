@@ -1,6 +1,3 @@
-{# The taking window. The rendered data below deliberately contains NO correct
-   options and NO explanations - those only come back from the server after an
-   answer is committed (assessment) or the attempt is finished (quiz). #}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -69,10 +66,6 @@
             </button>
         </div>
 
-        {# Rendered in both modes: the navigator button sits in the subbar for
-           quiz and assessment alike, so the panel has to exist for both or the
-           button opens nothing. Assessment stays forward-only - the script
-           locks the tiles for questions that have not been reached yet. #}
         <div class="qz-palette-panel is-hidden" id="qzPalettePanel">
             <div class="qz-palette-panel__head">Question Navigator <span class="qz-palette-panel__count" id="qzNavCount"></span></div>
             <div class="qz-palette-panel__body">

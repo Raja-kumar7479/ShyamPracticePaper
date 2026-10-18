@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import flash, redirect, render_template, session, url_for
 from routes.courses_platform.databases.profile_db import ProfileOperation
 from extensions import user_login_required
@@ -39,8 +40,29 @@ def profile_view():
         for p in all_purchases:
             grouped_purchases[p['section']].append(p)
 
-        purchase_count = len(all_purchases)
-        total_spent = sum(float(p.get('final_price') or 0) for p in all_purchases)
+        subscriptions = []
+        try:
+            from routes.exam_platform.placement_exam_portal.practice_coding import models as pcp_models
+            now = datetime.now()
+            for sub in pcp_models.subscription_history(user_email):
+                expires = sub.get('expires_at')
+                subscriptions.append({
+                    'plan': sub.get('plan_label') or sub.get('plan'),
+                    'course_code': sub.get('course_code'),
+                    'amount': float(sub.get('amount_paise') or 0) / 100.0,
+                    'starts_at': sub.get('starts_at'),
+                    'expires_at': expires,
+                    'payment_id': sub.get('razorpay_payment_id') or sub.get('razorpay_order_id'),
+                    'active': bool(expires and expires > now),
+                })
+        except Exception:
+            logger.exception(f"PROFILE: could not read premium subscriptions for {user_email}")
+
+        purchase_count = len(all_purchases) + len(subscriptions)
+        total_spent = (sum(float(p.get('final_price') or 0) for p in all_purchases)
+                       + sum(s['amount'] for s in subscriptions))
+        logger.info(f"PROFILE: {user_email} has {len(all_purchases)} purchase(s) and "
+                    f"{len(subscriptions)} premium subscription(s)")
 
         recent_purchase = all_purchases[0] if all_purchases else None
         first_enrolled_course = enrolled_courses[0] if enrolled_courses else None
@@ -64,6 +86,7 @@ def profile_view():
             logged_in=True,
             has_password=has_password,
             grouped_purchases=grouped_purchases,
+            subscriptions=subscriptions,
             recent_purchase=recent_purchase,
             first_enrolled_course=first_enrolled_course,
             course_unique_codes=course_unique_codes,

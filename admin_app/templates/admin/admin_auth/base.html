@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ url_for('static', filename='images/favicon-192.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin{% endblock %} · Admin Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="{{ url_for('static', filename='css/admin/admin_auth.css') }}" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-utils.css') }}">
+    {% block extra_css %}{% endblock %}
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token is defined else '' }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-csrf.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-toast.css') }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-toast.js') }}"></script>
+</head>
+<body>
+    {% include 'admin/_flash.html' %}
+    <div class="auth-shell">
+        <div class="signup-container">
+            <div class="auth-brand">
+                <img src="{{ url_for('static', filename='images/favicon.png') }}"
+                     alt="ShyamPracticePaper" class="auth-brand__logo">
+                <span class="auth-brand__name">ShyamPracticePaper</span>
+            </div>
+
+            {% block content %}{% endblock %}
+
+            <div class="footer text-center">
+                <a href="#">Terms of Use</a> &nbsp;·&nbsp; <a href="#">Privacy Policy</a>
+            </div>
+        </div>
+    </div>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

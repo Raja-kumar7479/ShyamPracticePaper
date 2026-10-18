@@ -31,9 +31,13 @@ def test_feedback(section_id, test_key, course_code, unique_code):
 def submit_feedback(section_id, test_key, course_code, unique_code):
     email, username, user_is_authenticated = get_user_session()
     try:
-        feedback_data = request.json
+        feedback_data = request.get_json(silent=True)
+        if not isinstance(feedback_data, dict):
+            return jsonify({"status": "error", "message": "Send the feedback as JSON."}), 400
         test_details = user_op.get_test_details(test_key)
-        test_id = test_details.get('test_id') if test_details else None
+        if not test_details or not test_details.get('test_id'):
+            return jsonify({"status": "error", "message": "That test does not exist."}), 404
+        test_id = test_details.get('test_id')
         
         query = """
             INSERT INTO test_feedback (test_id, test_key, email, feedback_software, feedback_content, feedback_speed, suggestions)

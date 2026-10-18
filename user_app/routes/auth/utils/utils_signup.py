@@ -35,23 +35,11 @@ def is_password_secure(password: str) -> bool:
         any(c in special_chars for c in password)
     )
 
-# --------------------------------------------------------------------------
-# Pending signup: held server-side, keyed by an opaque token in the session.
-#
-# The OTP and the bcrypt password hash used to be written into the session
-# cookie itself. That cookie is signed but not encrypted, so a visitor could
-# decode it, read the OTP, post it back and register an email address they do
-# not own. Only the token travels in the cookie now, and the OTP is stored as
-# a salted hash so the stored value cannot be replayed either.
-# --------------------------------------------------------------------------
 PENDING_TOKEN_KEY = 'signup_pending_token'
 MAX_OTP_ATTEMPTS = 6
 
 
 def _otp_hash(otp_value):
-    # No fallback pepper. An OTP is only six digits, so a constant that ships in
-    # the source would let anyone who can read the table precompute every
-    # possible hash; the whole point of the pepper is that it is not knowable.
     secret = os.environ.get('SECRET_KEY')
     if not secret:
         raise RuntimeError("SECRET_KEY must be set to hash signup OTPs.")

@@ -44,7 +44,7 @@ EXAM_SELECT = """
     SELECT e.*, cc.title AS block_title, cc.label AS block_label,
            td.subject_title AS aptitude_title, td.total_duration_minutes AS aptitude_minutes,
            td.total_questions AS aptitude_questions, td.total_marks AS aptitude_marks,
-           td.test_id AS aptitude_section_id,
+           td.test_id AS aptitude_section_id, COALESCE(td.access_label, 'inherit') AS aptitude_access,
            ct.title AS coding_title, ct.slug AS coding_slug,
            ct.total_duration_min AS coding_minutes, ct.is_published AS coding_published
     FROM tcs_exams e
@@ -59,6 +59,11 @@ def list_exams(section_id, code):
         WHERE e.section_id = %s AND e.code = %s AND e.is_published = 1
         ORDER BY e.created_at DESC
     """, (section_id, code))
+
+
+def exam_for_aptitude_key(test_key):
+    return _one(EXAM_SELECT + " WHERE e.aptitude_test_key = %s AND e.is_published = 1 ORDER BY e.id DESC",
+                (test_key,))
 
 
 def get_exam(exam_id):
@@ -94,6 +99,13 @@ def mark_aptitude_done(exam_id, email, attempt_number):
            SET stage = 'coding', aptitude_attempt_number = %s, aptitude_done_at = NOW()
          WHERE tcs_exam_id = %s AND email = %s AND stage = 'aptitude'
     """, (attempt_number, exam_id, email))
+
+
+def mark_coding_done(exam_id, email, coding_attempt_id):
+    return _write("""
+        UPDATE tcs_attempts SET coding_attempt_id = %s
+         WHERE tcs_exam_id = %s AND email = %s AND stage <> 'completed'
+    """, (coding_attempt_id, exam_id, email))
 
 
 def mark_completed(exam_id, email, coding_attempt_id):

@@ -3,9 +3,6 @@
 
   const CJ = window.CJ;
   const ROOT_SEL = "#page-root";
-  // The coding blueprint is mounted at /coding, so the exam paths carry that
-  // prefix. Without it here every Next/Prev fell through to a full page reload,
-  // which dropped full screen and re-ran the page guard.
   const EXAM_PATH_RE = /^\/coding\/attempt\/\d+\/(question|section)\/\d+(?:[/?]|$)/;
 
   let pageAbort = null;
@@ -19,7 +16,7 @@
       headers: { "X-Requested-With": "XMLHttpRequest" },
       credentials: "same-origin",
     });
-    if (res.status === 401) { window.location.href = "/login"; throw new Error("Session expired"); }
+    if (res.status === 401) { window.location.href = "/user_login"; throw new Error("Session expired"); }
     if (res.redirected && !isExamPath(new URL(res.url).pathname)) {
       window.location.href = res.url;
       throw new Error("redirecting");
@@ -70,8 +67,6 @@
     document.title = payload.title;
     const rootEl = CJ.$(ROOT_SEL);
     rootEl.innerHTML = payload.html;
-    // innerHTML never executes inline <script> blocks, so page-level wiring
-    // embedded in the fragment (e.g. the testcase collapse) must be re-run.
     Array.prototype.slice.call(rootEl.querySelectorAll("script:not([src])"))
       .forEach(function (old) {
         const s = document.createElement("script");

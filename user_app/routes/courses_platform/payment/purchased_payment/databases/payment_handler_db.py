@@ -1,5 +1,6 @@
 import logging
 import mysql.connector
+from routes.db_pool import get_connection
 from mysql.connector import Error
 from config import Config
 
@@ -8,12 +9,7 @@ logger = logging.getLogger(__name__)
 
 class UserOperation:
     def connection(self):
-        return mysql.connector.connect(
-            host=Config.DATABASE_HOST,
-            user=Config.DATABASE_USER,
-            password=Config.DATABASE_PASSWORD,
-            database=Config.DATABASE_NAME
-        )
+        return get_connection()
 
     def get_user_unique_code(self, email, course_code):
         conn = None
@@ -90,49 +86,57 @@ class UserOperation:
                 except Exception: pass
 
     def add_purchase_transactional(self, purchases_data):
-        conn = None
-        cursor = None
         if not purchases_data:
             return False
-        try:
-            conn = self.connection()
-            cursor = conn.cursor(buffered=True)
-            conn.start_transaction()
-            payment_id = purchases_data[0].get('payment_id')
-            cursor.execute(
-                "SELECT payment_id FROM purchase WHERE payment_id = %s LIMIT 1 FOR UPDATE",
-                (payment_id,)
+        payment_id = purchases_data[0].get('payment_id')
+        query = """
+            INSERT INTO purchase (
+                email, username, phone, title, subtitle, price, original_price,
+                discount_percent, final_price, payment_date, payment_id, status,
+                purchase_code, course_code, section, section_id, payment_mode
+            ) VALUES (
+                %(email)s, %(username)s, %(phone)s, %(title)s, %(subtitle)s, %(price)s,
+                %(original_price)s, %(discount_percent)s, %(final_price)s, %(payment_date)s,
+                %(payment_id)s, %(status)s, %(purchase_code)s, %(course_code)s,
+                %(section)s, %(section_id)s, %(payment_mode)s
             )
-            if cursor.fetchone():
-                conn.rollback()
-                logger.info(f"Duplicate purchase insert blocked for payment_id {payment_id}.")
-                return True
-            query = """
-                INSERT INTO purchase (
-                    email, username, phone, title, subtitle, price, original_price,
-                    discount_percent, final_price, payment_date, payment_id, status,
-                    purchase_code, course_code, section, section_id, payment_mode
-                ) VALUES (
-                    %(email)s, %(username)s, %(phone)s, %(title)s, %(subtitle)s, %(price)s,
-                    %(original_price)s, %(discount_percent)s, %(final_price)s, %(payment_date)s,
-                    %(payment_id)s, %(status)s, %(purchase_code)s, %(course_code)s,
-                    %(section)s, %(section_id)s, %(payment_mode)s
+        """
+        RETRYABLE = (1213, 1205)
+        for attempt in range(1, 4):
+            conn = cursor = None
+            try:
+                conn = self.connection()
+                cursor = conn.cursor(buffered=True)
+                conn.start_transaction()
+                cursor.execute(
+                    "SELECT payment_id FROM purchase WHERE payment_id = %s LIMIT 1 FOR UPDATE",
+                    (payment_id,)
                 )
-            """
-            for purchase_data in purchases_data:
-                cursor.execute(query, purchase_data)
-            conn.commit()
-            return True
-        except Error as e:
-            if conn: conn.rollback()
-            payment_id = purchases_data[0].get('payment_id') if purchases_data else 'N/A'
-            logger.error(f"Transactional error for payment_id {payment_id}: {e}")
-            return False
-        finally:
-            if cursor: cursor.close()
-            if conn:
-                try: conn.close()
-                except Exception: pass
+                if cursor.fetchone():
+                    conn.rollback()
+                    logger.info(f"Purchase for payment_id {payment_id} already recorded; nothing to add.")
+                    return True
+                for purchase_data in purchases_data:
+                    cursor.execute(query, purchase_data)
+                conn.commit()
+                return True
+            except Error as e:
+                if conn:
+                    try: conn.rollback()
+                    except Error: pass
+                errno = getattr(e, 'errno', None)
+                if errno == 1062:
+                    logger.info(f"Purchase for payment_id {payment_id} was saved by a concurrent request.")
+                    return True
+                if errno in RETRYABLE and attempt < 3:
+                    logger.info(f"Purchase insert for payment_id {payment_id} hit {errno}; retry {attempt}/2")
+                    continue
+                logger.error(f"Transactional error for payment_id {payment_id}: {e}")
+                return False
+            finally:
+                if cursor: cursor.close()
+                if conn: conn.close()
+        return False
 
     def get_all_purchases(self, email):
         conn = None
@@ -141,7 +145,7 @@ class UserOperation:
             conn = self.connection()
             cursor = conn.cursor(dictionary=True, buffered=True)
             query = """
-                SELECT p.*, cc.validity_expires_at FROM purchase AS p
+                SELECT p.*, cc.status AS content_status FROM purchase AS p
                 LEFT JOIN course_content AS cc ON p.section_id = cc.section_id
                 WHERE p.email = %s
                 ORDER BY p.payment_date DESC, p.section_id ASC
@@ -305,6 +309,17 @@ class UserOperation:
             if conn:
                 try: conn.close()
                 except Exception: pass
+
+    def content_exists(self, section_id):
+        db = cursor = None
+        try:
+            db = self.connection()
+            cursor = db.cursor()
+            cursor.execute("SELECT 1 FROM course_content WHERE section_id = %s LIMIT 1", (section_id,))
+            return cursor.fetchone() is not None
+        finally:
+            if cursor: cursor.close()
+            if db: db.close()
 
     def get_purchase_by_payment_id(self, email, payment_id):
         conn = None

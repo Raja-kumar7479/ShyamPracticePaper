@@ -1,9 +1,3 @@
-"""Practice coding platform: problem list, solve page, run/submit APIs.
-
-Paid questions are enforced server-side in three places - the solve page (the
-statement is never rendered for a locked question, not merely hidden), and the
-run and submit APIs. The client lock overlay is presentation only.
-"""
 import logging
 from datetime import datetime
 
@@ -19,12 +13,17 @@ logger = logging.getLogger(__name__)
 
 bp = Blueprint("practice_coding", __name__, url_prefix="/practice-coding")
 
-CODE_EXEMPT_ENDPOINTS = {"subscribe_webhook", "subscription_receipt"}
+CODE_EXEMPT_ENDPOINTS = {"subscribe_webhook", "subscription_receipt", "premium",
+                         "subscribe_order", "subscribe_verify"}
+
+CODES_ARE_ORIGIN = {"premium"}
 
 
 @bp.url_value_preprocessor
 def _pull_course_codes(endpoint, values):
     if not values:
+        return
+    if (endpoint or "").rsplit(".", 1)[-1] in CODES_ARE_ORIGIN:
         return
     course_code = values.pop("course_code", None)
     unique_code = values.pop("unique_code", None)
@@ -68,7 +67,7 @@ VERDICT_LABEL = {
 
 
 def has_premium(email):
-    return models.active_subscription(email) is not None
+    return models.active_subscription(email, session.get("pcp_course_code")) is not None
 
 
 def can_open(question, email):
@@ -76,11 +75,6 @@ def can_open(question, email):
 
 
 def question_access(question, logged_in, premium, preview_ids):
-    """One viewer, one question -> 'open' | 'login' | 'premium'.
-
-    Paid questions need a premium subscription. Free questions are open to any
-    signed-in user; a signed-out visitor may open only the preview slice.
-    """
     if question["is_paid"]:
         return "open" if premium else "premium"
     if logged_in:
@@ -89,15 +83,10 @@ def question_access(question, logged_in, premium, preview_ids):
 
 
 def _course_ctx(course_code=None, unique_code=None):
-    """Remember the course a visitor arrived from so its unique code stays in
-    the portal's links as they navigate, falling back to the session."""
     return (course_code or session.get("pcp_course_code"),
             unique_code or session.get("pcp_unique_code"))
 
 
-# --------------------------------------------------------------------------
-# Pages
-# --------------------------------------------------------------------------
 @bp.route("/")
 @bp.route("/<course_code>/<unique_code>")
 def home():
@@ -116,12 +105,8 @@ def home():
     user_id = user["id"] if user else None
     email = user["email"] if user else None
     premium = has_premium(email)
-    # A signed-out visitor may open only the first few free problems; a signed-in
-    # user has no preview limit (every free problem is open to them).
     preview_ids = set() if user else models.preview_question_ids(subject=subject)
 
-    # Only the first page is rendered; the rest is fetched as the student
-    # scrolls, so the bank can grow without the page growing with it.
     questions = models.list_questions(subject=subject, difficulty=difficulty,
                                       paid=paid, search=search,
                                       limit=models.PAGE_SIZE, offset=0,
@@ -166,7 +151,6 @@ def home():
 
 @bp.route("/api/questions")
 def api_questions():
-    """The next page of the practice list, for infinite scroll."""
     user = current_user()
     user_id = user["id"] if user else None
     subject = request.args.get("subject") or None
@@ -257,8 +241,6 @@ def random_pick():
 @bp.route("/problem/<int:question_id>/<course_code>/<unique_code>")
 @login_required
 def solve_by_id(question_id):
-    """The old numeric URL. Kept so existing links and bookmarks resolve, and
-    redirected to the readable one so only the slug is ever shared."""
     slug = models.slug_for(question_id)
     if not slug:
         abort(404)
@@ -280,7 +262,7 @@ def solve(slug):
     preview_ids = set() if user else models.preview_question_ids()
     access = question_access(question, user is not None, premium, preview_ids)
     locked = access != "open"
-    lock_reason = None if not locked else access   # 'login' or 'premium'
+    lock_reason = None if not locked else access
 
     templates = {} if locked else models.get_templates(question_id)
     samples = [] if locked else models.get_testcases(question_id, include_hidden=False)
@@ -291,7 +273,6 @@ def solve(slug):
                   else models.is_bookmarked(user["id"], question_id))
 
     if locked:
-        # The statement must not reach someone who may not open it, in any form.
         for field in ("statement_html", "input_spec", "example_html",
                       "statement_image", "input_image", "example_image",
                       "output_spec"):
@@ -317,7 +298,6 @@ def solve(slug):
 @bp.route("/bookmarks/<course_code>/<unique_code>")
 @login_required
 def bookmarks():
-    """Every question this student saved, with where they got to on each."""
     user = current_user()
     rows = models.bookmarked_questions(user["id"])
     premium = has_premium(user["email"])
@@ -342,7 +322,6 @@ def bookmarks():
 @login_required
 @csrf_protect
 def api_bookmark(question_id):
-    """Star / unstar a problem. Returns the state the button should now show."""
     user = current_user()
     if not models.get_question(question_id):
         return jsonify({"error": "Unknown question"}), 404
@@ -352,9 +331,6 @@ def api_bookmark(question_id):
     return jsonify({"bookmarked": on})
 
 
-# --------------------------------------------------------------------------
-# Run / submit
-# --------------------------------------------------------------------------
 def _guard(payload, allow_anon=False):
     user = current_user()
     question = models.get_question(payload.get("question_id") or 0)
@@ -367,8 +343,6 @@ def _guard(payload, allow_anon=False):
             return None, None, (jsonify({"error": "premium_required",
                                          "message": "Subscribe to unlock this question."}), 402)
     elif user is None:
-        # A signed-out visitor may run only the preview slice; anything more,
-        # and any submit, needs an account.
         if not allow_anon or question["id"] not in models.preview_question_ids():
             return None, None, (jsonify({"error": "login_required",
                                          "message": "Log in to continue."}), 401)
@@ -385,6 +359,26 @@ def _guard(payload, allow_anon=False):
         return None, None, (jsonify({"error": "Language not allowed here"}), 400)
 
     return user, question, None
+
+
+@bp.route("/api/judge/health")
+def judge_health():
+    from ..coding_portal.services import judge_queue
+    if judge_queue.enabled():
+        stats = judge_queue.stats()
+        stats["queue_ok"] = stats["waiting"] < stats["max_waiting"]
+        stats["healthy"] = stats["queue_ok"] and stats["judge_workers"] > 0
+        return jsonify(stats), (200 if stats["healthy"] else 503)
+    from ..coding_portal.services.judge_gate import gate
+    from ..coding_portal.services.docker_runner import docker_status
+    stats = gate.stats()
+    stats["mode"] = "local"
+    docker = docker_status()
+    stats["docker_running"] = docker["docker"]
+    stats["judge_image_present"] = docker["image"]
+    stats["queue_ok"] = stats["waiting"] < stats["max_waiting"]
+    stats["healthy"] = stats["queue_ok"] and docker["docker"] and docker["image"]
+    return jsonify(stats), (200 if stats["healthy"] else 503)
 
 
 @bp.route("/api/run", methods=["POST"])
@@ -406,7 +400,6 @@ def api_run(**kwargs):
             time_limit=question["time_limit_sec"],
             memory_limit=question["memory_limit"]))
 
-    # Running only ever sees the visible samples; hidden cases stay hidden.
     testcases = models.get_testcases(question["id"], include_hidden=False)
     if not testcases:
         return jsonify({"error": "No sample testcases for this question"}), 400
@@ -416,6 +409,8 @@ def api_run(**kwargs):
                                    memory_limit=question["memory_limit"],
                                    compare_mode=question.get("compare_mode") or "exact",
                                    float_tolerance=question.get("float_tolerance"))
+    if result.compiled and result.error and not result.cases:
+        return jsonify({"error": result.error, "busy": True}), 503
     return jsonify(_serialise(result, testcases, reveal=True))
 
 
@@ -440,6 +435,8 @@ def api_submit(**kwargs):
                                    memory_limit=question["memory_limit"],
                                    compare_mode=question.get("compare_mode") or "exact",
                                    float_tolerance=question.get("float_tolerance"))
+    if result.compiled and result.error and not result.cases:
+        return jsonify({"error": result.error, "busy": True}), 503
     verdict = result.verdict() if result.compiled else "CE"
     exec_time = max((c.execution_time for c in result.cases), default=0)
     sub_id = models.record_submission(user["id"], question["id"], language, code, {

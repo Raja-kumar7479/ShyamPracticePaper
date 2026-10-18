@@ -102,10 +102,12 @@ CREATE TABLE IF NOT EXISTS cp_attempts (
   progress_idx INT NOT NULL DEFAULT 0,
   started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   submitted_at TIMESTAMP NULL,
+  last_seen TIMESTAMP NULL DEFAULT NULL,
   UNIQUE KEY uq_test_user (test_id, user_id),
   FOREIGN KEY (test_id) REFERENCES cp_tests(id) ON DELETE CASCADE,
   FOREIGN KEY (user_id) REFERENCES auth(id) ON DELETE CASCADE,
-  INDEX idx_user (user_id)
+  INDEX idx_user (user_id),
+  INDEX idx_cp_attempts_submitted (status, submitted_at)
 );
 
 -- Autosave target. Kept apart from cp_submissions` so saving a draft every few

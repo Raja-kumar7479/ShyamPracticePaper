@@ -1,14 +1,3 @@
-"""Quiz / assessment pages and APIs.
-
-Mode contract:
-  quiz       - the browser collects picks locally and submits them all at the
-               end; the server grades in one shot and builds the attempt.
-  assessment - every pick is POSTed immediately; the server records it (the DB
-               unique key makes it final) and only then returns the correct
-               option and explanation for the instant-feedback panel.
-
-In both modes the answer key never appears in a page or a pre-answer response.
-"""
 import logging
 
 from flask import abort, jsonify, redirect, render_template, request, url_for
@@ -21,9 +10,6 @@ from .routes_practice import bp, has_premium
 logger = logging.getLogger(__name__)
 
 
-# --------------------------------------------------------------------------
-# Pages
-# --------------------------------------------------------------------------
 @bp.route("/quiz")
 @bp.route("/quiz/<course_code>/<unique_code>")
 @login_required
@@ -42,11 +28,6 @@ def quiz_home():
 @bp.route("/quiz/attempts/<course_code>/<unique_code>")
 @login_required
 def quiz_attempts():
-    """Past attempts on their own page, reached from the sidebar.
-
-    They used to sit at the bottom of the subject list, which pushed the
-    subjects up and grew without limit as a student practised.
-    """
     user = current_user()
     return render_template(
         "users/exam_platform/placement_exam_portal/practice_coding/quiz_attempts.html",
@@ -92,9 +73,6 @@ def quiz_review(attempt_id):
         user=user, attempt=attempt, rows=quiz.attempt_review(attempt_id))
 
 
-# --------------------------------------------------------------------------
-# APIs
-# --------------------------------------------------------------------------
 def _own_open_attempt(attempt_id):
     user = current_user()
     attempt = quiz.get_attempt(attempt_id or 0, user["id"])
@@ -110,7 +88,6 @@ def _own_open_attempt(attempt_id):
 @csrf_protect
 @limiter.limit("120 per minute")
 def quiz_answer(**kwargs):
-    """Assessment mode: commit one pick, then reveal the truth."""
     data = request.get_json(silent=True) or {}
     user, attempt, error = _own_open_attempt(data.get("attempt_id"))
     if error:
@@ -123,15 +100,12 @@ def quiz_answer(**kwargs):
     if selected not in quiz.OPTIONS:
         return jsonify({"error": "Pick one of the four options"}), 400
 
-    # Scoped to the attempt's subject: an id from another subject cannot have
-    # its answer revealed inside this attempt.
     key = quiz.answer_key([question_id], subject=attempt["subject"]).get(question_id)
     if not key:
         return jsonify({"error": "Unknown question"}), 404
     if key["is_paid"] and not has_premium(user["email"]):
         return jsonify({"error": "premium_required"}), 402
     if quiz.has_answered(attempt["id"], question_id):
-        # The lock: the first committed answer is the only one that counts.
         return jsonify({"error": "already_answered",
                         "message": "You already answered this question."}), 409
 
@@ -139,8 +113,6 @@ def quiz_answer(**kwargs):
     try:
         quiz.record_answer(attempt["id"], question_id, selected, is_correct)
     except Exception:
-        # Two simultaneous submits raced past the check above; the unique key
-        # kept the first one, so this one is simply "already answered".
         return jsonify({"error": "already_answered",
                         "message": "You already answered this question."}), 409
     return jsonify({"correct_option": key["correct_option"],
@@ -153,8 +125,6 @@ def quiz_answer(**kwargs):
 @csrf_protect
 @limiter.limit("30 per minute")
 def quiz_finish(**kwargs):
-    """Quiz mode: grade every pick at once. Assessment mode: close the attempt
-    from the answers already recorded one by one."""
     data = request.get_json(silent=True) or {}
     user, attempt, error = _own_open_attempt(data.get("attempt_id"))
     if error:
@@ -169,9 +139,6 @@ def quiz_finish(**kwargs):
         except (TypeError, ValueError):
             return jsonify({"error": "Bad answers payload"}), 400
 
-        # Subject-scoped, and capped at the attempt's size: padding the payload
-        # with extra ids (from other subjects or beyond the served set) cannot
-        # inflate the score past what was actually asked.
         key = quiz.answer_key(list(picked.keys()), subject=attempt["subject"])
         premium = has_premium(user["email"])
         total = attempt["total"]
@@ -188,7 +155,7 @@ def quiz_finish(**kwargs):
             try:
                 quiz.record_answer(attempt["id"], question_id, selected, ok)
             except Exception:
-                continue  # duplicate id in payload: first one stands
+                continue
             graded += 1
             if ok:
                 correct += 1

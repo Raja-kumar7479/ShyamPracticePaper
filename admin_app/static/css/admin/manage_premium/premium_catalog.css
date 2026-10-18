@@ -1,0 +1,148 @@
+/* Premium Catalog: one course at a time, prices on the left of the eye,
+   the promise below, and a live "what the student will see" preview. */
+.pc-hint { display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; margin-bottom: 20px;
+           background: #fff7ea; border: 1px solid #f1dcb4; border-radius: 12px; }
+.pc-hint > i { font-size: 22px; color: #b8860b; margin-top: 2px; }
+.pc-hint strong { display: block; margin-bottom: 4px; }
+.pc-hint p { margin: 0; color: #5a5148; font-size: .93rem; }
+
+.pc-layout { display: grid; grid-template-columns: 1fr; gap: 20px; align-items: start; }
+
+.pc-editor { background: #fff; border: 1px solid #e8e2d8; border-radius: 14px; padding: 22px 24px; min-height: 320px; }
+.pc-empty { text-align: center; color: #8a8078; padding: 70px 10px; }
+.pc-empty i { font-size: 34px; margin-bottom: 10px; display: block; color: #c9bfae; }
+
+.pc-form__head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid #efe9df; }
+.pc-form__head h2 { margin: 0; font-size: 1.35rem; }
+.pc-form__head p { margin: 2px 0 0; color: #7a7267; font-size: .9rem; }
+.pc-switch { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+.pc-switch input { width: 18px; height: 18px; }
+
+.pc-plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 20px; }
+.pc-plan { padding: 16px 18px; border-radius: 12px; border: 1px solid #e8e2d8; background: #fbfaf7; }
+.pc-plan--year { background: linear-gradient(135deg, #fff4e1, #ffe7c9); border-color: #f0d3a3; }
+.pc-plan h3 { font-size: 1.02rem; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
+.pc-plan h3 small { margin-left: auto; font-weight: 500; color: #7a7267; }
+.pc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.pc-grid label { display: flex; flex-direction: column; gap: 5px; font-size: .84rem; font-weight: 600; color: #4a4239; }
+.pc-grid input { padding: 8px 10px; border: 1px solid #d9d1c4; border-radius: 8px; font-size: 1rem; }
+
+/* What the student will see on the plan card */
+.pc-preview { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #fff; border: 1px dashed #d9d1c4; font-size: .95rem; }
+.pc-preview .was { color: #8a8a8a; text-decoration: line-through; margin-right: 8px; }
+.pc-preview .now { font-weight: 800; font-size: 1.25rem; color: #1b1b1b; }
+.pc-preview .off { margin-left: 10px; padding: 2px 9px; border-radius: 999px; background: #1f9254; color: #fff; font-size: .78rem; font-weight: 700; }
+.pc-preview .muted { color: #7a7267; font-size: .82rem; }
+
+.pc-field { margin-bottom: 18px; }
+.pc-field > label { display: block; font-weight: 700; margin-bottom: 8px; }
+.pc-field > label small { font-weight: 500; color: #7a7267; margin-left: 6px; }
+.pc-editor-wrap { border: 1px solid #d9d1c4; border-radius: 10px; overflow: hidden; }
+.pc-editor-wrap .ql-toolbar { border: 0; border-bottom: 1px solid #e8e2d8; background: #faf7f2; }
+.pc-editor-wrap .ql-container { border: 0; min-height: 260px; font-size: 15px; }
+
+.pc-actions { display: flex; align-items: center; justify-content: flex-end; gap: 14px; }
+.pc-saved { color: #7a7267; font-size: .85rem; }
+.pc-message { display: flex; align-items: flex-start; gap: 12px; margin-top: 12px; padding: 12px 14px 12px 16px;
+              border-radius: 12px; border: 1px solid; border-left-width: 5px; font-weight: 600; line-height: 1.45;
+              box-shadow: 0 6px 18px rgba(0,0,0,.06); animation: pc-message-in .18s ease-out; }
+.pc-message.is-hidden { display: none; }
+.pc-message.is-ok { background: #ecf9f1; color: #14532d; border-color: #b7e2c8; border-left-color: #1f9254; }
+.pc-message.is-bad { background: #fdf1f0; color: #7f1d1d; border-color: #f2bcbc; border-left-color: #d64545; }
+.pc-message__icon { font-size: 1.15rem; margin-top: 1px; flex: 0 0 auto; }
+.pc-message.is-ok .pc-message__icon { color: #1f9254; }
+.pc-message.is-bad .pc-message__icon { color: #d64545; }
+.pc-message__text { flex: 1 1 auto; min-width: 0; word-break: break-word; }
+.pc-message__close { flex: 0 0 auto; margin: -4px -6px -4px 0; width: 30px; height: 30px; border: 0; border-radius: 8px;
+                     background: transparent; color: inherit; font-size: 1.35rem; line-height: 1; cursor: pointer; opacity: .65; }
+.pc-message__close:hover { opacity: 1; background: rgba(0,0,0,.07); }
+@keyframes pc-message-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+.pc-grid--top { margin-bottom: 18px; }
+.pc-grid--top input[type="text"], .pc-grid--top input[type="datetime-local"] { padding: 8px 10px; border: 1px solid #d9d1c4; border-radius: 8px; font-size: .97rem; }
+
+/* The student's view, live */
+.pc-student { border: 1px solid #e8e2d8; border-radius: 14px; overflow: hidden; background: #fff; }
+.pc-student__hero { padding: 18px 20px; background: linear-gradient(135deg, #1e2333, #38405c); color: #fff; }
+.pc-student__flag { display: inline-flex; gap: 6px; align-items: center; padding: 3px 10px; border-radius: 999px; background: rgba(255,178,44,.16); border: 1px solid rgba(255,178,44,.5); color: #ffc257; font-size: .7rem; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; }
+.pc-student__title { font-size: 1.5rem; font-weight: 800; margin-top: 8px; }
+.pc-student__sub { color: #c9cede; font-size: .92rem; margin-top: 4px; }
+.pc-student__ends { color: #ffb3ad; font-weight: 700; font-size: .85rem; margin-top: 6px; }
+.pc-student__plans { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 14px 16px; }
+.pc-student__plan { padding: 12px 14px; border-radius: 12px; background: #f5f5f5; }
+.pc-student__plan--best { background: linear-gradient(135deg, #ffd9a0, #ff9d5c); }
+.pc-student__plan b { display: block; margin-bottom: 4px; }
+.pc-student__plan s { color: #8a8a8a; margin-right: 6px; }
+.pc-student__plan strong { font-size: 1.35rem; }
+.pc-student__plan small { color: #555; }
+.pc-student__plan em { display: block; margin-top: 4px; font-style: normal; font-size: .78rem; font-weight: 700; color: #14532d; }
+.pc-student__strip { margin: 0 16px 16px; padding: 10px 14px; border-radius: 10px; background: linear-gradient(135deg, #fff8ec, #fdf0d8); border: 1px solid #ecd9b4; font-size: .9rem; }
+.pc-student__strip .off { padding: 1px 8px; border-radius: 999px; background: #1f9254; color: #fff; font-size: .75rem; font-weight: 700; }
+.pc-student__strip .ends { padding: 1px 8px; border-radius: 999px; background: #fff; color: #a4302a; border: 1px solid #f2bcbc; font-size: .75rem; font-weight: 700; }
+.pc-student__strip .muted { color: #7a7267; font-size: .8rem; }
+@media (max-width: 640px) { .pc-student__plans { grid-template-columns: 1fr; } }
+
+.pc-until { display: flex; flex-direction: column; gap: 5px; margin-top: 12px; font-size: .84rem; font-weight: 600; color: #4a4239; }
+.pc-until small { font-weight: 500; color: #7a7267; }
+.pc-until input { padding: 8px 10px; border: 1px solid #d9d1c4; border-radius: 8px; font-size: 1rem; }
+
+/* Courses in the sidebar: one line per course with its live price state */
+.as-sidebar .pc-course { align-items: flex-start; padding-top: 9px; padding-bottom: 9px; }
+.as-sidebar .pc-course__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.as-sidebar .pc-course__line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.as-sidebar .pc-course__code { display: inline-block; margin-right: 6px; padding: 1px 7px; border-radius: 6px; background: rgba(255,255,255,.14); font-size: .74rem; }
+.as-sidebar .pc-course.is-active .pc-course__code { background: rgba(0,0,0,.18); }
+.as-sidebar .pc-course__state { font-size: .72rem; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.as-sidebar .pc-course__state.is-set { color: #9be7b8; }
+.as-sidebar .pc-course.is-active .pc-course__state.is-set { color: #14532d; }
+.as-sidebar .pc-course__state.is-off { color: #ffb3ad; }
+.as-sidebar.is-collapsed .pc-course__body { display: none; }
+
+/* The message sits at the top of the form, where the eye already is */
+.pc-form .pc-message { margin: 0 0 16px; }
+
+/* "What you get" keeps a fixed height and scrolls, so a long text never
+   pushes the Save button off the screen */
+.pc-editor-wrap .ql-container { min-height: 0; height: 300px; }
+.pc-editor-wrap .ql-editor { height: 100%; overflow-y: auto; }
+
+@media (max-width: 700px) {
+    .pc-editor { padding: 16px 14px; }
+    .pc-form__head { flex-direction: column; align-items: flex-start; }
+    .pc-grid { grid-template-columns: 1fr; }
+    .pc-actions { flex-direction: column; align-items: stretch; }
+    .pc-actions .btn { width: 100%; }
+    .pc-editor-wrap .ql-container { height: 240px; }
+}
+
+.pc-heading { margin: 22px 0 6px; font-size: 1.05rem; font-weight: 700; }
+.pc-help { margin: 0 0 14px; color: #7a7267; font-size: .86rem; line-height: 1.5; }
+.pc-plan-list { display: grid; gap: 12px; margin-bottom: 12px; }
+.pc-plan-row { border: 1px solid #e8e2d8; border-radius: 12px; padding: 14px 16px; background: #fbfaf7; }
+.pc-plan-row__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px 14px; }
+.pc-plan-row__grid label { display: flex; flex-direction: column; gap: 4px; font-size: .8rem; font-weight: 600; color: #4a4239; }
+.pc-plan-row__grid label small { font-weight: 500; color: #9a9187; }
+.pc-plan-row__grid input { padding: 7px 9px; border: 1px solid #d9d1c4; border-radius: 8px; font-size: .92rem; }
+.pc-plan-row__foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; padding-top: 10px; border-top: 1px dashed #e8e2d8; }
+.pc-plan-row__note { flex: 1 1 auto; min-width: 120px; font-size: .8rem; color: #7a7267; }
+.pc-plan-row .btn { white-space: nowrap; }
+@media (max-width: 700px) { .pc-plan-row__grid { grid-template-columns: 1fr 1fr; } .pc-plan-row__foot .btn { flex: 1 1 auto; } }
+.pc-plan-row__grid input[readonly] { background: #efece6; color: #4a4239; font-weight: 700; }
+.pc-copy { border: 0; padding: 0; margin: 0; min-width: 0; }
+.pc-copy.is-locked { opacity: .45; pointer-events: none; }
+.pc-help--locked { color: #8a5a12; background: #fff4dd; border: 1px solid #f3d9a4; border-radius: 8px; padding: 8px 12px; }
+
+.pc-today {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 10px;
+    padding: 9px 14px;
+    border-radius: 10px;
+    background: #fdf3e3;
+    border: 1px solid #f0dcc0;
+    color: #000000;
+    font-size: 14px;
+}
+.pc-today i { color: #833d17; }
+.pc-span { display: block; margin-top: 4px; color: #833d17; font-weight: 600; min-height: 1em; }

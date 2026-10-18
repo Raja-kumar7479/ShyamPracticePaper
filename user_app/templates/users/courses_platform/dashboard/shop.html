@@ -58,11 +58,14 @@
                     </div>
                 {% endif %}
 
-                <div class="overlay-actions">
-                    <button type="button" class="btn-quick-view"
-                            onclick="openModal({{ course.title|tojson }}, {{ (course.details or '')|tojson }})">
-                        Quick View
-                    </button>
+                <div class="card-badges">
+                    <span class="card-label-badge card-label-badge--{{ 'paid' if course.label == 'Paid' else 'free' }}">
+                        {{ course.label or 'Paid' }}
+                    </span>
+                    {% if course.is_newly_added %}
+                    <span class="card-new-badge"><i class="fas fa-star"></i> Latest</span>
+                    {% endif %}
+                    {% if course.hidden %}<span class="card-new-badge" style="background:#1f5f3f" title="No longer listed for new students - kept for you"><i class="fas fa-bookmark"></i> Kept for you</span>{% endif %}
                 </div>
             </div>
 
@@ -93,19 +96,10 @@
                             Cart full
                         </a>
                     {% else %}
-                        <form method="POST" action="{{ url_for('users.add_cart', course_code=course_code, unique_code=unique_code) }}" class="m-0">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="course_code" value="{{ course.code or '' }}">
-                            <input type="hidden" name="unique_code" value="{{ unique_code }}">
-                            <input type="hidden" name="title" value="{{ course.title or '' }}">
-                            <input type="hidden" name="subtitle" value="{{ course.subtitle or '' }}">
-                            <input type="hidden" name="section" value="{{ course.section or '' }}">
-                            <input type="hidden" name="section_id" value="{{ course.section_id or '' }}">
-
-                            <button type="submit" name="add_cart" value="true" class="btn-add-cart">
-                                <i class="fas fa-cart-plus"></i> Add
-                            </button>
-                        </form>
+                        <a class="btn-add-cart text-decoration-none"
+                           href="{{ url_for('users.view_content_details', course_code=course_code, unique_code=unique_code, section_id=course.section_id) }}">
+                            <i class="fas fa-cart-plus"></i> Add
+                        </a>
                     {% endif %}
                 </div>
             </div>
@@ -140,16 +134,7 @@
     {% include 'users/_flash.html' %}
 {% endwith %}
 
-<div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header border-0 pb-0 pt-4 px-4">
-                <h5 class="modal-title fw-bold" id="modalTitle"></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body px-4 pt-2 pb-4 text-secondary" id="modalDetails" style="line-height: 1.6;"></div>
-        </div>
-    </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

@@ -6,6 +6,7 @@ from routes.courses_platform.utils.utils_token import csrf_protected
 import logging
 from routes import users_bp
 import bcrypt
+from routes.auth.utils.utils_login import hash_password, verify_password
 from routes.auth.utils.utils_login import verify_password
 from routes.auth.utils.utils_signup import is_password_secure
 
@@ -98,7 +99,7 @@ def api_profile_update_password():
         return jsonify({"status": "error", "message": "Password must be 8+ chars, 1 uppercase, 1 digit, 1 special char."})
 
     try:
-        hashed_pw = bcrypt.hashpw(new_pass.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        hashed_pw = hash_password(new_pass)
         profile_op.update_user_password(email, hashed_pw)
         return jsonify({"status": "success", "message": "Password updated successfully!"})
     except Exception as e:
@@ -128,7 +129,7 @@ def api_profile_set_password():
         return jsonify({"status": "error", "message": "Password not secure enough."})
 
     try:
-        hashed_pw = bcrypt.hashpw(new_pass.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        hashed_pw = hash_password(new_pass)
         profile_op.set_user_password(email, hashed_pw)
         return jsonify({"status": "success", "message": "Password set successfully!", "reload": True})
     except Exception as e:

@@ -1,9 +1,3 @@
-"""Data access for the MCQ quiz/assessment bank (pcq_* tables).
-
-The grading rule that matters: correct_option and explanation are only read
-here, server-side. list-for-taking queries never select them, so a quiz page
-cannot leak an answer before the student has committed one.
-"""
 import random
 from datetime import datetime
 
@@ -13,10 +7,7 @@ OPTIONS = ('A', 'B', 'C', 'D')
 MODES = ('quiz', 'assessment')
 
 
-# ------------------------------------------------------------------ subjects
 def subjects(premium):
-    """Subject cards: totals, and how many extra questions premium adds -
-    the number the upsell banner shows."""
     rows = _all("""
         SELECT subject,
                COUNT(*) AS total,
@@ -30,9 +21,7 @@ def subjects(premium):
     return rows
 
 
-# ------------------------------------------------------- questions for taking
 def questions_for_taking(subject, premium, limit=30):
-    """Questions WITHOUT the answer key. Paid ones only for subscribers."""
     sql = """
         SELECT id, question_text, question_image,
                option_a, option_b, option_c, option_d, is_paid
@@ -47,11 +36,6 @@ def questions_for_taking(subject, premium, limit=30):
 
 
 def answer_key(question_ids, subject=None):
-    """{id: row with correct/explanation} - server-side only, used for grading.
-
-    subject scopes the key to one attempt's subject, so grading can never be
-    padded with question ids smuggled in from other subjects.
-    """
     if not question_ids:
         return {}
     marks = ','.join(['%s'] * len(question_ids))
@@ -69,7 +53,6 @@ def get_question(question_id):
                 (question_id,))
 
 
-# ------------------------------------------------------------------ attempts
 def create_attempt(user_id, subject, mode, total):
     return _write("""
         INSERT INTO pcq_attempts (user_id, subject, mode, total)
@@ -83,8 +66,6 @@ def get_attempt(attempt_id, user_id):
 
 
 def record_answer(attempt_id, question_id, selected, is_correct):
-    """INSERT only - the unique key makes an already-answered question
-    unchangeable, which is the assessment-mode lock."""
     return _write("""
         INSERT INTO pcq_attempt_answers (attempt_id, question_id, selected, is_correct)
         VALUES (%s,%s,%s,%s)
@@ -106,7 +87,6 @@ def finish_attempt(attempt_id, total, correct, wrong, skipped):
 
 
 def attempt_review(attempt_id):
-    """Everything the review page needs: the question, the pick, the truth."""
     return _all("""
         SELECT q.id, q.question_text, q.question_image,
                q.option_a, q.option_b, q.option_c, q.option_d,

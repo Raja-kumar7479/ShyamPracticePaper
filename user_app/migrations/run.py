@@ -1,18 +1,3 @@
-"""Applies pending SQL migrations in order and records them in schema_migrations.
-
-Usage (from anywhere):
-    python user_app/migrations/run.py                # apply pending migrations
-    python user_app/migrations/run.py --list         # show applied / pending
-    python user_app/migrations/run.py --baseline     # mark ALL current files as
-                                                     # applied WITHOUT running them
-                                                     # (use once on a DB that was
-                                                     # migrated manually)
-    python user_app/migrations/run.py --dry-run      # print what would run
-
-Each .sql file runs inside one connection; statements are split on ';' at end of
-line. On the first error the file stops and is NOT recorded, so fixing and
-re-running is safe (write migrations idempotently, as the existing ones are).
-"""
 import argparse
 import os
 import re
@@ -51,6 +36,10 @@ def statements(path):
             buf.append(ch)
         elif ch == ';':
             stmt = ''.join(buf).strip()
+            upper = stmt.upper()
+            if ('CREATE TRIGGER' in upper or 'CREATE PROCEDURE' in upper or 'CREATE FUNCTION' in upper) and not re.search(r'\bEND\s*$', upper):
+                buf.append(ch)
+                continue
             if stmt:
                 out.append(stmt)
             buf = []
@@ -105,7 +94,13 @@ def main():
             continue
         try:
             for stmt in stmts:
-                cur.execute(stmt)
+                try:
+                    cur.execute(stmt)
+                except mysql.connector.Error as exc:
+                    if exc.errno not in (1050, 1060, 1061, 1091, 1359, 1826):
+                        raise
+                    print(f'   already in place, skipped: {exc.msg}')
+                    continue
                 if cur.with_rows:
                     cur.fetchall()
                 try:

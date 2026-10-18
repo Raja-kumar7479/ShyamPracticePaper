@@ -263,3 +263,61 @@
         @media (prefers-reduced-motion: reduce) {
             * { animation: none !important; transition: none !important; }
         }
+
+/* Last date this package is available, shown on both free and paid content */
+.card-expiry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -0.35rem 0 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #9a6a00;
+}
+
+/* Formatted description written in the admin editor */
+#modalDetails img { max-width: 100%; height: auto; border-radius: 8px; }
+#modalDetails table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+#modalDetails table td, #modalDetails table th { border: 1px solid #d7dee7; padding: 6px 8px; }
+#modalDetails .ql-align-center { text-align: center; }
+#modalDetails .ql-align-right { text-align: right; }
+#modalDetails .ql-align-justify { text-align: justify; }
+
+/* Label and "latest" tag, together at the top of the card image */
+.card-badges {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.card-label-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.card-label-badge--paid { background: #fdf3e3; color: #7a231d; }
+.card-label-badge--free { background: #1f9254; color: #fff; }
+
+.card-new-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #7a231d;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+.card-new-badge i { font-size: 0.6rem; }

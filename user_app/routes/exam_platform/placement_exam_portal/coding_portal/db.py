@@ -1,10 +1,3 @@
-"""Database helpers for the coding portal.
-
-The standalone compiler owned its own MySQL pool and database. Inside this
-app there is already one pool and one database, so this module keeps the same
-helper API the ported blueprints use (query_all / query_one / execute /
-executemany / get_cursor) but serves every call from the app's shared pool.
-"""
 import logging
 import os
 from contextlib import contextmanager
@@ -48,7 +41,6 @@ def query_one(sql, params=None):
 
 
 def execute(sql, params=None):
-    """Runs a write and returns lastrowid (inserts) or rowcount (updates)."""
     with get_cursor(commit=True) as cur:
         cur.execute(sql, params or ())
         return cur.lastrowid or cur.rowcount
@@ -61,16 +53,10 @@ def executemany(sql, seq):
 
 
 def warm_pool():
-    """No-op: the shared application pool is warmed at startup."""
     return True
 
 
 def init_db():
-    """Applies the coding-portal schema onto the existing database.
-
-    Every statement is CREATE TABLE IF NOT EXISTS, so this is idempotent and
-    never touches the app's other tables.
-    """
     if not os.path.exists(SCHEMA_PATH):
         logger.warning("CODING DB: schema.sql not found at %s", SCHEMA_PATH)
         return False
@@ -78,8 +64,6 @@ def init_db():
     with open(SCHEMA_PATH, encoding="utf-8") as fh:
         sql_text = fh.read()
 
-    # Strip comment lines BEFORE splitting: a ';' inside a comment would
-    # otherwise cut a CREATE TABLE in half and the statement would fail.
     cleaned = "\n".join(line for line in sql_text.splitlines()
                         if not line.strip().startswith("--"))
     statements = [s.strip() for s in cleaned.split(";") if s.strip()]
@@ -89,7 +73,6 @@ def init_db():
     try:
         for stmt in statements:
             low = stmt.lower()
-            # The portal must never create or switch databases inside this app.
             if low.startswith(("create database", "use ", "drop database")):
                 continue
             try:

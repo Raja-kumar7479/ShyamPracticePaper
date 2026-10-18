@@ -43,6 +43,7 @@
       this.pending = false;
       this.lastSaved = Date.now();
       this._tick();
+      window.dispatchEvent(new CustomEvent("cj:saved"));
       return true;
     } catch (e) {
       this._render("Not saved");

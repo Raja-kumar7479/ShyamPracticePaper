@@ -1,0 +1,63 @@
+/* Coding page shown inside the TCS exam window's CODING tab: no header, nav
+   or footer of its own; colours and type follow the exam window. */
+html, body { background: #fff; }
+body { font-family: Arial, sans-serif; }
+
+.exam-shell.is-embedded { height: 100vh; }
+
+/* question | editor sit edge to edge, no coloured band or card gaps */
+.exam-shell.is-embedded .exam-body { background: #fff; gap: 0; padding: 0; overflow: hidden; }
+.exam-shell.is-embedded .pane-question,
+.exam-shell.is-embedded .pane-response {
+  border: 0; border-radius: 0; box-shadow: none;
+}
+.exam-shell.is-embedded .pane-question {
+  padding: 12px 16px 16px;
+  border-right: 1px solid #ccc;
+  overflow-y: auto;           /* scrollbar appears only when the question is long */
+  scrollbar-width: auto;
+}
+.exam-shell.is-embedded .vsplitter { flex: 0 0 5px; background: #e6e6e6; }
+.exam-shell.is-embedded .vsplitter:hover { background: #cfd8e3; }
+
+.exam-shell.is-embedded .q-heading { font-size: 16px; font-weight: bold; }
+.exam-shell.is-embedded .q-howto { display: none; }
+.exam-shell.is-embedded .btn-revisit { display: none; }
+.exam-shell.is-embedded .editor-tools { display: none; }
+.exam-shell.is-embedded .q-statement { color: #222; font-size: 14px; }
+.exam-shell.is-embedded .q-box { background: #fff; }
+
+.exam-shell.is-embedded .response-head .label { font-weight: bold; color: #333; }
+.exam-shell.is-embedded .response-head { background: #f8f9fa; border-bottom: 1px solid #ddd; }
+.exam-shell.is-embedded .editor-bar { background: #f8f9fa; }
+.exam-shell.is-embedded .lang-select { border-color: #999; }
+.exam-shell.is-embedded .lang-label { font-size: 13px; color: #333; margin-right: 4px; }
+.exam-shell.is-embedded .btn-primary { background: #007bff; border-color: #007bff; }
+.exam-shell.is-embedded .btn-primary:hover { background: #0069d9; }
+.exam-shell.is-embedded .btn-ghost { border-color: #337ab7; color: #337ab7; }
+
+.exam-shell.is-embedded .emb-note {
+  flex: 0 0 auto; padding: 6px 16px;
+  background: #f8f9fa; border-bottom: 1px solid #ddd;
+  font-size: 13px; color: #333;
+}
+.exam-shell.is-embedded .emb-note strong { text-decoration: underline; }
+
+/* footer across the whole coding part: Marked For Review | Next | Previous,
+   bottom-left as on the TCS NQT screen */
+.exam-shell.is-embedded .emb-footer {
+  flex: 0 0 auto;
+  position: relative; z-index: 5;          /* always painted above both panes */
+  min-height: 56px; box-sizing: border-box;
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  background: #fff; border-top: 1px solid #ccc;
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, .06);
+}
+.emb-btn {
+  display: inline-block; padding: 6px 14px; border: 1px solid #337ab7; border-radius: 3px;
+  font-family: inherit; font-size: 13px; line-height: 1.2; color: #337ab7; background: #fff;
+  text-decoration: none; cursor: pointer;
+}
+.emb-btn:hover { color: #fff; background: #337ab7; text-decoration: none; }
+.emb-btn--review.is-marked { color: #fff; background: #8a2be2; border-color: #8a2be2; }

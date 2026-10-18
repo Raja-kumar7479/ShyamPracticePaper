@@ -24,7 +24,8 @@ from .courses_platform.payment.purchased_payment import (
     add_cart,
     coupon_code_apply,
     create_payment_order,
-    payment_success
+    payment_success,
+    payment_orders
 
 )
 
@@ -35,6 +36,7 @@ from .practice_question_platform.databases import question_handler_db
 from .practice_question_platform.practice_question import practice_question
 
 from .exam_platform import exam_window_guard
+from .exam_platform import premium_portal
 from .exam_platform.placement_exam_portal import rounds
 from .exam_platform.placement_exam_portal.communication_portal import routes_proctor
 from .exam_platform.placement_exam_portal.communication_portal import start_test

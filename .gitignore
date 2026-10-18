@@ -34,12 +34,8 @@ client_secret*.json
 *service-account*.json
 
 # ---- Shared uploads (user-generated; should not live in git) ----
-shared_uploads/images/
-shared_uploads/proctor_snaps/
-shared_uploads/user_responses/
-shared_uploads/verification/
-shared_uploads/audio_checks/
-shared_uploads/receipt_*.pdf
+user_app/uploads/
+admin_app/uploads/
 
 # ---- Editor / OS ----
 .vscode/

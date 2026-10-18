@@ -12,7 +12,6 @@
 
     document.addEventListener('DOMContentLoaded', function () {
 
-        /* ---------- left tabs: Description | Editorial | Submissions ---------- */
         var tabs = document.querySelectorAll('.pc-ltab');
         var panels = document.querySelectorAll('.pc-lpanel');
         tabs.forEach(function (tab) {
@@ -33,7 +32,6 @@
             });
         });
 
-        /* ---------- editorial: language tabs + copy ---------- */
         document.querySelectorAll('.pc-ed').forEach(function (article) {
             var langs = article.querySelectorAll('[data-edlang]');
             var blocks = article.querySelectorAll('[data-edcode]');
@@ -57,7 +55,6 @@
             }
         });
 
-        /* ---------- submissions: reveal the code of a row ---------- */
         document.querySelectorAll('.pc-subrow').forEach(function (row) {
             row.addEventListener('click', function () {
                 var id = row.getAttribute('data-subid');
@@ -69,7 +66,6 @@
             });
         });
 
-        /* ---------- bookmark ---------- */
         var bookmarks = document.querySelectorAll('.js-bookmark');
         bookmarks.forEach(function (btn) {
             btn.addEventListener('click', function () {
@@ -97,7 +93,6 @@
             toast(on ? 'Bookmarked' : 'Bookmark removed');
         }
 
-        /* ---------- reset to the starter code ---------- */
         var reset = $('pcReset');
         if (reset) {
             reset.addEventListener('click', function () {
@@ -114,7 +109,6 @@
             });
         }
 
-        /* ---------- expand the editor ---------- */
         var expand = $('pcExpand');
         if (expand) {
             expand.addEventListener('click', function () { setExpanded(!document.body.classList.contains('pc-expanded')); });
@@ -135,7 +129,6 @@
             }
         }
 
-        /* ---------- full window (browser fullscreen) ---------- */
         (function () {
             var btn = $('pcFullscreen');
             if (!btn) return;
@@ -178,7 +171,6 @@
             paint();
         })();
 
-        /* ---------- resize the console: drag the grip or nudge the arrows ---------- */
         (function () {
             var io = $('pcIo');
             var grip = $('pcIoGrip');
@@ -270,7 +262,6 @@
             window.addEventListener('resize', function () { apply(current(), false); });
         })();
 
-        /* ---------- collapse the console ---------- */
         var collapse = $('pcIoCollapse');
         if (collapse) {
             collapse.addEventListener('click', function () {
@@ -283,7 +274,6 @@
             });
         }
 
-        /* ---------- stopwatch ---------- */
         var timerBtn = $('pcTimerBtn');
         var timerOut = $('pcTimer');
         if (timerBtn && timerOut) {
@@ -310,7 +300,6 @@
             window.addEventListener('beforeunload', function () { if (handle) clearInterval(handle); });
         }
 
-        /* ---------- helpers ---------- */
         function copyText(text, btn) {
             var done = function () {
                 var original = btn.innerHTML;

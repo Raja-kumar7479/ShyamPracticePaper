@@ -1,0 +1,100 @@
+.acf {
+    --acf-primary: #833d17;
+    --acf-primary-2: #6b3213;
+    --acf-danger: #dc2626;
+    --acf-danger-soft: #fef2f2;
+    --acf-warn: #b45309;
+    --acf-warn-soft: #fff7ed;
+    --acf-cream: #fdf3e3;
+    --acf-line: #e5e7eb;
+    --acf-ink: #000000;
+    --acf-muted: #6b7280;
+    position: fixed;
+    inset: 0;
+    z-index: 15000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(0, 0, 0, .55);
+    backdrop-filter: blur(3px);
+}
+.acf[hidden] { display: none; }
+body.acf-open { overflow: hidden; }
+
+.acf-box {
+    width: 100%;
+    max-width: 480px;
+    max-height: calc(100vh - 32px);
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    color: var(--acf-ink);
+    border-radius: 14px;
+    box-shadow: 0 30px 70px rgba(0, 0, 0, .35);
+    animation: acfRise .22s cubic-bezier(.22, 1, .36, 1);
+    font-family: inherit;
+}
+@keyframes acfRise { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+
+.acf-head { display: flex; align-items: center; gap: 12px; padding: 18px 20px 6px; }
+.acf-icon {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 16px;
+    background: var(--acf-cream);
+    color: var(--acf-primary);
+}
+.acf--danger .acf-icon { background: var(--acf-danger-soft); color: var(--acf-danger); }
+.acf--blocked .acf-icon { background: var(--acf-warn-soft); color: var(--acf-warn); }
+.acf-title { margin: 0; font-size: 17px; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }
+
+.acf-body { padding: 8px 20px 4px 72px; overflow-y: auto; font-size: 14px; line-height: 1.5; }
+.acf-msg { margin: 0 0 10px; color: #1f2937; overflow-wrap: anywhere; }
+.acf-list-title { margin: 4px 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: var(--acf-muted); }
+.acf-list { list-style: none; margin: 0 0 10px; padding: 0; border: 1px solid var(--acf-line); border-radius: 10px; }
+.acf-item { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 9px 12px; overflow-wrap: anywhere; }
+.acf-item + .acf-item { border-top: 1px solid var(--acf-line); }
+.acf-item__label { font-weight: 600; min-width: 92px; }
+.acf-item__value { color: #1f2937; }
+.acf-item__change { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.acf-from { color: var(--acf-muted); text-decoration: line-through; }
+.acf-to { color: var(--acf-primary); font-weight: 600; }
+.acf-arrow { font-size: 11px; color: var(--acf-muted); }
+.acf-note { margin: 0 0 10px; font-size: 13px; color: var(--acf-muted); }
+.acf--danger .acf-note { color: var(--acf-danger); font-weight: 600; }
+
+.acf-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px 18px; }
+.acf-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 9px 18px;
+    border: 0;
+    border-radius: 9px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter .15s ease, background .15s ease, border-color .15s ease;
+}
+.acf-btn[hidden] { display: none; }
+.acf-btn:focus-visible { outline: 3px solid rgba(240, 174, 6, .6); outline-offset: 2px; }
+.acf-btn--ghost { background: #ffffff; color: var(--acf-ink); border: 1.5px solid var(--acf-line); }
+.acf-btn--ghost:hover { border-color: #d6cbc7; }
+.acf-btn--alt { background: #fdf3e3; color: var(--acf-primary); border: 1.5px solid #f0dcc0; }
+.acf-btn--alt:hover { border-color: var(--acf-primary); }
+.acf-btn--primary { color: #ffffff; background: linear-gradient(135deg, var(--acf-primary), var(--acf-primary-2)); }
+.acf-btn--danger { color: #ffffff; background: var(--acf-danger); }
+.acf-btn--primary:hover, .acf-btn--danger:hover { filter: brightness(1.07); }
+
+@media (max-width: 520px) {
+    .acf-body { padding-left: 20px; }
+    .acf-foot { flex-direction: column-reverse; }
+    .acf-btn { width: 100%; }
+}

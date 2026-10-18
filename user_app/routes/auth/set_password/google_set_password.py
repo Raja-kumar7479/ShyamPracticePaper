@@ -3,6 +3,7 @@ from routes.auth.utils.utils_signup import is_password_secure
 from routes.auth.database.auth_db import AuthOperation
 from routes.auth.utils.utils_login import safe_next_url
 import bcrypt
+from routes.auth.utils.utils_login import hash_password, verify_password
 import logging
 from routes import users_bp
 
@@ -11,18 +12,6 @@ logger = logging.getLogger(__name__)
 
 @users_bp.route("/user_set_password", methods=['GET', 'POST'])
 def user_set_password():
-    """Add a password to the signed-in account.
-
-    The email used to come from the query string, so anyone who knew the
-    address of a Google account with no password could set one and be logged
-    straight in as that user - a full account takeover with no authentication
-    and no proof of email ownership. The address is now taken only from an
-    established session, so this page can only ever change your own account.
-
-    Someone who cannot sign in has the password-reset flow instead: it emails
-    a signed, single-use link, which is what actually proves the address
-    belongs to them.
-    """
     try:
         email = session.get('user_email')
 
@@ -61,7 +50,7 @@ def user_set_password():
                 return redirect(url_for('users.user_set_password'))
 
             try:
-                hashed_pw = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                hashed_pw = hash_password(new_password)
                 auth_db.set_user_password(email, hashed_pw)
                 
                 if user.get('auth_type') == 'google':

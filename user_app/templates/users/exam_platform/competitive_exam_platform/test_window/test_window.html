@@ -8,13 +8,25 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/katex.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/competitive_exam_platform/test_window/test_window.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/users/exam_platform/exam_fullscreen_guard.css') }}">
 {% endblock %}
 
 {% block flash %}{% endblock %}
 
 {% block content %}
-<div id="pageData" hidden data-section-id="{{ section_id }}" data-test-key="{{ test_key }}" data-course-code="{{ course_code }}" data-unique-code="{{ unique_code }}" data-email="{{ email }}" data-duration-seconds="{{ duration_seconds | safe }}" data-sections-data='{{ sections_data | tojson | safe }}'></div>
+<div id="pageData" hidden data-section-id="{{ section_id }}" data-test-key="{{ test_key }}" data-course-code="{{ course_code }}" data-unique-code="{{ unique_code }}" data-email="{{ email }}" data-duration-seconds="{{ duration_seconds | safe }}" data-coding-url="{{ url_for('tcs.coding_part', exam_id=tcs_exam.id, embedded=1) if tcs_exam else '' }}" data-sections-data='{{ sections_data | tojson | safe }}' data-coding-nav='{{ (coding_nav or []) | tojson }}'></div>
 <div id="examWindowGuard" hidden data-test-key="{{ test_key }}" data-exit-url="{{ url_for('users.open_mock_test_section', section_id=section_id, course_code=course_code, unique_code=unique_code) }}"></div>
+<div id="examSecure" hidden
+     data-block-clipboard="0"
+     data-watermark="{{ email }}"
+     data-report-url="{{ url_for('users.record_violation', test_key=test_key, course_code=course_code, unique_code=unique_code) }}"
+     data-terminated-url="{{ url_for('users.test_terminated', test_key=test_key, course_code=course_code, unique_code=unique_code, violation_type='__TYPE__') }}"></div>
+<div id="examFullscreenGuard" hidden
+     data-grace-seconds="20"
+     data-terminate-url="{{ url_for('users.terminate_violation', test_key=test_key, course_code=course_code, unique_code=unique_code) }}"
+     data-terminated-url="{{ url_for('users.test_terminated', test_key=test_key, course_code=course_code, unique_code=unique_code, violation_type='left_full_screen') }}"
+     data-require-fullscreen="1"
+     data-start-label="Start test"></div>
 <div id="examExitGuard" hidden
      data-away-seconds="0"
      data-confirm="1"
@@ -50,7 +62,17 @@
             {% for section in sections_data %}
             <div class="tab" data-section-id="{{ section.section_id }}" onclick="testManager.selectSection('{{ section.section_id }}')">{{ section.section_name }} <i class="fas fa-info-circle tab-info"></i></div>
             {% endfor %}
+            {% if coding_sections %}
+            <div class="tab" data-section-id="__coding__" onclick="testManager.selectCodingTab()">{{ tcs_exam.coding_label or 'CODING' }} <i class="fas fa-info-circle tab-info"></i></div>
+            {% endif %}
         </div>
+        {% if coding_sections %}
+        <div class="section-tabs coding-subtabs" id="coding-subtabs" style="display:none">
+            {% for cs in coding_sections %}
+            <div class="tab inactive-tab" data-coding-section="{{ cs.id }}" onclick="testManager.selectCodingSection('{{ cs.id }}')">{{ cs.title }} <i class="fas fa-info-circle tab-info"></i></div>
+            {% endfor %}
+        </div>
+        {% endif %}
         <div class="question-header">
             <div><strong>Question Type: <span id="question-type-display">---</span></strong></div>
             <div>Marks for correct answer: <span class="correct-mark" id="correct-marks-display">-</span> | Negative Marks: <span class="negative-mark" id="negative-marks-display">-</span></div>
@@ -69,6 +91,11 @@
             <div class="left-actions"><button id="mark-review-next-btn">Mark for Review & Next</button><button id="clear-response-btn">Clear Response</button></div>
             <div class="right-action"><button id="save-next-btn">Save & Next</button></div>
         </div>
+        {% if tcs_exam %}
+        <div id="coding-frame-wrap" style="display:none; flex:1 1 auto; min-height:0; flex-direction:column; background:#fff;">
+            <iframe id="coding-frame" title="Coding section" style="flex:1 1 auto; width:100%; min-height:0; border:0; background:#fff;"></iframe>
+        </div>
+        {% endif %}
     </aside>
 
     <aside class="right-panel">
@@ -182,6 +209,8 @@
 <script src="https://cdn.jsdelivr.net/npm/katex@0.13.11/dist/contrib/auto-render.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <script src="{{ url_for('static', filename='js/users/exam_platform/competitive_exam_platform/test_proctoring.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/exam_fullscreen_guard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/users/exam_platform/exam_secure.js') }}"></script>
 <script src="{{ url_for('static', filename='js/users/exam_platform/competitive_exam_platform/test_window.js') }}"></script>
 <script src="{{ url_for('static', filename='js/users/exam_platform/competitive_exam_platform/test_window/test_features.js') }}"></script>
 <script src="{{ url_for('static', filename='js/users/exam_platform/exam_window_guard.js') }}"></script>

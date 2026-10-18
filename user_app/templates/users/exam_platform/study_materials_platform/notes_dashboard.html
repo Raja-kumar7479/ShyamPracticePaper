@@ -29,15 +29,27 @@
                                             <ul class="topic-list">
                                                 {% for title, content in titles.items() %}
                                                     {% if content.main_path and not content.subtitles %}
-                                                        <li><a href="{{ url_for('users.view_note_file', filepath=content.main_path) }}" target="_blank" rel="noopener noreferrer">{{ title }}</a></li>
+                                                        {% if content.main_locked %}
+                                                        <li><a class="note-locked" href="{{ premium_url }}">{{ title }} <span class="note-tag"><i class="fas fa-crown"></i> Premium</span></a></li>
+                                                        {% else %}
+                                                        <li><a href="{{ url_for('users.view_note_file', filepath=content.main_path) }}" target="_blank" rel="noopener noreferrer">{{ title }}{% if content.main_premium %} <span class="note-tag note-tag--open"><i class="fas fa-crown"></i> Premium</span>{% endif %}</a></li>
+                                                        {% endif %}
                                                     {% elif content.subtitles %}
                                                         <li>{{ title }}</li>
                                                         <ul class="topic-list">
                                                         {% if content.main_path %}
-                                                            <li><a href="{{ url_for('users.view_note_file', filepath=content.main_path) }}" target="_blank" rel="noopener noreferrer">Introduction / Main</a></li>
+                                                            {% if content.main_locked %}
+                                                            <li><a class="note-locked" href="{{ premium_url }}">Introduction / Main <span class="note-tag"><i class="fas fa-crown"></i> Premium</span></a></li>
+                                                            {% else %}
+                                                            <li><a href="{{ url_for('users.view_note_file', filepath=content.main_path) }}" target="_blank" rel="noopener noreferrer">Introduction / Main{% if content.main_premium %} <span class="note-tag note-tag--open"><i class="fas fa-crown"></i> Premium</span>{% endif %}</a></li>
+                                                            {% endif %}
                                                         {% endif %}
                                                         {% for subtitle in content.subtitles %}
-                                                            <li><a href="{{ url_for('users.view_note_file', filepath=subtitle.path) }}" target="_blank" rel="noopener noreferrer">{{ subtitle.name }}</a></li>
+                                                            {% if subtitle.locked %}
+                                                            <li><a class="note-locked" href="{{ premium_url }}">{{ subtitle.name }} <span class="note-tag"><i class="fas fa-crown"></i> Premium</span></a></li>
+                                                            {% else %}
+                                                            <li><a href="{{ url_for('users.view_note_file', filepath=subtitle.path) }}" target="_blank" rel="noopener noreferrer">{{ subtitle.name }}{% if subtitle.premium %} <span class="note-tag note-tag--open"><i class="fas fa-crown"></i> Premium</span>{% endif %}</a></li>
+                                                            {% endif %}
                                                         {% endfor %}
                                                         </ul>
                                                     {% else %}
@@ -79,6 +91,15 @@
         </div>
     </aside>
 </div>
+{% endblock %}
+
+{% block head_extras %}
+<style>
+.note-locked { color: #8a7c6c !important; }
+.note-tag { display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; padding: 1px 8px; border-radius: 999px;
+            background: linear-gradient(135deg, #ffd166, #f0ae06); color: #3b2300; font-size: .68rem; font-weight: 800; vertical-align: middle; }
+.note-tag--open { background: #e8f7ee; color: #17703f; }
+</style>
 {% endblock %}
 
 {% block body_extras %}

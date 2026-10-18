@@ -153,7 +153,7 @@
                                     <span class="course-code">{{ course.code }}</span>
                                     <h4>{{ course.description | striptags }}</h4>
                                     <p>Comprehensive learning material and tests.</p>
-                                    <a href="{{ url_for('users.view_course_dashboard', course_code=course.code, unique_code=course.unique_code) }}" class="btn btn-primary w-100 mt-3">
+                                    <a href="{{ url_for('users.view_course_dashboard', course_code=course.code, unique_code=course.unique_code) }}" class="btn btn-primary dc-action">
                                         Continue Learning
                                     </a>
                                 </div>
@@ -173,7 +173,7 @@
                 <div id="purchases" class="tab-section">
                     <h2 class="section-heading">Your Purchased Items</h2>
 
-                    {% if grouped_purchases %}
+                    {% if grouped_purchases or subscriptions %}
                         <div class="purchase-summary mb-4">
                             <div class="ps-item">
                                 <span class="ps-label">Total Purchases</span>
@@ -185,12 +185,42 @@
                             </div>
                             <div class="ps-item">
                                 <span class="ps-label">Categories</span>
-                                <span class="ps-value">{{ grouped_purchases|length }}</span>
+                                <span class="ps-value">{{ grouped_purchases|length + (1 if subscriptions else 0) }}</span>
                             </div>
                         </div>
 
+                        {% if subscriptions %}
+                        <h5 class="purchase-section-title">Premium subscription<span>{{ subscriptions|length }}</span></h5>
+                        <div class="purchase-grid mb-4">
+                            {% for sub in subscriptions %}
+                            <div class="purchase-card purchase-card--premium">
+                                <div class="pc-top">
+                                    <h4 class="pc-title"><i class="fas fa-crown"></i> {{ sub.plan }}</h4>
+                                    <span class="pc-price">&#8377;{{ "%.2f"|format(sub.amount) }}</span>
+                                </div>
+                                <p class="pc-sub">Every premium item in {{ sub.course_code or 'your course' }}</p>
+                                <ul class="pc-meta">
+                                    <li><i class="fas fa-calendar-day"></i> {{ sub.starts_at.strftime('%d %b %Y') if sub.starts_at else 'N/A' }}</li>
+                                    <li><i class="fas fa-hourglass-half"></i>
+                                        {{ 'Valid till ' ~ sub.expires_at.strftime('%d %b %Y, %I:%M %p') if sub.expires_at else 'No end date' }}</li>
+                                    <li><i class="fas fa-hashtag"></i> <span class="pc-txn">{{ sub.payment_id }}</span></li>
+                                </ul>
+                                <div class="pc-foot">
+                                    <span class="pc-status{{ ' pc-status--ended' if not sub.active }}">{{ 'Active' if sub.active else 'Ended' }}</span>
+                                    {% set suc = course_unique_codes.get(sub.course_code) %}
+                                    {% if suc %}
+                                    <a href="{{ url_for('users.purchase_dashboard', course_code=sub.course_code, unique_code=suc) }}" class="pc-link">
+                                        Open <i class="fas fa-arrow-right"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+
                         {% for section, purchases in grouped_purchases.items() %}
-                            <h5 class="purchase-section-title">{{ section }}<span>{{ purchases|length }}</span></h5>
+                            <h5 class="purchase-section-title">{{ (section or 'Other')|replace('_', ' ')|title }}<span>{{ purchases|length }}</span></h5>
                             <div class="purchase-grid mb-4">
                                 {% for p in purchases %}
                                 <div class="purchase-card">
@@ -202,9 +232,6 @@
 
                                     <ul class="pc-meta">
                                         <li><i class="fas fa-calendar-day"></i> {{ p.payment_date.strftime('%d %b %Y') if p.payment_date else 'N/A' }}</li>
-                                        {% if p.validity_expires_at %}
-                                        <li><i class="fas fa-hourglass-half"></i> Valid till {{ p.validity_expires_at.strftime('%d %b %Y') }}</li>
-                                        {% endif %}
                                         <li><i class="fas fa-hashtag"></i> <span class="pc-txn">{{ p.payment_id }}</span></li>
                                     </ul>
 
@@ -224,8 +251,8 @@
                     {% else %}
                         <div class="empty-placeholder">
                             <i class="fas fa-receipt mb-3"></i>
-                            <h5>No Purchases Found</h5>
-                            <p>You haven't bought any premium content yet.</p>
+                            <h5>Nothing bought yet</h5>
+                            <p>Paid items you buy and Premium subscriptions you take will be listed here with their receipts.</p>
                             {% if first_enrolled_course %}
                             <a href="{{ url_for('users.course_shop', course_code=first_enrolled_course.code, unique_code=first_enrolled_course.unique_code) }}"
                                class="btn btn-primary rounded-pill mt-2">

@@ -56,6 +56,9 @@
     }, 250);
 
     window.sppMarkExamFinished = function () { finished = true; internalNav = true; };
+    window.sppExamWillPrompt = function () {
+        return wantConfirm && !(finished || terminated || internalNav || window.sppExamLeaving);
+    };
 
     function sendRelease() {
         if (!releaseUrl) return;
@@ -71,8 +74,6 @@
 
     if (wantConfirm) {
         window.addEventListener('beforeunload', function (e) {
-            // sppExamLeaving means the proctoring guard is terminating and
-            // navigating on purpose - never prompt over that.
             if (finished || terminated || internalNav || window.sppExamLeaving) return;
             e.preventDefault();
             e.returnValue = confirmText;
@@ -80,11 +81,18 @@
         });
     }
 
+    function bringOpenerBack() {
+        try {
+            if (window.opener && !window.opener.closed) window.opener.focus();
+        } catch (err) {}
+    }
+
     window.addEventListener('pagehide', function (e) {
-        if (finished || terminated) return;
         if (e.persisted) return;
+        if (finished || terminated) { bringOpenerBack(); return; }
         if (internalNav) { internalNav = false; return; }
         sendRelease();
+        bringOpenerBack();
     });
 
     window.sppCloseExam = function (exitUrl) {

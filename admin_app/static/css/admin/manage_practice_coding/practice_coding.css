@@ -1,0 +1,42 @@
+/* Practice coding bank: only the pieces coding_question.css does not cover. */
+
+.pcq-tier {
+    display: flex;
+    padding: 3px;
+    border: 1px solid #e0d7cd;
+    border-radius: 8px;
+    background: #f2ece6;
+}
+.pcq-tier__opt {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    color: #6a6058;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.pcq-tier__opt input { position: absolute; opacity: 0; pointer-events: none; }
+.pcq-tier__opt.is-active { background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .1); }
+.pcq-tier__opt[data-tier="free"].is-active { color: #1e6b32; }
+.pcq-tier__opt[data-tier="paid"].is-active { color: #8a5210; }
+
+.pcq-flag {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 0;
+    border-radius: 16px;
+    padding: 6px 14px;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.pcq-flag--free { background: #e3f4e6; color: #1e6b32; }
+.pcq-flag--paid { background: #fdf0e0; color: #8a5210; }
+.pcq-flag:hover { filter: brightness(.96); }

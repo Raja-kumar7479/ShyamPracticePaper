@@ -38,7 +38,7 @@
   </nav>
 
   <span class="attempt-count">
-    Attempted: {{ attempted_map.values() | select | list | length }}/{{ questions | length }}
+    Submitted: <span id="submitted-count">{{ attempted_map.values() | select | list | length }}</span>/{{ questions | length }}
   </span>
 
   <div class="spacer"></div>
@@ -67,9 +67,9 @@
         {% endfor %}
       </div>
       <div class="qgrid-legend">
-        <span><span class="legend-dot" style="background:#c9efd6"></span>Answered</span>
+        <span><span class="legend-dot" style="background:#c9efd6"></span>Submitted</span>
         <span><span class="legend-dot" style="background:#fdeeb3"></span>Review</span>
-        <span><span class="legend-dot"></span>Unanswered</span>
+        <span><span class="legend-dot"></span>Not submitted</span>
       </div>
     </div>
   </div>

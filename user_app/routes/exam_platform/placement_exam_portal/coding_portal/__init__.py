@@ -1,11 +1,3 @@
-"""Coding portal - the placement Coding round.
-
-Ported from the standalone CodeJudge compiler. It keeps its own blueprints
-(so its internal url_for names stay intact) but runs inside this application:
-same database pool, same session auth, same templates/static tree.
-
-register(app) is called once from user_app/app.py.
-"""
 import logging
 
 logger = logging.getLogger(__name__)

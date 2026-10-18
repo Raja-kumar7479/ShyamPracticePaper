@@ -1,13 +1,17 @@
-from flask import jsonify, render_template, request, session, redirect, url_for
+from flask import current_app, jsonify, render_template, request, session, redirect, url_for
 from routes.exam_platform.competitive_exam_platform.databases.main_handler_db import UserOperation
 from routes.exam_platform.competitive_exam_platform.utils.utils_test_dashboard import get_user_session
 from routes.exam_platform.competitive_exam_platform.utils.utils_secure_code import secure_access_required
+from routes.exam_platform.competitive_exam_platform.utils.utils_test_access import test_access_required
 from routes import users_bp
 import json
 import logging
+import time
 
 user_op = UserOperation()
 logger = logging.getLogger(__name__)
+_PAPER_TTL = 30.0
+_paper_cache = {}
 
 
 def _parse_regions(raw):
@@ -42,9 +46,15 @@ def clean_html(html_content):
 
 @users_bp.route('/fetch-questions/<section_id>/<test_key>/<course_code>/<unique_code>', methods=['GET'])
 @secure_access_required(('course_code', 'unique_code'))
+@test_access_required
 def fetch_questions(section_id, test_key, course_code, unique_code):
     user_email, user_username, user_is_authenticated = get_user_session()
     
+    now = time.monotonic()
+    cached = _paper_cache.get(test_key)
+    if cached and now - cached[0] < _PAPER_TTL:
+        return current_app.response_class(cached[1], mimetype='application/json')
+
     all_questions = user_op.get_all_test_questions(test_key)
     if not all_questions:
         return jsonify({"error": "No questions available for this test."}), 404
@@ -71,7 +81,11 @@ def fetch_questions(section_id, test_key, course_code, unique_code):
             "correct_marks": q.get('correct_marks'),
             "negative_marks": q.get('negative_marks'),
         })
-    return jsonify(processed_questions)
+    body = current_app.json.dumps(processed_questions)
+    if len(_paper_cache) > 200:
+        _paper_cache.clear()
+    _paper_cache[test_key] = (now, body)
+    return current_app.response_class(body, mimetype='application/json')
 
 
 @users_bp.route('/api/test-flag/<test_key>', methods=['POST'])
@@ -101,6 +115,7 @@ def toggle_question_flag(test_key):
 
 
 @users_bp.route('/api/question-paper/<test_key>', methods=['GET'])
+@test_access_required
 def question_paper_data(test_key):
     email, username, authenticated = get_user_session()
     if not authenticated or not email:
@@ -133,6 +148,7 @@ def question_paper_data(test_key):
 
 @users_bp.route('/question-paper/<section_id>/<test_key>/<course_code>/<unique_code>', methods=['GET'])
 @secure_access_required(('course_code', 'unique_code'))
+@test_access_required
 def question_paper(section_id, test_key, course_code, unique_code):
     email, username, authenticated = get_user_session()
     if not authenticated or not email:

@@ -4,7 +4,6 @@
 
    Loaded after solve.css and reuses its --pc-* palette. */
 
-/* ---------- top nav ---------- */
 .pc-nav {
     flex: 0 0 auto;
     display: flex;
@@ -71,7 +70,6 @@
     font-weight: 700; font-size: 13px;
 }
 
-/* ---------- left pane tabs ---------- */
 .pc-question { display: flex; flex-direction: column; padding: 0; }
 
 .pc-ltabs {
@@ -113,7 +111,6 @@
 .pc-solvedtag { background: rgba(31, 122, 77, .12); color: var(--pc-ok); }
 .pc-attempttag { background: rgba(240, 174, 6, .16); color: #8a6b1f; }
 
-/* ---------- editorial ---------- */
 .pc-ed__h1 { font-size: 19px; margin-bottom: 18px; }
 
 .pc-ed {
@@ -174,7 +171,6 @@
 .pc-ed__cx h4 { font-size: 13px; margin: 0 0 7px; color: var(--pc-accent); }
 .pc-ed__cx ul { margin: 0; padding-left: 18px; font-size: 13px; }
 
-/* ---------- submissions ---------- */
 .pc-subrow { cursor: pointer; transition: background .15s; }
 .pc-subrow:hover, .pc-subrow.is-open { background: var(--pc-panel2); }
 .pc-subrow.is-latest td:first-child { font-weight: 700; }
@@ -211,7 +207,6 @@
 .pc-lempty h4 { font-size: 15px; margin-bottom: 6px; color: var(--pc-text); }
 .pc-lempty p { font-size: 13px; margin: 0; }
 
-/* ---------- editor tools ---------- */
 .pc-iconbtn {
     background: transparent; border: 1px solid transparent; cursor: pointer;
     color: var(--pc-muted); font-size: 13px;
@@ -243,7 +238,6 @@
 .pc-io.is-collapsed { height: auto; }
 .pc-io.is-collapsed .pc-io__body { display: none; }
 
-/* ---- resize grip ---- */
 .pc-io__grip {
     flex: 0 0 auto;
     display: flex;
@@ -295,12 +289,10 @@ body.pc-io-resizing .pc-editorwrap { pointer-events: none; }
 .pc-question::-webkit-scrollbar-thumb,
 .pc-subpre::-webkit-scrollbar-thumb { background: var(--pc-line); border-radius: 999px; }
 
-/* ---------- expanded editor ---------- */
 body.pc-expanded .pc-question,
 body.pc-expanded .pc-splitter { display: none; }
 body.pc-expanded .pc-editorpane { flex: 1 1 100%; }
 
-/* ---------- mobile problem/code toggle ---------- */
 .pc-mobiletoggle { display: none; }
 
 .pc-mobiletoggle button {
@@ -309,7 +301,6 @@ body.pc-expanded .pc-editorpane { flex: 1 1 100%; }
 }
 .pc-mobiletoggle button.is-active { color: var(--pc-accent); border-bottom: 2px solid var(--pc-gold); }
 
-/* ---------- toast ---------- */
 .pc-toast {
     position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%);
     background: #2a2220; color: #fff; font-size: 13px;
@@ -319,7 +310,6 @@ body.pc-expanded .pc-editorpane { flex: 1 1 100%; }
 }
 .pc-toast.is-out { opacity: 0; transform: translateX(-50%) translateY(8px); }
 
-/* ---------- responsive ---------- */
 @media (max-width: 900px) {
     .pc-nav { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
     .pc-nav__left, .pc-nav__right { flex: 0 0 auto; }

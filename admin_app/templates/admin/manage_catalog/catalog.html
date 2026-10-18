@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Catalog</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/brand-bootstrap.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-utils.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-shell.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/manage_catalog/catalog.css') }}">
+    <meta name="csrf-token" content="{{ csrf_token() if csrf_token is defined else '' }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-csrf.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/admin-toast.css') }}">
+    <script src="{{ url_for('static', filename='js/admin/admin-toast.js') }}"></script>
+</head>
+<body>
+
+{% with page_key = 'catalog' %}
+    {% include 'admin/_sidebar.html' %}
+{% endwith %}
+
+<div class="as-main">
+    <header class="as-topbar">
+        <button class="as-toggle" type="button" onclick="asToggle()" aria-label="Toggle menu"><i class="fas fa-bars"></i></button>
+        <h1 class="as-title">Course Catalog</h1>
+        <span class="as-chip">{{ sections|length }} sections &middot; {{ groups|length }} groups</span>
+    </header>
+
+    <div class="as-page">
+
+        <div class="ct-hint">
+            <i class="fas fa-info-circle"></i>
+            <div>
+                <strong>This screen controls the whole platform's vocabulary</strong>
+                <p>
+                    A <em>group</em> is an exam family (GATE, Placement) and is managed under
+                    <strong>Courses &amp; Groups</strong>. Each group offers a set of <em>sections</em>. A section is a kind of content,
+                    and its <strong>portal</strong> decides which screen a student lands on when they open it.
+                    Changes take effect immediately - on this app at once, and on the student app within a minute.
+                </p>
+            </div>
+        </div>
+
+        {% if not is_owner %}
+        <div class="alert alert-warning">
+            <i class="fas fa-lock me-1"></i>
+            You can view the catalog, but only an <strong>owner</strong> can change it -
+            these values control routing for every course.
+        </div>
+        {% endif %}
+
+        <section class="ct-card">
+            <div class="ct-card__bar">
+                <h2 class="ct-card__title"><i class="fas fa-shapes"></i> Content sections</h2>
+                {% if is_owner %}
+                <button class="btn btn-primary btn-sm" type="button" id="ctNewSection">
+                    <i class="fas fa-plus me-1"></i> New section
+                </button>
+                {% endif %}
+            </div>
+            <p class="ct-note">
+                The <strong>portal</strong> column is what actually sends a student somewhere.
+                A section with no portal is saved and visible to admins, but students see a
+                &ldquo;coming soon&rdquo; page - use that for exam types you have not built yet.
+            </p>
+
+            <div class="table-responsive">
+                <table class="table align-middle ct-table">
+                    <thead>
+                        <tr>
+                            <th>Key</th><th>Label</th><th>Portal</th><th>Editor</th>
+                            <th>Status</th><th>Used by</th><th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for s in sections %}
+                        <tr data-section="{{ s.section_key }}">
+                            <td><code>{{ s.section_key }}</code></td>
+                            <td>
+                                <strong>{{ s.label }}</strong>
+                                {% if s.help_text %}<div class="ct-sub">{{ s.help_text }}</div>{% endif %}
+                            </td>
+                            <td>
+                                {% if s.portal in live_portals %}
+                                    <span class="ct-pill ct-pill--live">{{ s.portal }}</span>
+                                {% elif s.portal %}
+                                    <span class="ct-pill ct-pill--warn" title="No route exists for this value; students see Coming Soon">
+                                        {{ s.portal }} &middot; not built
+                                    </span>
+                                {% else %}
+                                    <span class="ct-pill ct-pill--none">no portal</span>
+                                {% endif %}
+                            </td>
+                            <td>{% if s.editor %}<span class="ct-pill">{{ s.editor }}</span>{% else %}<span class="ct-muted">-</span>{% endif %}</td>
+                            <td>
+                                {% if s.is_available %}<span class="ct-pill ct-pill--live">Available</span>
+                                {% else %}<span class="ct-pill ct-pill--soon">Coming soon</span>{% endif %}
+                            </td>
+                            <td>
+                                <span class="ct-muted">{{ s.content_count }} item{{ '' if s.content_count == 1 else 's' }}</span>
+                            </td>
+                            <td class="text-end">
+                                {% if is_owner %}
+                                <button class="btn btn-sm btn-outline-primary ct-edit-section"
+                                        data-section='{{ s|tojson }}'><i class="fas fa-pen"></i></button>
+                                <button class="btn btn-sm btn-outline-danger ct-del-section"
+                                        data-key="{{ s.section_key }}" data-used="{{ s.content_count }}">
+                                    <i class="fas fa-trash"></i></button>
+                                {% else %}<span class="ct-muted">-</span>{% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="ct-card">
+            <h2 class="ct-card__title"><i class="fas fa-table-cells"></i> Which group offers which section</h2>
+            <p class="ct-note">
+                Tick a box to let that group use that section. This is exactly what the Section
+                dropdown offers when adding content, so unticking hides it from that group.
+            </p>
+            <div class="table-responsive">
+                <table class="table align-middle ct-table ct-matrix">
+                    <thead>
+                        <tr>
+                            <th>Section</th>
+                            {% for g in groups %}<th class="text-center">{{ g.group_name }}</th>{% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for s in sections %}
+                        <tr>
+                            <td>
+                                <strong>{{ s.label }}</strong>
+                                <div class="ct-sub"><code>{{ s.section_key }}</code></div>
+                            </td>
+                            {% for g in groups %}
+                            <td class="text-center">
+                                <input type="checkbox" class="form-check-input ct-link"
+                                       data-group="{{ g.group_name }}" data-section="{{ s.section_key }}"
+                                       {% if s.section_key in group_sections.get(g.group_name, []) %}checked{% endif %}
+                                       {% if not is_owner %}disabled{% endif %}>
+                            </td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>
+
+<div class="modal fade" id="ctSectionModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content">
+    <div class="modal-header">
+        <h5 class="modal-title" id="ctModalTitle">New section</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Key <span class="ct-req">*</span></label>
+                <input type="text" class="form-control" id="ctSecKey" placeholder="interview_test">
+                <small class="ct-help">Stored on every content row. Cannot be changed later.</small>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Label <span class="ct-req">*</span></label>
+                <input type="text" class="form-control" id="ctSecLabel" placeholder="Interview Test">
+                <small class="ct-help">What admins see in the Section dropdown.</small>
+            </div>
+            <div class="col-12">
+                <label class="form-label">Help text</label>
+                <input type="text" class="form-control" id="ctSecHelp"
+                       placeholder="Mock HR interview round. Opens the communication portal.">
+                <small class="ct-help">Shown under the dropdown so the admin knows what they are picking.</small>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Portal</label>
+                <select class="form-select" id="ctSecPortal">
+                    <option value="">No portal - students see &ldquo;coming soon&rdquo;</option>
+                    {% for value, text in live_portals.items() %}
+                    <option value="{{ value }}">{{ text }}</option>
+                    {% endfor %}
+                </select>
+                <small class="ct-help">Only these portals exist today. Pick the one that fits.</small>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Question editor</label>
+                <select class="form-select" id="ctSecEditor">
+                    <option value="">None - not a test</option>
+                    {% for value, text in editors.items() %}
+                    <option value="{{ value }}">{{ text }}</option>
+                    {% endfor %}
+                </select>
+                <small class="ct-help">Which editor opens on the Mock Test screen for this section.</small>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Order</label>
+                <input type="number" class="form-control" id="ctSecPosition" value="0" min="0" max="999">
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="ctSecAvailable">
+                    <label class="form-check-label" for="ctSecAvailable">
+                        Available to students
+                        <small class="ct-help">Needs a portal. Leave off while the portal is being built.</small>
+                    </label>
+                </div>
+            </div>
+            <div class="col-12" id="ctSecGroupsWrap">
+                <label class="form-label">Offer it to these groups</label>
+                <div class="ct-chips">
+                    {% for g in groups %}
+                    <label class="ct-chip"><input type="checkbox" value="{{ g.group_name }}"> {{ g.group_name }}</label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" id="ctSaveSection"><i class="fas fa-save me-1"></i> Save</button>
+    </div>
+  </div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/admin/admin-shell.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/manage_catalog/catalog.js') }}"></script>
+</body>
+</html>

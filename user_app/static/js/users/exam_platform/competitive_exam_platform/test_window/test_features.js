@@ -55,15 +55,12 @@
         fsBtn.addEventListener('click', function () {
             if (!document.fullscreenElement) {
                 document.documentElement.requestFullscreen().catch(function () {});
-            } else {
-                window.sppAllowFsExit = true;
-                document.exitFullscreen().catch(function () {});
             }
         });
         document.addEventListener('fullscreenchange', function () {
             var icon = fsBtn.querySelector('i');
-            if (icon) icon.className = document.fullscreenElement ? 'fas fa-compress' : 'fas fa-expand';
-            fsBtn.title = document.fullscreenElement ? 'Exit Fullscreen' : 'Toggle Fullscreen';
+            if (icon) icon.className = document.fullscreenElement ? 'fas fa-lock' : 'fas fa-expand';
+            fsBtn.title = document.fullscreenElement ? 'Full screen is required for this test' : 'Enter full screen';
         });
     }
 
@@ -72,6 +69,9 @@
     var qpBody = document.getElementById('question-paper-body');
     var qpClose = document.getElementById('close-question-paper-btn');
     var qpLoaded = false;
+    var qpQuestions = [];
+    var qpTabs = null;
+    var qpView = null;
 
     function esc(v) {
         var d = document.createElement('div');
@@ -79,14 +79,74 @@
         return d.innerHTML;
     }
 
-    function renderPaper(questions) {
-        if (!questions.length) {
+    function manager() {
+        return (typeof testManager !== 'undefined') ? testManager : null;
+    }
+
+    function sections() {
+        return (typeof sectionsData !== 'undefined' && Array.isArray(sectionsData)) ? sectionsData : [];
+    }
+
+    function codingSections() {
+        var tm = manager();
+        return (tm && tm.coding && Array.isArray(tm.coding.sections)) ? tm.coding.sections : [];
+    }
+
+    function currentPaperSection() {
+        var tm = manager();
+        if (!tm) return null;
+        if (tm.currentSectionId === '__coding__') return 'coding:' + (tm.coding && tm.coding.section != null ? tm.coding.section : '');
+        var found = null;
+        sections().forEach(function (s) {
+            if (String(s.section_id) === String(tm.currentSectionId)) found = s.section_name;
+        });
+        return found;
+    }
+
+    function paperTabs() {
+        var tabs = [];
+        var seen = {};
+        qpQuestions.forEach(function (q) {
+            var name = q.section_name || 'Section';
+            if (!seen[name]) { seen[name] = true; tabs.push({ key: name, label: name }); }
+        });
+        codingSections().forEach(function (sec) {
+            tabs.push({ key: 'coding:' + sec.id, label: sec.title });
+        });
+        return tabs;
+    }
+
+    function renderCodingPaper(sec, html) {
+        html += '<h3 class="qp-sec">' + esc(sec.title) + '</h3>';
+        if (!sec.questions || !sec.questions.length) return html + '<p class="qp-loading">No questions in this section.</p>';
+        sec.questions.forEach(function (q) {
+            html += '<div class="qp-item"><div class="qp-item__head"><span class="qp-no">Q' + esc(q.n) + '</span>' +
+                '<span class="qp-type">CODING</span></div><div class="qp-text">' + esc(q.title || ('Programming question ' + q.n)) +
+                '</div><p class="qp-coding-note">Open the ' + esc(sec.title) + ' tab to read the full problem and write your program.</p></div>';
+        });
+        return html;
+    }
+
+    function renderPaper(view) {
+        qpView = view;
+        var questions = qpQuestions;
+        if (!questions.length && !codingSections().length) {
             qpBody.innerHTML = '<p class="qp-loading">No questions available.</p>';
             return;
         }
+        var tabs = paperTabs();
+        var html = '<div class="qp-tabs">' +
+            '<button type="button" class="qp-tab' + (view === 'all' ? ' is-on' : '') + '" data-qp="all">All sections</button>' +
+            tabs.map(function (t) {
+                return '<button type="button" class="qp-tab' + (t.key === view ? ' is-on' : '') + '" data-qp="' + esc(t.key) + '">' + esc(t.label) + '</button>';
+            }).join('') + '</div>';
+        html += '<p class="qp-hint">Read-only view of the paper. Answers are not saved here.</p>';
         var section = '';
-        var html = '<p class="qp-hint">Read-only view of the full paper. Answers are not saved here.</p>';
-        questions.forEach(function (q) {
+        var shown = questions.filter(function (q) { return view === 'all' || (q.section_name || 'Section') === view; });
+        if (!shown.length && view !== 'all' && view.indexOf('coding:') !== 0) {
+            html += '<p class="qp-loading">No questions in this section.</p>';
+        }
+        shown.forEach(function (q) {
             if (q.section_name !== section) {
                 section = q.section_name;
                 html += '<h3 class="qp-sec">' + esc(section || 'Section') + '</h3>';
@@ -108,13 +168,27 @@
             }
             html += '</div>';
         });
+        codingSections().forEach(function (sec) {
+            if (view === 'all' || view === 'coding:' + sec.id) html = renderCodingPaper(sec, html);
+        });
         qpBody.innerHTML = html;
+        qpBody.scrollTop = 0;
+        qpBody.querySelectorAll('.qp-tab').forEach(function (btn) {
+            btn.addEventListener('click', function () { renderPaper(btn.getAttribute('data-qp')); });
+        });
+    }
+
+    function paperStartView() {
+        var current = currentPaperSection();
+        if (!current) return 'all';
+        var known = paperTabs().some(function (t) { return t.key === current; });
+        return known ? current : 'all';
     }
 
     function openPaper() {
         if (!qpModal) return;
         qpModal.style.display = 'block';
-        if (qpLoaded) return;
+        if (qpLoaded) { renderPaper(paperStartView()); return; }
         qpBody.innerHTML = '<p class="qp-loading">Loading question paper...</p>';
         fetch('/api/question-paper/' + encodeURIComponent(testKey))
             .then(function (r) { return r.json(); })
@@ -123,8 +197,9 @@
                     qpBody.innerHTML = '<p class="qp-loading">' + esc(d.error) + '</p>';
                     return;
                 }
-                renderPaper(d.questions || []);
+                qpQuestions = d.questions || [];
                 qpLoaded = true;
+                renderPaper(paperStartView());
             })
             .catch(function () {
                 qpBody.innerHTML = '<p class="qp-loading">Could not load the question paper.</p>';
