@@ -11,7 +11,7 @@ from routes.auth.utils.utils_login import (
 )
 from routes.exam_platform.competitive_exam_platform.utils.utils_test_dashboard import establish_user_session
 from extensions import limiter
-from routes import users_bp
+
 
 auth_db = AuthDb()
 mail = Mail()
