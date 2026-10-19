@@ -12,7 +12,7 @@ import time
 import bcrypt
 from routes.auth.utils.utils_login import hash_password, verify_password
 import logging
-from routes import users_bp
+
 from routes.exam_platform.competitive_exam_platform.utils.utils_test_dashboard import establish_user_session
 
 mail = Mail()
